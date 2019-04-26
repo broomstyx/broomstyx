@@ -1,0 +1,23 @@
+BROOMStyx is a parallel object-oriented software framework for 
+solving nonlinear systems of partial differential equations that
+allows for the combination of fundamentally different numerical
+methods within a single code architecture. It was originally 
+written by Juan Michael Sargado while he was a PhD student at the 
+University of Bergen, Department of Mathematics from 2014 to 2019.
+
+
+Copyright (C) 2014 - 2019 University of Bergen
+
+
+BROOMStyx is free software: you can redistribute it and/or modify
+it under the terms of the GNU General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+BROOMStyx is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU General Public License for more details.
+
+You should have received a copy of the GNU General Public License
+along with BROOMStyx.  If not, see <http://www.gnu.org/licenses/>.
