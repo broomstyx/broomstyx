@@ -1,0 +1,10 @@
+################################
+# Dune module information file #
+################################
+
+#Name of the module
+Module: broomstyx
+Version: 0.1
+Maintainer: jusa@norceresearch.no
+#depending on
+Depends: dune-fem
