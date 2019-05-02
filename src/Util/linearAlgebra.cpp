@@ -960,8 +960,9 @@ namespace broomstyx
             throw std::runtime_error("Cannot invert singular matrix!");
         }
 
-        double* work;
-        int lwork;
+        int lwork = ncols * nrows ;
+        std::vector< double > workVec ( lwork, 0.0 );
+        double * work = workVec.data();
         dgetri_(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
         //info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
 
@@ -1004,8 +1005,9 @@ namespace broomstyx
             throw std::runtime_error("Cannot invert singular matrix!");
         }
 
-        double * work;
-        int lwork;
+        int lwork = ncols * nrows ;
+        std::vector< double > workVec ( lwork, 0.0 );
+        double * work = workVec.data();
         dgetri_(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
         //info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
 
