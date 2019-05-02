@@ -35,10 +35,14 @@ namespace broomstyx
     class ISTLMat : public SparseMatrix
     {
         using SparseMatrix :: _symFlag;
+        using SparseMatrix :: _dim1;
+        using SparseMatrix :: _dim2;
+        using SparseMatrix :: _nnz;
     public:
-        ISTLMat() : _matrix()
-        {
-        }
+        typedef Dune::FieldMatrix<double, 1,1> BlockType;
+        typedef Dune::BCRSMatrix< BlockType > MatrixType ;
+
+        ISTLMat();
 
         void addToComponent( int rowNum, int colNum, double val ) override;
         void atomicAddToComponent( int rowNum, int colNum, double val ) override;
@@ -55,9 +59,9 @@ namespace broomstyx
 
         RealVector times( const RealVector& x ) override;
 
+        MatrixType& exportMatrix() { assert( _matrix ); return *_matrix; }
+
     private:
-        typedef Dune::FieldMatrix<double, 1,1> BlockType;
-        typedef Dune::BCRSMatrix< BlockType > MatrixType ;
         std::unique_ptr< MatrixType > _matrix;
     };
 }
