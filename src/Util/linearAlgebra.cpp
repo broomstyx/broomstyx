@@ -1,6 +1,6 @@
 /*
   Copyright (c) 2014 - 2019 University of Bergen
-  
+
   This file is part of the BROOMStyx project.
 
   BROOMStyx is free software: you can redistribute it and/or modify
@@ -31,20 +31,32 @@
     #include "mkl_lapacke.h"
 #else
     #include "cblas.h"
-    #include "lapacke.h"
+
+    typedef int lapack_int;
+//    #include "lapacke.h"
+
+extern "C" {
+// LU decomoposition of a general matrix
+void dgetrf_(int* M, int *N, double* A, int* lda, int* IPIV, int* INFO);
+//// generate inverse of a matrix given its LU decomposition
+void dgetri_(int* N, double* A, int* lda, int* IPIV, double* WORK, int*    lwork, int* INFO);
+void dgetrs_(char* C, int* N, int* NRHS, double* A, int* LDA, int* IPIV, double* B, int* LDB, int* INFO);
+void dgesv_(int *n, int *nrhs, double *a, int *lda, int *ipiv, double *b, int *ldb, int *info);
+}
+
 #endif
 
 namespace broomstyx
 {
     // Matrix addition
     // ---------------------------------------------------------------------------
-    RealMatrix operator+( RealMatrix&& A, RealMatrix&& B ) 
+    RealMatrix operator+( RealMatrix&& A, RealMatrix&& B )
     {
         if ( A.isTransposed() )
             A.simplify();
         if ( B.isTransposed() )
             B.simplify();
-        
+
         int A_dim1 = A.dim1();
         int A_dim2 = A.dim2();
         int B_dim1 = B.dim1();
@@ -52,7 +64,7 @@ namespace broomstyx
 
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
         if ( A.isScaled() || !A.ownsItsPointer() )
@@ -69,7 +81,7 @@ namespace broomstyx
         }
     }
 
-    RealMatrix operator+( RealMatrix&& A, const RealMatrix& B ) 
+    RealMatrix operator+( RealMatrix&& A, const RealMatrix& B )
     {
         A.simplify();
 #ifndef NDEBUG
@@ -82,14 +94,14 @@ namespace broomstyx
         int B_dim2 = B.dim2();
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
         cblas_daxpy(A_dim1*A_dim2, B.scaling(), B.ptr(), 1, A.ptr(), 1);
         return (RealMatrix&&)A;
     }
 
-    RealMatrix operator+( const RealMatrix& A, RealMatrix&& B ) 
+    RealMatrix operator+( const RealMatrix& A, RealMatrix&& B )
     {
         B.simplify();
 #ifndef NDEBUG
@@ -102,7 +114,7 @@ namespace broomstyx
         int B_dim2 = B.dim2();
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
         cblas_daxpy(B_dim1*B_dim2, A.scaling(), A.ptr(), 1, B.ptr(), 1);
@@ -124,19 +136,19 @@ namespace broomstyx
         int B_dim2 = B.dim2();
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix addition!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
         RealMatrix C = A;
         C.simplify();
         cblas_daxpy(A_dim1*A_dim2, B.scaling(), B.ptr(), 1, C.ptr(), 1);
-        
+
         return C;
     }
 
     // Vector addition
     // ---------------------------------------------------------------------------
-    RealVector operator+( RealVector&& A, RealVector&& B ) 
+    RealVector operator+( RealVector&& A, RealVector&& B )
     {
         int A_dim = A.dim();
         int B_dim = B.dim();
@@ -158,7 +170,7 @@ namespace broomstyx
         }
     }
 
-    RealVector operator+( RealVector&& A, const RealVector& B ) 
+    RealVector operator+( RealVector&& A, const RealVector& B )
     {
         int A_dim = A.dim();
         int B_dim = B.dim();
@@ -172,7 +184,7 @@ namespace broomstyx
         return (RealVector&&)A;
     }
 
-    RealVector operator+( const RealVector& A, RealVector&& B ) 
+    RealVector operator+( const RealVector& A, RealVector&& B )
     {
         int A_dim = A.dim();
         int B_dim = B.dim();
@@ -186,7 +198,7 @@ namespace broomstyx
         return (RealVector&&)B;
     }
 
-    RealVector operator+( const RealVector& A, const RealVector& B ) 
+    RealVector operator+( const RealVector& A, const RealVector& B )
     {
         int A_dim = A.dim();
         int B_dim = B.dim();
@@ -208,14 +220,14 @@ namespace broomstyx
         A.simplify();
         if ( B.isTransposed() )
             B.simplify();
-        
+
         int A_dim1 = A.dim1();
         int A_dim2 = A.dim2();
         int B_dim1 = B.dim1();
         int B_dim2 = B.dim2();
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
         cblas_daxpy(A_dim1*A_dim2, -1.*B.scaling(), B.ptr(), 1, A.ptr(), 1);
@@ -223,7 +235,7 @@ namespace broomstyx
         return (RealMatrix&&)A;
     }
 
-    RealMatrix operator-( RealMatrix&& A, const RealMatrix& B ) 
+    RealMatrix operator-( RealMatrix&& A, const RealMatrix& B )
     {
         A.simplify();
 #ifndef NDEBUG
@@ -236,7 +248,7 @@ namespace broomstyx
         int B_dim2 = B.dim2();
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
         cblas_daxpy(A_dim1*A_dim2, -1.*B.scaling(), B.ptr(), 1, A.ptr(), 1);
@@ -244,21 +256,21 @@ namespace broomstyx
         return (RealMatrix&&)A;
     }
 
-    RealMatrix operator-( const RealMatrix& A, RealMatrix&& B ) 
+    RealMatrix operator-( const RealMatrix& A, RealMatrix&& B )
     {
         if ( B.isTransposed() )
             B.simplify();
-        
+
         RealMatrix C = A;
         C.simplify();
-        
+
         int A_dim1 = C.dim1();
         int A_dim2 = C.dim2();
         int B_dim1 = B.dim1();
         int B_dim2 = B.dim2();
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
         cblas_daxpy(A_dim1*A_dim2, -1.*B.scaling(), B.ptr(), 1, C.ptr(), 1);
@@ -266,7 +278,7 @@ namespace broomstyx
         return C;
     }
 
-    RealMatrix operator-( const RealMatrix& A, const RealMatrix& B ) 
+    RealMatrix operator-( const RealMatrix& A, const RealMatrix& B )
     {
 #ifndef NDEBUG
         if ( B.isTransposed() )
@@ -274,17 +286,17 @@ namespace broomstyx
 #endif
         RealMatrix C = A;
         C.simplify();
-        
+
         int A_dim1 = C.dim1();
         int A_dim2 = C.dim2();
         int B_dim1 = B.dim1();
         int B_dim2 = B.dim2();
 #ifndef NDEBUG
         if ( A_dim1 != B_dim1 || A_dim2 != B_dim2 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix subtraction!\n\tdim(A) = [ " + std::to_string(A_dim1) + " x "
                     + std::to_string(A_dim2) + " ], dim(B) = [ " + std::to_string(B_dim1) + " x " + std::to_string(B_dim2) + " ]");
 #endif
-        
+
         cblas_daxpy(A_dim1*A_dim2, -1.*B.scaling(), B.ptr(), 1, C.ptr(), 1);
 
         return C;
@@ -292,10 +304,10 @@ namespace broomstyx
 
     // Vector subtraction
     // ---------------------------------------------------------------------------
-    RealVector operator-( RealVector&& A, RealVector&& B ) 
+    RealVector operator-( RealVector&& A, RealVector&& B )
     {
         A.simplify();
-        
+
         int A_dim = A.dim();
         int B_dim = B.dim();
 #ifndef NDEBUG
@@ -307,10 +319,10 @@ namespace broomstyx
         return (RealVector&&)A;
     }
 
-    RealVector operator-( RealVector&& A, const RealVector& B ) 
+    RealVector operator-( RealVector&& A, const RealVector& B )
     {
         A.simplify();
-        
+
         int A_dim = A.dim();
         int B_dim = B.dim();
 #ifndef NDEBUG
@@ -322,7 +334,7 @@ namespace broomstyx
         return (RealVector&&)A;
     }
 
-    RealVector operator-( const RealVector& A, RealVector&& B ) 
+    RealVector operator-( const RealVector& A, RealVector&& B )
     {
         int A_dim = A.dim();
         int B_dim = B.dim();
@@ -337,7 +349,7 @@ namespace broomstyx
         return C;
     }
 
-    RealVector operator-( const RealVector& A, const RealVector& B ) 
+    RealVector operator-( const RealVector& A, const RealVector& B )
     {
         int A_dim = A.dim();
         int B_dim = B.dim();
@@ -438,10 +450,10 @@ namespace broomstyx
     {
         CBLAS_TRANSPOSE transA, transB;
         int opA_dim1, opA_dim2, opB_dim1, opB_dim2;
-        
+
         int ldA = A.dim1();
         int ldB = B.dim1();
-        
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A.dim2();
@@ -454,7 +466,7 @@ namespace broomstyx
             opA_dim2 = A.dim2();
             transA = CblasNoTrans;
         }
-        
+
         if ( B.isTransposed() )
         {
             opB_dim1 = B.dim2();
@@ -469,7 +481,7 @@ namespace broomstyx
         }
 #ifndef NDEBUG
         if ( opA_dim2 != opB_dim1 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x "
                     + std::to_string(opA_dim2) + " ], dim(opB) = [ " + std::to_string(opB_dim1) + " x " + std::to_string(opB_dim2) + " ]");
 #endif
         RealMatrix C(opA_dim1, opB_dim2);
@@ -482,10 +494,10 @@ namespace broomstyx
     {
         CBLAS_TRANSPOSE transA, transB;
         int opA_dim1, opA_dim2, opB_dim1, opB_dim2;
-        
+
         int ldA = A.dim1();
         int ldB = B.dim1();
-        
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A.dim2();
@@ -498,7 +510,7 @@ namespace broomstyx
             opA_dim2 = A.dim2();
             transA = CblasNoTrans;
         }
-        
+
         if ( B.isTransposed() )
         {
             opB_dim1 = B.dim2();
@@ -511,9 +523,9 @@ namespace broomstyx
             opB_dim2 = B.dim2();
             transB = CblasNoTrans;
         }
-#ifndef NDEBUG        
+#ifndef NDEBUG
         if ( opA_dim2 != opB_dim1 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x "
                     + std::to_string(opA_dim2) + " ], dim(opB) = [ " + std::to_string(opB_dim1) + " x " + std::to_string(opB_dim2) + " ]");
 #endif
         RealMatrix C(opA_dim1, opB_dim2);
@@ -526,10 +538,10 @@ namespace broomstyx
     {
         CBLAS_TRANSPOSE transA, transB;
         int opA_dim1, opA_dim2, opB_dim1, opB_dim2;
-        
+
         int ldA = A.dim1();
         int ldB = B.dim1();
-        
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A.dim2();
@@ -542,7 +554,7 @@ namespace broomstyx
             opA_dim2 = A.dim2();
             transA = CblasNoTrans;
         }
-        
+
         if ( B.isTransposed() )
         {
             opB_dim1 = B.dim2();
@@ -555,9 +567,9 @@ namespace broomstyx
             opB_dim2 = B.dim2();
             transB = CblasNoTrans;
         }
-#ifndef NDEBUG        
+#ifndef NDEBUG
         if ( opA_dim2 != opB_dim1 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x "
                     + std::to_string(opA_dim2) + " ], dim(opB) = [ " + std::to_string(opB_dim1) + " x " + std::to_string(opB_dim2) + " ]");
 #endif
         RealMatrix C(opA_dim1, opB_dim2);
@@ -570,10 +582,10 @@ namespace broomstyx
     {
         CBLAS_TRANSPOSE transA, transB;
         int opA_dim1, opA_dim2, opB_dim1, opB_dim2;
-        
+
         int ldA = A.dim1();
         int ldB = B.dim1();
-        
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A.dim2();
@@ -586,7 +598,7 @@ namespace broomstyx
             opA_dim2 = A.dim2();
             transA = CblasNoTrans;
         }
-        
+
         if ( B.isTransposed() )
         {
             opB_dim1 = B.dim2();
@@ -599,9 +611,9 @@ namespace broomstyx
             opB_dim2 = B.dim2();
             transB = CblasNoTrans;
         }
-#ifndef NDEBUG        
+#ifndef NDEBUG
         if ( opA_dim2 != opB_dim1 )
-            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x " 
+            throw std::runtime_error("\nSize mismatch in operands for matrix multiplication!\n\tdim(opA) = [ " + std::to_string(opA_dim1) + " x "
                     + std::to_string(opA_dim2) + " ], dim(opB) = [ " + std::to_string(opB_dim1) + " x " + std::to_string(opB_dim2) + " ]");
 #endif
         RealMatrix C(opA_dim1, opB_dim2);
@@ -615,11 +627,11 @@ namespace broomstyx
     RealVector operator*( RealMatrix&& A, RealVector&& B)
     {
         CBLAS_TRANSPOSE transA;
-        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;        
-        
+        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;
+
         A_dim1 = A.dim1();
         A_dim2 = A.dim2();
-            
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A_dim2;
@@ -632,7 +644,7 @@ namespace broomstyx
             opA_dim2 = A_dim2;
             transA = CblasNoTrans;
         }
-        
+
         int ldA = A_dim1;
         B_dim = B.dim();
 #ifndef NDEBUG
@@ -649,11 +661,11 @@ namespace broomstyx
     RealVector operator*( RealMatrix&& A, const RealVector& B)
     {
         CBLAS_TRANSPOSE transA;
-        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;        
-        
+        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;
+
         A_dim1 = A.dim1();
         A_dim2 = A.dim2();
-            
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A_dim2;
@@ -666,7 +678,7 @@ namespace broomstyx
             opA_dim2 = A_dim2;
             transA = CblasNoTrans;
         }
-        
+
         int ldA = A_dim1;
         B_dim = B.dim();
 #ifndef NDEBUG
@@ -683,11 +695,11 @@ namespace broomstyx
     RealVector operator*( const RealMatrix& A, RealVector&& B)
     {
         CBLAS_TRANSPOSE transA;
-        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;        
-        
+        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;
+
         A_dim1 = A.dim1();
         A_dim2 = A.dim2();
-            
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A_dim2;
@@ -700,7 +712,7 @@ namespace broomstyx
             opA_dim2 = A_dim2;
             transA = CblasNoTrans;
         }
-        
+
         int ldA = A_dim1;
         B_dim = B.dim();
 #ifndef NDEBUG
@@ -717,11 +729,11 @@ namespace broomstyx
     RealVector operator*( const RealMatrix& A, const RealVector& B)
     {
         CBLAS_TRANSPOSE transA;
-        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;        
-        
+        int A_dim1, A_dim2, opA_dim1, opA_dim2, B_dim;
+
         A_dim1 = A.dim1();
         A_dim2 = A.dim2();
-            
+
         if ( A.isTransposed() )
         {
             opA_dim1 = A_dim2;
@@ -734,7 +746,7 @@ namespace broomstyx
             opA_dim2 = A_dim2;
             transA = CblasNoTrans;
         }
-        
+
         int ldA = A_dim1;
         B_dim = B.dim();
 #ifndef NDEBUG
@@ -753,11 +765,11 @@ namespace broomstyx
     RealVector operator*( RealVector&& A, RealMatrix&& B )
     {
         CBLAS_TRANSPOSE transB;
-        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;        
-        
+        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;
+
         B_dim1 = B.dim1();
         B_dim2 = B.dim2();
-            
+
         if ( !B.isTransposed() )
         {
             opB_dim1 = B_dim2;
@@ -770,7 +782,7 @@ namespace broomstyx
             opB_dim2 = B_dim2;
             transB = CblasNoTrans;
         }
-        
+
         int ldB = B_dim1;
         A_dim = A.dim();
 #ifndef NDEBUG
@@ -785,13 +797,13 @@ namespace broomstyx
     }
 
     RealVector operator*( RealVector&& A, const RealMatrix& B )
-    {   
+    {
         CBLAS_TRANSPOSE transB;
-        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;        
-        
+        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;
+
         B_dim1 = B.dim1();
         B_dim2 = B.dim2();
-            
+
         if ( !B.isTransposed() )
         {
             opB_dim1 = B_dim2;
@@ -804,7 +816,7 @@ namespace broomstyx
             opB_dim2 = B_dim2;
             transB = CblasNoTrans;
         }
-        
+
         int ldB = B_dim1;
         A_dim = A.dim();
 #ifndef NDEBUG
@@ -819,13 +831,13 @@ namespace broomstyx
     }
 
     RealVector operator*( const RealVector& A, RealMatrix&& B )
-    {   
+    {
         CBLAS_TRANSPOSE transB;
-        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;        
-        
+        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;
+
         B_dim1 = B.dim1();
         B_dim2 = B.dim2();
-            
+
         if ( !B.isTransposed() )
         {
             opB_dim1 = B_dim2;
@@ -838,7 +850,7 @@ namespace broomstyx
             opB_dim2 = B_dim2;
             transB = CblasNoTrans;
         }
-        
+
         int ldB = B_dim1;
         A_dim = A.dim();
 #ifndef NDEBUG
@@ -853,13 +865,13 @@ namespace broomstyx
     }
 
     RealVector operator*( const RealVector& A, const RealMatrix& B )
-    {   
+    {
         CBLAS_TRANSPOSE transB;
-        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;        
-        
+        int B_dim1, B_dim2, opB_dim1, opB_dim2, A_dim;
+
         B_dim1 = B.dim1();
         B_dim2 = B.dim2();
-            
+
         if ( !B.isTransposed() )
         {
             opB_dim1 = B_dim2;
@@ -872,7 +884,7 @@ namespace broomstyx
             opB_dim2 = B_dim2;
             transB = CblasNoTrans;
         }
-        
+
         int ldB = B_dim1;
         A_dim = A.dim();
 #ifndef NDEBUG
@@ -894,7 +906,7 @@ namespace broomstyx
             A._isTransposed = false;
         else
             A._isTransposed = true;
-        
+
         return (RealMatrix&&)A;
     }
 
@@ -910,22 +922,22 @@ namespace broomstyx
         A.simplify();
         return (RealMatrix&&)A;
     }
-    
+
     RealVector simplify( RealVector&& A )
     {
         A.simplify();
         return (RealVector&&)A;
     }
-    
+
     // Matrix inverse
     // ------------------------------------------------------------------------
     RealMatrix inv( RealMatrix&& A )
     {
         A.simplify();
-        
+
         int info;
         lapack_int* ipiv;
-        
+
         int nrows = A.dim1();
         int ncols = A.dim2();
 
@@ -935,8 +947,8 @@ namespace broomstyx
         ipiv = new lapack_int[nrows]();
         double *locA = A.ptr();
 
-        //dgetrf(&nrows, &nrows, locA, &nrows, ipiv, &info);
-        info = LAPACKE_dgetrf(LAPACK_COL_MAJOR, nrows, nrows, locA, nrows, ipiv);
+        dgetrf_(&nrows, &nrows, locA, &nrows, ipiv, &info);
+        //info = LAPACKE_dgetrf(LAPACK_COL_MAJOR, nrows, nrows, locA, nrows, ipiv);
         if ( info < 0 )
         {
             delete[] ipiv;
@@ -948,8 +960,10 @@ namespace broomstyx
             throw std::runtime_error("Cannot invert singular matrix!");
         }
 
-        //dgetri(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
-        info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
+        double* work;
+        int lwork;
+        dgetri_(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
+        //info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
 
         delete[] ipiv;
 
@@ -977,8 +991,8 @@ namespace broomstyx
         ipiv = new lapack_int[nrows]();
         double *locA = A.ptr();
 
-        //dgetrf(&nrows, &nrows, locA, &nrows, ipiv, &info);
-        info = LAPACKE_dgetrf(LAPACK_COL_MAJOR, nrows, nrows, locA, nrows, ipiv);
+        dgetrf_(&nrows, &nrows, locA, &nrows, ipiv, &info);
+        //info = LAPACKE_dgetrf(LAPACK_COL_MAJOR, nrows, nrows, locA, nrows, ipiv);
         if ( info < 0 )
         {
             delete[] ipiv;
@@ -990,8 +1004,10 @@ namespace broomstyx
             throw std::runtime_error("Cannot invert singular matrix!");
         }
 
-        //dgetri(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
-        info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
+        double * work;
+        int lwork;
+        dgetri_(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
+        //info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
 
         delete[] ipiv;
 

@@ -23,12 +23,20 @@ if( dune-common_FOUND )
   #include the dune macros
   include(DuneMacros)
 
+  find_package( BLAS )
+  find_package(LAPACK )
+  find_package( GSL )
+
+  if( GSL_FOUND )
+    dune_register_package_flags(INCLUDE_DIRS ${GSL_INCLUDE_DIRS} LIBRARIES ${GSL_LIBRARIES})
+  endif()
+
   # start a dune project with information from dune.module
   dune_project()
 
   dune_enable_all_packages()
 
-  add_subdirectory(doc)
+  #add_subdirectory(doc)
   add_subdirectory(cmake/modules)
 
   file (GLOB_RECURSE sourcefiles "${PROJECT_SOURCE_DIR}/src/*.cpp")
