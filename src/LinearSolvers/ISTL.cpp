@@ -50,7 +50,7 @@ ISTLSolver::giveRequiredMatrixFormat() { return std::string("ISTLMat"); }
 void
 ISTLSolver::readDataFrom( FILE* fp )
 {
-    _tol = 1e-4;
+    _tol = 1e-8;
     _maxIter = 1000;
 
     /*
@@ -109,9 +109,9 @@ ISTLSolver::solve ( SparseMatrix* coefMat, RealVector& rhs )
         AssembledOperatorType;
     AssembledOperatorType op( mat );
     typedef Dune::SeqILU< M, BlockVectorType, BlockVectorType > PreconditionerType;
-    PreconditionerType precon( mat, 0.9, true );
+    PreconditionerType precon( mat, 1.0, true );
 
-    Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, int(_maxIter), int(2));
+    Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, int(_maxIter), int(0));
 
     const int dim = rhs.dim();
     BlockVectorType B( rhs.dim() );
