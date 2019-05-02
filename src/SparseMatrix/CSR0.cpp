@@ -1,6 +1,6 @@
 /*
   Copyright (c) 2014 - 2019 University of Bergen
-  
+
   This file is part of the BROOMStyx project.
 
   BROOMStyx is free software: you can redistribute it and/or modify
@@ -40,12 +40,12 @@ CSR0::~CSR0() {}
 // ----------------------------------------------------------------------------
 void CSR0::addToComponent( int rowNum, int colNum, double val )
 {
-    
+
     // Do nothing if component is in lower triangular portion of a symmetric
     // sparse matrix
     if ( _symFlag && colNum < rowNum)
         return;
-    
+
     int rowStart = _prfVec1[rowNum];
     int nextRow = _prfVec1[rowNum + 1];
 
@@ -70,12 +70,12 @@ void CSR0::addToComponent( int rowNum, int colNum, double val )
 // ----------------------------------------------------------------------------
 void CSR0::atomicAddToComponent( int rowNum, int colNum, double val )
 {
-    
+
     // Do nothing if component is in lower triangular portion of a symmetric
     // sparse matrix
     if ( _symFlag && colNum < rowNum)
         return;
-    
+
     int rowStart = _prfVec1[rowNum];
     int nextRow = _prfVec1[rowNum + 1];
 
@@ -127,9 +127,9 @@ std::tuple<int*,int*> CSR0::giveProfileArrays()
     return std::make_tuple(_prfVec1.data(),_prfVec2.data());
 }
 // ----------------------------------------------------------------------------
-double* CSR0::giveValArray() 
-{ 
-    return _val.ptr(); 
+double* CSR0::giveValArray()
+{
+    return _val.ptr();
 }
 // ----------------------------------------------------------------------------
 void CSR0::initializeValues()
@@ -153,7 +153,7 @@ void CSR0::insertNonzeroComponentAt( int rowIdx, int colIdx )
 RealVector CSR0::lumpRows()
 {
     RealVector b(_dim1);
-    
+
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -161,12 +161,12 @@ RealVector CSR0::lumpRows()
     {
         for ( int j = _prfVec1[i]; j < _prfVec1[i+1]; j++ )
         {
-            b(i) += std::fabs(_val(j));            
+            b(i) += std::fabs(_val(j));
             if ( _symFlag && _prfVec2[j] != i )
                 b(_prfVec2[j]) += std::fabs(_val(j));
         }
     }
-    
+
     return b;
 }
 // ----------------------------------------------------------------------------
@@ -174,7 +174,7 @@ void CSR0::printTo( FILE* fp, int n )
 {
     int width1 = (int)std::log10((double)_dim2);
     int width2 = (int)std::log10((double)_dim2);
-    
+
     std::fprintf(fp, "\nnRows = %d", _dim1);
     std::fprintf(fp, "\nnCols = %d", _dim2);
     std::fprintf(fp, "\nnNonzeros = %d", _nnz);
@@ -182,9 +182,9 @@ void CSR0::printTo( FILE* fp, int n )
         std::fprintf(fp, "\nSymmetric\n");
     else
         std::fprintf(fp, "\nNonsymmetric\n");
-    
+
     int colCount = -1;
-    
+
     for ( int i = 0; i < _dim1; i++)
     {
         int startColIdx = _prfVec1[i];
@@ -203,11 +203,11 @@ RealVector CSR0::times(const RealVector& x)
 {
     if ( x.dim() != _dim2 )
         throw std::runtime_error("\nSize mismatch in sparse matrix - vector multiplication.\n\tdim(A) = [ "
-                + std::to_string(_dim1) + " x " + std::to_string(_dim2) + " ], dim(B) = " 
+                + std::to_string(_dim1) + " x " + std::to_string(_dim2) + " ], dim(B) = "
                 + std::to_string(x.dim()));
-    
+
     RealVector b(_dim1);
-    
+
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -215,11 +215,11 @@ RealVector CSR0::times(const RealVector& x)
     {
         for ( int j = _prfVec1[i]; j < _prfVec1[i+1]; j++ )
         {
-            b(i) += _val(j) * x(_prfVec2[j]);            
+            b(i) += _val(j) * x(_prfVec2[j]);
             if ( _symFlag && _prfVec2[j] != i )
                 b(_prfVec2[j]) += _val(j) * x(i);
         }
     }
-    
+
     return b;
 }
