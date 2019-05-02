@@ -42,6 +42,88 @@ using namespace broomstyx;
 
 registerBroomstyxObject(LinearSolver, ISTLSolver)
 
+namespace detail
+{
+
+  template<class M, class X, class Y>
+  class OpenMPMatrixAdapter : public Dune::AssembledLinearOperator<M,X,Y>
+  {
+  public:
+    //! export types
+    typedef M matrix_type;
+    typedef X domain_type;
+    typedef Y range_type;
+    typedef typename X::field_type field_type;
+
+    //! constructor: just store a reference to a matrix
+    explicit OpenMPMatrixAdapter (const M& A) : _A_(A) {}
+
+    //! apply operator to x:  \f$ y = A(x) \f$
+    virtual void apply (const X& x, Y& y) const
+    {
+#ifdef _OPENMP
+        const size_t nRows = _A_.N();
+
+#pragma omp parallel for
+        for( size_t i = 0; i<nRows; ++i )
+        {
+          const auto& row = _A_[ i ];
+
+          y[ i ] = 0;
+          const auto endj = row.end();
+          for (auto j=row.begin(); j!=endj; ++j)
+          {
+            (*j).umv( x[ j.index() ], y[ i ]);
+          }
+        }
+
+#else
+        _A_.mv(x,y);
+#endif
+    }
+
+    //! apply operator to x, scale and add:  \f$ y = y + \alpha A(x) \f$
+    virtual void applyscaleadd (field_type alpha, const X& x, Y& y) const
+    {
+#ifdef _OPENMP
+        const size_t nRows = _A_.N();
+
+#pragma omp parallel for
+        for( size_t i = 0; i<nRows; ++i )
+        {
+          const auto& row = _A_[ i ];
+
+          const auto endj = row.end();
+          for (auto j=row.begin(); j!=endj; ++j)
+          {
+            (*j).usmv(alpha, x[ j.index() ], y[ i ]);
+          }
+        }
+
+#else
+        _A_.usmv(alpha,x,y);
+#endif
+    }
+
+    //! get matrix via *
+    virtual const M& getmat () const
+    {
+      return _A_;
+    }
+
+    //! Category of the solver (see SolverCategory::Category)
+    virtual Dune::SolverCategory::Category category() const
+    {
+      return Dune::SolverCategory::sequential;
+    }
+
+  private:
+    const M& _A_;
+  };
+
+
+}
+
 
 ISTLSolver::ISTLSolver() {}
 
@@ -105,7 +187,7 @@ ISTLSolver::solve ( SparseMatrix* coefMat, RealVector& rhs )
 
     M& mat = matrix->exportMatrix();
 
-    typedef Dune::MatrixAdapter< M, BlockVectorType, BlockVectorType >
+    typedef detail::OpenMPMatrixAdapter< M, BlockVectorType, BlockVectorType >
         AssembledOperatorType;
     AssembledOperatorType op( mat );
     typedef Dune::SeqILU< M, BlockVectorType, BlockVectorType > PreconditionerType;
