@@ -40,9 +40,9 @@
 /* Define to the revision of broomstyx */
 #define BROOMSTYX_VERSION_REVISION @BROOMSTYX_VERSION_REVISION@
 
+/* Intel (R) Math Kernel Library */
+#cmakedefine HAVE_MKL 1
+
 /* end broomstyx
    Everything below here will be overwritten
 */
-
-/* Intel (R) Math Kernel Library */
-#cmakedefine HAVE_MKL

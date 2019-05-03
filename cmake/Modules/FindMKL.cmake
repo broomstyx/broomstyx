@@ -83,8 +83,8 @@ FIND_PACKAGE_HANDLE_STANDARD_ARGS(MKL DEFAULT_MSG MKL_LIBRARIES MKL_INCLUDE_DIRS
 mark_as_advanced (MKL_INCLUDE_DIRS MKL_LIBRARIES MKL_INTERFACE_LIBRARY MKL_THREAD_LIBRARY MKL_CORE_LIBRARY)
 
 if (MKL_FOUND)
-    include_directories ("${MKL_INCLUDE_DIRS}")
-    target_link_libraries(broomstyx ${MKL_LIBRARIES})
+#    include_directories ("${MKL_INCLUDE_DIRS}")
+#    target_link_libraries(broomstyx ${MKL_LIBRARIES})
     set (HAVE_MKL ON)
 else()
     set (HAVE_MKL OFF)
