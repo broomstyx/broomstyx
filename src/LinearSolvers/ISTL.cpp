@@ -28,153 +28,129 @@
 
 #ifdef HAVE_DUNE_ISTL
 
-#include "../Core/ObjectFactory.hpp"
 #include <dune/istl/operators.hh>
 #include <dune/istl/solvers.hh>
 #include <dune/istl/preconditioners.hh>
 #include <string>
-#include "../Util/RealVector.hpp"
+#include "../Core/ObjectFactory.hpp"
 #include "../SparseMatrix/ISTLMat.hpp"
+#include "../Util/readOperations.hpp"
+#include "../Util/RealVector.hpp"
 
 #include "ISTL.hpp"
 
 using namespace broomstyx;
 
-registerBroomstyxObject(LinearSolver, ISTLSolver)
+registerBroomstyxObject(LinearSolver, ISTL)
 
 namespace detail
 {
 
-  template<class M, class X, class Y>
-  class OpenMPMatrixAdapter : public Dune::AssembledLinearOperator<M,X,Y>
-  {
-  public:
-    //! export types
-    typedef M matrix_type;
-    typedef X domain_type;
-    typedef Y range_type;
-    typedef typename X::field_type field_type;
-
-    //! constructor: just store a reference to a matrix
-    explicit OpenMPMatrixAdapter (const M& A) : _A_(A) {}
-
-    //! apply operator to x:  \f$ y = A(x) \f$
-    virtual void apply (const X& x, Y& y) const
+    template<class M, class X, class Y>
+    class OpenMPMatrixAdapter : public Dune::AssembledLinearOperator<M,X,Y>
     {
+    public:
+        //! export types
+        typedef M matrix_type;
+        typedef X domain_type;
+        typedef Y range_type;
+        typedef typename X::field_type field_type;
+
+        //! constructor: just store a reference to a matrix
+        explicit OpenMPMatrixAdapter (const M& A) : _A_(A) {}
+
+        //! apply operator to x:  \f$ y = A(x) \f$
+        virtual void apply (const X& x, Y& y) const
+        {
 #ifdef _OPENMP
-        const size_t nRows = _A_.N();
+            const size_t nRows = _A_.N();
 
 #pragma omp parallel for
-        for( size_t i = 0; i<nRows; ++i )
-        {
-          const auto& row = _A_[ i ];
+            for( size_t i = 0; i < nRows; ++i )
+            {
+                const auto& row = _A_[ i ];
 
-          y[ i ] = 0;
-          const auto endj = row.end();
-          for (auto j=row.begin(); j!=endj; ++j)
-          {
-            (*j).umv( x[ j.index() ], y[ i ]);
-          }
+                y[ i ] = 0;
+                const auto endj = row.end();
+                for (auto j=row.begin(); j!=endj; ++j)
+                {
+                    (*j).umv( x[ j.index() ], y[ i ]);
+                }
+            }
+#else
+            _A_.mv(x,y);
+#endif
         }
 
-#else
-        _A_.mv(x,y);
-#endif
-    }
-
-    //! apply operator to x, scale and add:  \f$ y = y + \alpha A(x) \f$
-    virtual void applyscaleadd (field_type alpha, const X& x, Y& y) const
-    {
+        //! apply operator to x, scale and add:  \f$ y = y + \alpha A(x) \f$
+        virtual void applyscaleadd (field_type alpha, const X& x, Y& y) const
+        {
 #ifdef _OPENMP
-        const size_t nRows = _A_.N();
+            const size_t nRows = _A_.N();
 
 #pragma omp parallel for
-        for( size_t i = 0; i<nRows; ++i )
-        {
-          const auto& row = _A_[ i ];
+            for( size_t i = 0; i<nRows; ++i )
+            {
+              const auto& row = _A_[ i ];
 
-          const auto endj = row.end();
-          for (auto j=row.begin(); j!=endj; ++j)
-          {
-            (*j).usmv(alpha, x[ j.index() ], y[ i ]);
-          }
+              const auto endj = row.end();
+              for (auto j=row.begin(); j!=endj; ++j)
+              {
+                (*j).usmv(alpha, x[ j.index() ], y[ i ]);
+              }
+            }
+#else
+            _A_.usmv(alpha,x,y);
+#endif
         }
 
-#else
-        _A_.usmv(alpha,x,y);
-#endif
-    }
+        //! get matrix via *
+        virtual const M& getmat () const
+        {
+            return _A_;
+        }
 
-    //! get matrix via *
-    virtual const M& getmat () const
-    {
-      return _A_;
-    }
+        //! Category of the solver (see SolverCategory::Category)
+        virtual Dune::SolverCategory::Category category() const
+        {
+            return Dune::SolverCategory::sequential;
+        }
 
-    //! Category of the solver (see SolverCategory::Category)
-    virtual Dune::SolverCategory::Category category() const
-    {
-      return Dune::SolverCategory::sequential;
-    }
-
-  private:
-    const M& _A_;
-  };
-
-
+    private:
+        const M& _A_;
+    };
 }
 
 
-ISTLSolver::ISTLSolver() {}
+ISTL::ISTL() {}
 
-std::string
-ISTLSolver::giveRequiredMatrixFormat() { return std::string("ISTLMat"); }
-void
-ISTLSolver::readDataFrom( FILE* fp )
+ISTL::~ISTL() {}
+
+std::string ISTL::giveRequiredMatrixFormat()
 {
-    _tol = 1e-8;
-    _maxIter = 1000;
+    return std::string("ISTLMat");
+}
 
-    /*
-    std::string src = "ViennaCL_cuda (LinearSolver)";
+bool ISTL::giveSymmetryOption()
+{
+    return false;
+}
 
-    verifyKeyword(fp, "Algorithm", src);
-    _algorithm = getStringInputFrom(fp, "Failed to read iterative algorithm for linear solver from input file!", src);
+void ISTL::readDataFrom( FILE* fp )
+{
+	std::string src = "ISTL (LinearSolver)";
 
     _tol = getRealInputFrom(fp, "Failed to read relative tolerance for iterative linear solver from input file!", src);
     _maxIter = getIntegerInputFrom(fp, "Failed to read max. iterations for iterative linear solver from input file!", src);
-
-    if ( _algorithm == "GMRES" )
-        _restart = getIntegerInputFrom(fp, "Failed to read number of iterations before restarting GMRES solver from input file!", src);
-
-    verifyKeyword(fp, "Preconditioner", src);
-    _preconditioner = getStringInputFrom(fp, "Failed to read preconditioner for linear solver from input file!", src);
-
-    if ( _preconditioner == "Chow_Patel_ILU0" )
-    {
-        _chowPatel_sweep = getIntegerInputFrom(fp, "Failed to read number of sweeps for preconditioner Chow_Patel_ILU0 from input file!", src);
-        _chowPatel_nJacIter = getIntegerInputFrom(fp, "Failed to read number of Jacobi iterations for preconditioner Chow_Patel_ILU0 from input file!", src);
-    }
-    else if ( _preconditioner == "ILU0" || _preconditioner == "none" )
-    {
-        // Do nothing.
-    }
-    else
-    {
-        std::string errMsg = "Invalid preconditioner tag '" + _preconditioner + "' encountered while reading input file!\nSource: ViennaCL_cuda (LinearSolver)";
-        throw std::runtime_error(errMsg);
-    }
-    */
+    _relax = getRealInputFrom(fp, "Failed to read ILU0 preconditioner relaxation parameter from input file!", src);
 }
 
-void
-ISTLSolver::setInitialGuessTo( RealVector& initGuess )
+void ISTL::setInitialGuessTo( RealVector& initGuess )
 {
     _initGuess = initGuess;
 }
 
-RealVector
-ISTLSolver::solve ( SparseMatrix* coefMat, RealVector& rhs )
+RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
 {
     ISTLMat* matrix = dynamic_cast< ISTLMat* > (coefMat);
     if( ! matrix )
@@ -187,11 +163,11 @@ ISTLSolver::solve ( SparseMatrix* coefMat, RealVector& rhs )
 
     M& mat = matrix->exportMatrix();
 
-    typedef detail::OpenMPMatrixAdapter< M, BlockVectorType, BlockVectorType >
-        AssembledOperatorType;
+    typedef detail::OpenMPMatrixAdapter< M, BlockVectorType, BlockVectorType > AssembledOperatorType;
     AssembledOperatorType op( mat );
+    
     typedef Dune::SeqILU< M, BlockVectorType, BlockVectorType > PreconditionerType;
-    PreconditionerType precon( mat, 1.0, true );
+    PreconditionerType precon( mat, _relax, true );
 
     Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, int(_maxIter), int(0));
 

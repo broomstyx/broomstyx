@@ -21,11 +21,7 @@
   for the list of copyright holders.
 */
 
-#ifndef VIENNACL_CUDA_HPP
-#define VIENNACL_CUDA_HPP
-
 #include <config.h>
-
 #include "LinearSolver.hpp"
 
 #ifdef HAVE_DUNE_ISTL
@@ -36,56 +32,32 @@
 
 namespace broomstyx
 {
-    class ISTLSolver : public LinearSolver
+    class ISTL : public LinearSolver
     {
         typedef Dune::FieldVector< double, 1 > BlockType;
         typedef Dune::BlockVector< BlockType > BlockVectorType;
-
         typedef Dune::InverseOperator< BlockVectorType, BlockVectorType > InverseOperatorType;
+        
     public:
-        ISTLSolver();
+        ISTL();
+        ~ISTL();
 
         std::string giveRequiredMatrixFormat() override;
+        bool        giveSymmetryOption() override;
         void        readDataFrom( FILE* fp ) override;
         void        setInitialGuessTo( RealVector& initGuess ) override;
         RealVector  solve ( SparseMatrix* coefMat, RealVector& rhs ) override;
         bool        takesInitialGuess() override { return true; }
 
-//        struct PrecondParam
-//        {
-//            int    _chowPatel_sweep;
-//            int    _chowPatel_nJacIter;
-//            int    _ilut_entriesPerRow;
-//            double _ilut_dropTol;
-//            bool   _ilut_levelSched;
-//            bool   _ilu0_levelSched;
-//            int    _rowScal_norm;
-//            double _amg_strConThresh;
-//            double _amg_jacSmthWt;
-//            int    _amg_nPreSmooth;
-//            int    _amg_nPostSmooth;
-//            int    _amg_maxCrsLvl;
-//            int    _amg_crsLvlCutoff;
-//            int    _amg_precSetup;
-//            int    _amg_precApp;
-//        };
-
     private:
         double _tol;
         int    _maxIter;
-        int    _restart;
+        double _relax;
 
-        std::string  _algorithm;
-        std::string  _preconditioner;
         RealVector   _initGuess;
 
         std::unique_ptr< InverseOperatorType > _solver;
-
-        // Preconditioner parameters
-        int    _chowPatel_sweep;
-        int    _chowPatel_nJacIter;
     };
 }
 
-#endif /* HAVE_VIENNACL */
-#endif /* VIENNACL_CUDA_HPP */
+#endif /* HAVE_DUNE_ISTL */
