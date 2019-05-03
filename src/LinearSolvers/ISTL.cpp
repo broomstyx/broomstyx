@@ -24,7 +24,7 @@
 #ifndef ISTL_CPP
 #define ISTL_CPP
 
-#include "../../config.h"
+#include <config.h>
 
 #ifdef HAVE_DUNE_ISTL
 

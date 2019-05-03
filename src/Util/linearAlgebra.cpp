@@ -25,7 +25,7 @@
 #include <cstdio>
 #include <stdexcept>
 #include <vector>
-#include "../../config.h"
+#include <config.h>
 
 #ifdef HAVE_MKL
     #include "mkl_cblas.h"

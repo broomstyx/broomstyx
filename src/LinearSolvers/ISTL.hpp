@@ -24,7 +24,7 @@
 #ifndef VIENNACL_CUDA_HPP
 #define VIENNACL_CUDA_HPP
 
-#include "../../config.h"
+#include <config.h>
 
 #include "LinearSolver.hpp"
 
