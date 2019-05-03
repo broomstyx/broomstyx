@@ -23,9 +23,11 @@ if( dune-common_FOUND )
   #include the dune macros
   include(DuneMacros)
 
-  find_package( BLAS )
-  find_package(LAPACK )
-  find_package( GSL )
+  if( NOT MKL_FOUND )
+    find_package( BLAS REQUIRED )
+    find_package( LAPACK REQUIRED )
+    find_package( GSL )
+  endif()
 
   if( GSL_FOUND )
     dune_register_package_flags(INCLUDE_DIRS ${GSL_INCLUDE_DIRS} LIBRARIES ${GSL_LIBRARIES})
