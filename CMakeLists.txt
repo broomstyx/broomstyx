@@ -27,6 +27,8 @@ if( dune-common_FOUND )
     find_package( BLAS REQUIRED )
     find_package( LAPACK REQUIRED )
     find_package( GSL )
+  else()
+    dune_register_package_flags(INCLUDE_DIRS ${MKL_INCLUDE_DIRS} LIBRARIES ${MKL_LIBRARIES})
   endif()
 
   if( GSL_FOUND )
