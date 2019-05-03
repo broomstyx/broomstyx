@@ -21,12 +21,8 @@
   for the list of copyright holders.
 */
 
-#ifndef ISTLMAT_CPP
-#define	ISTLMAT_CPP
-
 #include "ISTLMat.hpp"
 #include "../Core/ObjectFactory.hpp"
-
 
 #if HAVE_DUNE_ISTL
 
@@ -34,48 +30,37 @@ using namespace broomstyx;
 
 registerBroomstyxObject(SparseMatrix, ISTLMat)
 
+ISTLMat::ISTLMat() : _matrix() {}
 
-ISTLMat::ISTLMat() : _matrix()
+void ISTLMat::addToComponent( int rowNum, int colNum, double val )
 {
-}
-
-void
-ISTLMat::addToComponent( int rowNum, int colNum, double val )
-{
-    // Do nothing if component is in lower triangular portion of a symmetric
-    // sparse matrix
-    //if ( _symFlag && colNum < rowNum)
-    //    return;
-
     (*_matrix)[ rowNum ][ colNum ][ 0 ][ 0 ] += val;
 }
 
-void
-ISTLMat::atomicAddToComponent( int rowNum, int colNum, double val )
+void ISTLMat::atomicAddToComponent( int rowNum, int colNum, double val )
 {
-    // Do nothing if component is in lower triangular portion of a symmetric
-    // sparse matrix
-    //if ( _symFlag && colNum < rowNum)
-    //    return;
-
     (*_matrix)[ rowNum ][ colNum ][ 0 ][ 0 ] += val;
 }
 
-void
-ISTLMat::finalizeProfile()
+void ISTLMat::finalizeProfile()
 {
     _matrix->compress();
     _nnz = _matrix->nonzeroes();
 }
 
 std::tuple< int*,int* >
-ISTLMat::giveProfileArrays() { return std::tuple< int*,int* > (nullptr, nullptr ) ; }
+ISTLMat::giveProfileArrays()
+{
+    return std::tuple< int*,int* > (nullptr, nullptr );
+}
 
-double*
-ISTLMat::giveValArray() { std::abort(); return nullptr; }
+double* ISTLMat::giveValArray()
+{
+    std::abort();
+    return nullptr;
+}
 
-void
-ISTLMat::initializeProfile( int dim1, int dim2 )
+void ISTLMat::initializeProfile( int dim1, int dim2 )
 {
     _symFlag = false;
     _dim1 = dim1;
@@ -84,20 +69,17 @@ ISTLMat::initializeProfile( int dim1, int dim2 )
     _matrix.reset( new MatrixType( dim1, dim2, 15, 1.4, MatrixType::implicit ) );
 }
 
-void
-ISTLMat::initializeValues()
+void ISTLMat::initializeValues()
 {
     (*_matrix) = 0.0;
 }
 
-void
-ISTLMat::insertNonzeroComponentAt( int rowIdx, int colIdx)
+void ISTLMat::insertNonzeroComponentAt( int rowIdx, int colIdx)
 {
     _matrix->entry( rowIdx, colIdx ) = 0.0;
 }
 
-RealVector
-ISTLMat::lumpRows()
+RealVector ISTLMat::lumpRows()
 {
     RealVector y( _matrix->N() );
     const auto endrow = _matrix->end();
@@ -114,9 +96,7 @@ ISTLMat::lumpRows()
     return y;
 }
 
-
-void
-ISTLMat::printTo( FILE* fp, int n )
+void ISTLMat::printTo( FILE* fp, int n )
 {
     int width1 = (int)std::log10((double)_dim2);
     int width2 = (int)std::log10((double)_dim2);
@@ -145,8 +125,7 @@ ISTLMat::printTo( FILE* fp, int n )
 
 }
 
-RealVector
-ISTLMat::times( const RealVector& x )
+RealVector ISTLMat::times( const RealVector& x )
 {
     assert( x.dim() == _matrix->M() );
     RealVector y( _matrix->N() );
@@ -164,6 +143,4 @@ ISTLMat::times( const RealVector& x )
     return y;
 }
 
-#endif // HAVE_DUNE_ISTL
-
-#endif	/* ISTLMAT_HPP */
+#endif  /* HAVE_DUNE_ISTL */

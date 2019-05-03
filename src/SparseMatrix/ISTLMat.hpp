@@ -38,6 +38,7 @@ namespace broomstyx
         using SparseMatrix :: _dim1;
         using SparseMatrix :: _dim2;
         using SparseMatrix :: _nnz;
+
     public:
         typedef Dune::FieldMatrix<double, 1,1> BlockType;
         typedef Dune::BCRSMatrix< BlockType > MatrixType ;
@@ -47,7 +48,6 @@ namespace broomstyx
         void addToComponent( int rowNum, int colNum, double val ) override;
         void atomicAddToComponent( int rowNum, int colNum, double val ) override;
         void finalizeProfile() override;
-
         std::tuple< int*,int* > giveProfileArrays() override;
         double* giveValArray() override;
         void initializeProfile( int dim1, int dim2 ) override;
@@ -56,23 +56,22 @@ namespace broomstyx
 
         RealVector lumpRows() override;
         void       printTo( FILE* fp, int n ) override;
-
         RealVector times( const RealVector& x ) override;
 
-        MatrixType& exportMatrix() { assert( _matrix ); return *_matrix; }
+        MatrixType& exportMatrix()
+        {
+            assert( _matrix );
+            return *_matrix;
+        }
 
     private:
         std::unique_ptr< MatrixType > _matrix;
     };
 }
-
 #else
-
 namespace broomstyx
 {
     using ISTLMat = CSR0 ;
 }
-
-#endif // HAVE_DUNE_ISTL
-
+#endif  /* HAVE_DUNE_ISTL */
 #endif	/* ISTLMAT_HPP */
