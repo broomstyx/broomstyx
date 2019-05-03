@@ -7,4 +7,4 @@ Module: broomstyx
 Version: 0.1
 Maintainer: jusa@norceresearch.no
 #depending on
-Depends: dune-fem
+Depends: dune-istl
