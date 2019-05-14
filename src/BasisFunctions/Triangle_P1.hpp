@@ -25,22 +25,21 @@
 #define TRIANGLE_P1_HPP
 
 #include <vector>
+#include "ScalarBasisFunction.hpp"
 #include "../Util/RealVector.hpp"
 
 namespace broomstyx
 {
     class Node;
     
-    class Triangle_P1 final
+    class Triangle_P1 final : public ScalarBasisFunction
     {
     public:
         Triangle_P1();
         virtual ~Triangle_P1();
     
-        double giveAreaOf( const std::vector<Node*>& node );
-        
-        RealVector giveBasisFunctionsAt( const RealVector& coor, const std::vector<Node*>& node );
-        std::vector<RealVector> giveBasisFunctionDerivativesAt( const std::vector<Node*>& node );
+        RealVector giveBasisFunctionsAt( const RealVector& coor ) override;
+        std::vector<RealVector> giveBasisFunctionDerivativesAt( const RealVector& coor ) override;
     };
 }
 

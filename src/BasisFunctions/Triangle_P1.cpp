@@ -32,72 +32,25 @@ Triangle_P1::Triangle_P1() {}
 
 Triangle_P1::~Triangle_P1() {}
 
-double Triangle_P1::giveAreaOf( const std::vector<Node*>& node )
+RealVector Triangle_P1::giveBasisFunctionsAt( const RealVector& coor )
 {
-    RealVector coor_0, coor_1, coor_2;
+    double xi = coor(0);
+    double eta = coor(1);
     
-    coor_0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-    coor_1 = analysisModel().domainManager().giveCoordinatesOf(node[1]);
-    coor_2 = analysisModel().domainManager().giveCoordinatesOf(node[2]);
-    
-    double area = 0.5*(coor_0(0)*(coor_1(1) - coor_2(1)) + 
-                       coor_1(0)*(coor_2(1) - coor_0(1)) +
-                       coor_2(0)*(coor_0(1) - coor_1(1)));
-    
-    if ( area <= 0 )
-        throw std::runtime_error("Calculation of negative area detected!\nSource: Triangle_P1 (ShapeFunction)");
-    
-    return area;
-}
-
-RealVector Triangle_P1::giveBasisFunctionsAt( const RealVector& coor, const std::vector<Node*>& node )
-{
-    RealVector coor_0, coor_1, coor_2;
-    
-    coor_0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-    coor_1 = analysisModel().domainManager().giveCoordinatesOf(node[1]);
-    coor_2 = analysisModel().domainManager().giveCoordinatesOf(node[2]);
-    
-    double twiceArea = 2.*this->giveAreaOf(node);
-    
-    RealVector beta(3), gamma(3);
-    beta(0) = (coor_1(1) - coor_2(1))/twiceArea;
-    beta(1) = (coor_2(1) - coor_0(1))/twiceArea;
-    beta(2) = (coor_0(1) - coor_1(1))/twiceArea;
-    
-    gamma(0) = (coor_2(0) - coor_1(0))/twiceArea;
-    gamma(1) = (coor_0(0) - coor_2(0))/twiceArea;
-    gamma(2) = (coor_1(0) - coor_0(0))/twiceArea;
-    
-    RealVector psi(3);
-    
-    psi(0) = (coor_1(0)*coor_2(1) - coor_2(0)*coor_1(1))/twiceArea + coor(0)*beta(0) + coor(1)*gamma(0);
-    psi(1) = (coor_2(0)*coor_0(1) - coor_0(0)*coor_2(1))/twiceArea + coor(0)*beta(1) + coor(1)*gamma(1);
-    psi(2) = (coor_0(0)*coor_1(1) - coor_1(0)*coor_0(1))/twiceArea + coor(0)*beta(2) + coor(1)*gamma(2);
-    
+    RealVector psi({1. - xi - eta,
+                    xi,
+                    eta});
+                    
     return psi;
 }
 
-std::vector<RealVector> Triangle_P1::giveBasisFunctionDerivativesAt( const std::vector<Node*>& node )
+std::vector<RealVector> Triangle_P1::giveBasisFunctionDerivativesAt( const RealVector& coor )
 {
-    RealVector coor_0, coor_1, coor_2;
-    
-    coor_0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-    coor_1 = analysisModel().domainManager().giveCoordinatesOf(node[1]);
-    coor_2 = analysisModel().domainManager().giveCoordinatesOf(node[2]);
-    
-    double twiceArea = 2.*this->giveAreaOf(node);
-    
     std::vector<RealVector> dpsi;
-    dpsi.assign(2, RealVector(3));
+    dpsi.assign(2, RealVector());
     
-    dpsi[0](0) = (coor_1(1) - coor_2(1))/twiceArea;
-    dpsi[0](1) = (coor_2(1) - coor_0(1))/twiceArea;
-    dpsi[0](2) = (coor_0(1) - coor_1(1))/twiceArea;
-    
-    dpsi[1](0) = (coor_2(0) - coor_1(0))/twiceArea;
-    dpsi[1](1) = (coor_0(0) - coor_2(0))/twiceArea;
-    dpsi[1](2) = (coor_1(0) - coor_0(0))/twiceArea;
+    dpsi[0] = {-1., 1., 0.};
+    dpsi[1] = {-1., 0., 1.};
     
     return dpsi;
 }
