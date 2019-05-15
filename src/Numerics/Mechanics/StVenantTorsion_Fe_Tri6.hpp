@@ -63,7 +63,7 @@ namespace broomstyx
         void deleteNumericsAt( Cell* targetCell ) override;
         void finalizeDataAt( Cell* targetCell ) override;
         
-        RealVector giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum );
+        RealVector giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum ) override;
         
         std::tuple< std::vector<Dof*>
                   , std::vector<Dof*>
