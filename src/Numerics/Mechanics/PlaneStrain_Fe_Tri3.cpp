@@ -58,6 +58,20 @@ PlaneStrain_Fe_Tri3::PlaneStrain_Fe_Tri3()
     _nStages = 1;
     _nSubsystems = 1;
     _name = "PlaneStrain_Fe_Tri3";
+    
+    // Lone Gauss point coordinate is at natural coordinate (1/3, 1/3), weight = 0.5
+    _gpNatCoor = {1./3., 1./3.};
+    _wt = 0.5;
+    
+    // Pre-calculate shape functions and derivatives at Gauss point
+    _basisFunctionValues = _basisFunction.giveBasisFunctionsAt(_gpNatCoor);
+    std::vector<RealVector> dpsiNat = _basisFunction.giveBasisFunctionDerivativesAt(_gpNatCoor);
+    _basisFunctionDerivatives.init(2,3);
+    for ( int i = 0; i < 3; i++)
+    {
+        _basisFunctionDerivatives(0,i) = dpsiNat[0](i);
+        _basisFunctionDerivatives(1,i) = dpsiNat[1](i);
+    }
 }
 
 // Destructor
@@ -89,7 +103,7 @@ void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     RealVector uVec = this->giveLocalDisplacementsAt(dof, converged_value);
     
     // Construct displacement gradient
-    RealMatrix bmatGradU, gradU, uMat(3,2);
+    RealMatrix bmatGradU, uMat(3,2);
     
     uMat(0,0) = uVec(0); uMat(0,1) = uVec(1);
     uMat(1,0) = uVec(2); uMat(1,1) = uVec(3);
@@ -108,9 +122,7 @@ void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
     
     // Update secondary variable at DOFs
-    double area = this->giveAreaOf(targetCell);
-    
-    RealVector fmat = area*trp(bmat)*cns->_stress;
+    RealVector fmat = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
     
     analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmat(0));
     analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmat(1));
@@ -173,9 +185,10 @@ std::tuple< RealVector, RealVector >
 PlaneStrain_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag )
 {
     RealVector fieldVal(1), weight(1);
-    weight(0) = this->giveAreaOf(targetCell);
     
     auto cns = this->getNumericsStatusAt(targetCell);
+    weight(0) = _wt*cns->_Jdet;
+    
     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
     
     if ( fieldTag == "unassigned" )
@@ -271,9 +284,6 @@ PlaneStrain_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
         // Retrieve nodal DOFs local to element
         std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);
         
-        // Calculate element area
-        double area = this->giveAreaOf(targetCell);
-        
         // Retrieve material set for element
         std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
         
@@ -281,8 +291,8 @@ PlaneStrain_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
         RealMatrix cmat = material[1]->giveModulusFrom(cns->_strain, cns->_materialStatus[1]);
 
         // Calculate stiffness matrix
-        RealMatrix bmat = giveBmatAt(targetCell);
-        RealMatrix kmat = area*trp(bmat)*cmat*bmat;
+        RealMatrix bmat = this->giveBmatAt(targetCell);
+        RealMatrix kmat = _wt*cns->_Jdet*trp(bmat)*cmat*bmat;
         
         rowDof.assign(36, nullptr);
         colDof.assign(36, nullptr);
@@ -318,7 +328,6 @@ PlaneStrain_Fe_Tri3::giveStaticLeftHandSideAt(Cell*            targetCell
         auto cns = this->getNumericsStatusAt(targetCell);
         
         // Element area and local displacements
-        double area = this->giveAreaOf(targetCell);
         rowDof = this->giveNodalDofsAt(targetCell);
         RealVector u = this->giveLocalDisplacementsAt(rowDof, current_value);
             
@@ -332,7 +341,7 @@ PlaneStrain_Fe_Tri3::giveStaticLeftHandSideAt(Cell*            targetCell
         cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
 
         // Calculate lhs
-        lhs = area*trp(bmat)*cns->_stress;
+        lhs = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
     }
     
     return std::make_tuple(std::move(rowDof), std::move(lhs));
@@ -453,8 +462,7 @@ PlaneStrain_Fe_Tri3::giveStaticRightHandSideAt( Cell*                 targetCell
             // Note that field condition is assumed to be piecewise linear over each cell
             std::vector<RealVector> coor = this->giveEvaluationPointsFor(targetCell);
             double accel = fldCond.valueAt(coor[0], time);
-            double area = this->giveAreaOf(targetCell);
-            double force = accel*rho*area/3.0;
+            double force = accel*rho*_wt*cns->_Jdet/3.0;
             
             rhs.init(3);
             rhs(0) = force;
@@ -514,6 +522,17 @@ void PlaneStrain_Fe_Tri3::initializeMaterialsAt( Cell* targetCell )
 void PlaneStrain_Fe_Tri3::initializeNumericsAt( Cell* targetCell )
 {
     targetCell->numericsStatus = new NumericsStatus_PlaneStrain_Fe_Tri3();
+    auto cns = this->getNumericsStatusAt(targetCell);
+    
+    // Pre-calculate det(J) and inv(J);
+    RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, _gpNatCoor);
+    cns->_Jdet = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
+    
+    // Sanity check
+    if ( cns->_Jdet <= 0 )
+        throw std::runtime_error("Calculation of negative area detected!\nSource: " + _name);
+    
+    cns->_JmatInv = inv(Jmat);
 }
 // ----------------------------------------------------------------------------
 void PlaneStrain_Fe_Tri3::setDofStagesAt( Cell* targetCell )
@@ -545,44 +564,46 @@ PlaneStrain_Fe_Tri3::getNumericsStatusAt( Cell* targetCell )
     
     return cns;
 }
-// ---------------------------------------------------------------------------
-double PlaneStrain_Fe_Tri3::giveAreaOf( Cell* targetCell )
-{
-    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-    return _basisFunction.giveAreaOf(node);
-}
 // ----------------------------------------------------------------------------
 RealMatrix PlaneStrain_Fe_Tri3::giveBmatAt( Cell* targetCell )
 {
-    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-    std::vector<RealVector> dpsi = _basisFunction.giveBasisFunctionDerivativesAt(node);
+    auto cns = this->getNumericsStatusAt(targetCell);
+    RealMatrix dpsi = cns->_JmatInv*_basisFunctionDerivatives;
     
     RealMatrix bmat(4,6);
-#pragma GCC ivdep
-    for ( int i = 0; i < 3; i++ )
-    {
-        bmat(0,2*i) = dpsi[0](i);
-        bmat(1,2*i+1) = dpsi[1](i);
-        bmat(3,2*i) = dpsi[1](i);
-        bmat(3,2*i+1) = dpsi[0](i);
-    }
+    bmat = {{dpsi(0,0), 0.,        dpsi(0,1), 0.,        dpsi(0,2), 0.},
+            {0.,        dpsi(1,0), 0.,        dpsi(1,1), 0.,        dpsi(1,2)},
+            {0.,        0.,        0.,        0.,        0.,        0.},
+            {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2)}};
 
     return bmat;
 }
 // ----------------------------------------------------------------------------
 RealMatrix PlaneStrain_Fe_Tri3::giveGradBmatAt( Cell* targetCell )
 {
+    auto cns = this->getNumericsStatusAt(targetCell);
+    return cns->_JmatInv*_basisFunctionDerivatives;
+}
+// ----------------------------------------------------------------------------
+RealMatrix PlaneStrain_Fe_Tri3::giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor )
+{
     std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-    std::vector<RealVector> dpsi = _basisFunction.giveBasisFunctionDerivativesAt(node);
+#ifndef NDEBUG
+    if ( (int)node.size() != 3 )
+        throw std::runtime_error("\nError: Basis function requires 3 nodes be specified for calculation of Jacobian matrix!\nSource: " + _name);
+#endif
     
-    RealMatrix bmat(2,3);
+    RealMatrix coorMat(3,2);
+    
 #pragma GCC ivdep
     for ( int i = 0; i < 3; i++ )
     {
-        bmat(0,i) = dpsi[0](i); 
-        bmat(1,i) = dpsi[1](i);
+        RealVector nodeCoor = analysisModel().domainManager().giveCoordinatesOf(node[i]);
+        coorMat(i,0) = nodeCoor(0);
+        coorMat(i,1) = nodeCoor(1);
     }
-    return bmat;
+    
+   return _basisFunctionDerivatives*coorMat;
 }
 // ----------------------------------------------------------------------------
 RealVector PlaneStrain_Fe_Tri3::giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType)
