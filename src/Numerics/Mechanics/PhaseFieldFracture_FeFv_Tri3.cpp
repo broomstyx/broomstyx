@@ -68,6 +68,20 @@ PhaseFieldFracture_FeFv_Tri3::PhaseFieldFracture_FeFv_Tri3()
     _nSubsystems = 2;
     
     _name = "PhsFieldBrittleFracture_Hyb_FeFv_Tri3";
+    
+    // Lone Gauss point coordinate and weight
+    _gpNatCoor = {1./3., 1./3.};
+    _wt = 0.5;
+    
+    // Pre-calculate shape functions and derivatives at Gauss point
+    _basisFunctionValues = _basisFunction.giveBasisFunctionsAt(_gpNatCoor);
+    std::vector<RealVector> dpsiNat = _basisFunction.giveBasisFunctionDerivativesAt(_gpNatCoor);
+    _basisFunctionDerivatives.init(2,3);
+    for ( int i = 0; i < 3; i++)
+    {
+        _basisFunctionDerivatives(0,i) = dpsiNat[0](i);
+        _basisFunctionDerivatives(1,i) = dpsiNat[1](i);
+    }
 }
 
 // Destructor
@@ -88,9 +102,6 @@ void PhaseFieldFracture_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
 {
     // Pointer to numerics status
     auto cns = this->getNumericsStatusAt(targetCell);
-    
-    // Get cell area
-    double area = this->giveAreaOf(targetCell);
     
     // Get coordinate of cell center
     std::vector<RealVector> epCoor = this->giveEvaluationPointsFor(targetCell);
@@ -188,7 +199,8 @@ void PhaseFieldFracture_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     RealMatrix gradU = bmatGrad*uMat;
     
     // Construct strain vector
-    cns->_strain = cns->_bmatU*uVec;
+    RealMatrix bmatU = this->giveBmatAt(targetCell);
+    cns->_strain = bmatU*uVec;
     
     // Retrieve material set for element
     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
@@ -206,7 +218,7 @@ void PhaseFieldFracture_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_surfEgy = _Gc/2.0*(_l*cns->_gradPhi.dot(cns->_gradPhi) + cns->_phi*cns->_phi/_l);
     
     RealVector fmatU;
-    fmatU = area*(trp(cns->_bmatU)*cns->_stress);
+    fmatU = _wt*cns->_Jdet*(trp(bmatU)*cns->_stress);
     
     analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
     analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
@@ -265,9 +277,9 @@ std::tuple< RealVector, RealVector >
 PhaseFieldFracture_FeFv_Tri3::giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag )
 {
     RealVector fieldVal(1), weight(1);
-    weight(0) = this->giveAreaOf(targetCell);
     
     auto cns = this->getNumericsStatusAt(targetCell);
+    weight(0) = _wt*cns->_Jdet;
     
     if ( fieldTag == "unassigned" )
         fieldVal(0) = 0.;
@@ -370,9 +382,6 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticCoefficientMatrixAt
         std::vector<Dof*> dof = giveNodalDofsAt(targetCell);
         Dof* dof_phi = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
         
-        // Calculate element area
-        double area = giveAreaOf(targetCell);
-        
         // Retrieve material set for element
         std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
         
@@ -390,7 +399,8 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticCoefficientMatrixAt
             RealMatrix cmat = material[1]->giveModulusFrom(conState, cns->_materialStatus[1], "Mechanics");
 
             // Calculate stiffness KmatUU
-            RealMatrix kmatUU = area*trp(cns->_bmatU)*cmat*cns->_bmatU;
+            RealMatrix bmatU = this->giveBmatAt(targetCell);
+            RealMatrix kmatUU = _wt*cns->_Jdet*trp(bmatU)*cmat*bmatU;
 
             for ( int i = 0; i < 6; i++ )
                 for ( int j = 0; j < 6; j++ )
@@ -409,7 +419,7 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticCoefficientMatrixAt
             // Compute g''(phi)*elasticEnergy
             RealMatrix ddgPhi_Psi0 = material[1]->giveModulusFrom(conState, cns->_materialStatus[1], "PhaseField");
             
-            double coef = area*(_Gc/_l + ddgPhi_Psi0(0,0));
+            double coef = _wt*cns->_Jdet*(_Gc/_l + ddgPhi_Psi0(0,0));
             
             rowDof[startIdx] = dof_phi;
             colDof[startIdx] = dof_phi;
@@ -467,9 +477,6 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticLeftHandSideAt
         // Retrieve nodal DOFs local to element
         std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);
 
-        // Calculate element area
-        double area = this->giveAreaOf(targetCell);
-        
         int vecLength = 9; // Default output lengths for unassigned subsystems
         
         if ( subsys == _subsystem[0] )
@@ -488,7 +495,8 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticLeftHandSideAt
         cns->_phi = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof_phi, current_value);
         
         // Compute local strains
-        cns->_strain = cns->_bmatU*uVec;
+        RealMatrix bmatU = this->giveBmatAt(targetCell);
+        cns->_strain = bmatU*uVec;
         
         // Assemble constitutive state vector
         RealVector conState({cns->_strain(0), 
@@ -519,7 +527,7 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticLeftHandSideAt
             
             // Calculate FmatU
             RealVector fmatU;
-            fmatU = area*trp(cns->_bmatU)*cns->_stress;
+            fmatU = _wt*cns->_Jdet*trp(bmatU)*cns->_stress;
             
             lhs(0) = fmatU(0);
             lhs(1) = fmatU(1);
@@ -534,8 +542,6 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticLeftHandSideAt
             // Get coordinate of cell center and cell area
             std::vector<RealVector> epCoor = this->giveEvaluationPointsFor(targetCell);
             RealVector cellCoor = epCoor[0];
-
-            double area = this->giveAreaOf(targetCell);
 
             // normal phase-field flux on edges
             RealVector normFlux(3);
@@ -585,9 +591,9 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticLeftHandSideAt
             rowDof[offset + 2] = dof_phi;
             
             // Calculate FmatPhi
-            lhs(offset) = area*_Gc/_l*cns->_phi;
+            lhs(offset) = _wt*cns->_Jdet*_Gc/_l*cns->_phi;
             lhs(offset + 1) = normFlux(0) + normFlux(1) + normFlux(2);
-            lhs(offset + 2) = area*dgPhi_Psi0(0);
+            lhs(offset + 2) = _wt*cns->_Jdet*dgPhi_Psi0(0);
         }
     }
     
@@ -736,8 +742,7 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticRightHandSideAt
                 
                 std::vector<RealVector> ep = this->giveEvaluationPointsFor(targetCell);
                 double accel = fldCond.valueAt(ep[0], time);
-                double area = giveAreaOf(targetCell);
-                double force = accel*rho*area/3.0;
+                double force = accel*rho*_wt*cns->_Jdet/3.0;
                 
                 rhs = {force, force, force};
                 
@@ -846,10 +851,17 @@ void PhaseFieldFracture_FeFv_Tri3::initializeMaterialsAt( Cell* targetCell )
 void PhaseFieldFracture_FeFv_Tri3::initializeNumericsAt( Cell* targetCell )
 {
     targetCell->numericsStatus = new NumericsStatus_PhaseFieldFracture_FeFv_Tri3();
-    
-    // Precompute FE matrices
     auto cns = this->getNumericsStatusAt(targetCell);
-    cns->_bmatU = this->giveBmatAt(targetCell);
+    
+    // Pre-calculate det(J) and inv(J);
+    RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, _gpNatCoor);
+    cns->_Jdet = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
+    
+    // Sanity check
+    if ( cns->_Jdet <= 0 )
+        throw std::runtime_error("Calculation of negative area detected!\nSource: " + _name);
+    
+    cns->_JmatInv = inv(Jmat);
 }
 // ----------------------------------------------------------------------------
 void PhaseFieldFracture_FeFv_Tri3::performPostprocessingAt( Cell* targetCell, std::string tag )
@@ -858,9 +870,6 @@ void PhaseFieldFracture_FeFv_Tri3::performPostprocessingAt( Cell* targetCell, st
     {
         // Pointer to numerics status
         auto cns = this->getNumericsStatusAt(targetCell);
-
-        // Get cell area
-        double area = this->giveAreaOf(targetCell);
 
         // Get coordinate of cell center
         std::vector<RealVector> epCoor = this->giveEvaluationPointsFor(targetCell);
@@ -911,7 +920,7 @@ void PhaseFieldFracture_FeFv_Tri3::performPostprocessingAt( Cell* targetCell, st
         }
 
         // Required history field value (note sign in front of flux_sum due to conventions used above)
-        double gprimeH = -(-flux_sum/area + _Gc/_l*phi);
+        double gprimeH = -(-flux_sum/(_wt*cns->_Jdet) + _Gc/_l*phi);
         
         RealVector conState({phi, gprimeH});
         
@@ -1013,24 +1022,24 @@ PhaseFieldFracture_FeFv_Tri3::getNumericsStatusAt( Cell* targetCell )
     
     return cns;
 }
-// ----------------------------------------------------------------------------
-double PhaseFieldFracture_FeFv_Tri3::giveAreaOf( Cell* targetCell )
-{
-    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-    
-    return _basisFunction.giveAreaOf(node);
-}
+//// ----------------------------------------------------------------------------
+//double PhaseFieldFracture_FeFv_Tri3::giveAreaOf( Cell* targetCell )
+//{
+//    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+//    
+//    return _basisFunction.giveAreaOf(node);
+//}
 // ----------------------------------------------------------------------------
 RealMatrix PhaseFieldFracture_FeFv_Tri3::giveBmatAt( Cell* targetCell )
 {
-    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-    std::vector<RealVector> dpsi = _basisFunction.giveBasisFunctionDerivativesAt(node);
+    auto cns = this->getNumericsStatusAt(targetCell);
+    RealMatrix dpsi = cns->_JmatInv*_basisFunctionDerivatives;
     
     // Fill entries for Bmat
-    RealMatrix bmat({{dpsi[0](0), 0,          dpsi[0](1), 0,          dpsi[0](2), 0},
-                     {0,          dpsi[1](0), 0,          dpsi[1](1), 0,          dpsi[1](2)},
-                     {0,          0,          0,          0,          0,          0},
-                     {dpsi[1](0), dpsi[0](0), dpsi[1](1), dpsi[0](1), dpsi[1](2), dpsi[0](2)}});
+    RealMatrix bmat({{dpsi(0,0), 0.,        dpsi(0,1), 0.,        dpsi(0,2), 0.},
+                     {0.,        dpsi(1,0), 0.,        dpsi(1,1), 0.,        dpsi(1,2)},
+                     {0.,        0.,        0.,        0.,        0.,        0.},
+                     {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2)}});
     return bmat;
 }
 // ----------------------------------------------------------------------------
@@ -1052,15 +1061,8 @@ std::vector<std::vector<Node*> > PhaseFieldFracture_FeFv_Tri3::giveFaceNodesOf( 
 // ----------------------------------------------------------------------------
 RealMatrix PhaseFieldFracture_FeFv_Tri3::giveGradBmatAt( Cell* targetCell )
 {
-    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-    std::vector<RealVector> dpsi = _basisFunction.giveBasisFunctionDerivativesAt(node);
-    
-    // Fill entries for Bmat
-    RealMatrix bmat;
-    bmat = {{dpsi[0](0), dpsi[0](1), dpsi[0](2)},
-            {dpsi[1](0), dpsi[1](1), dpsi[1](2)}};
-    
-    return bmat;
+    auto cns = this->getNumericsStatusAt(targetCell);
+    return cns->_JmatInv*_basisFunctionDerivatives;
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_FeFv_Tri3::giveDistanceToMidpointOf( std::vector<Node*>& face
@@ -1072,6 +1074,27 @@ double PhaseFieldFracture_FeFv_Tri3::giveDistanceToMidpointOf( std::vector<Node*
     dx = 0.5*(coor0 + coor1) - coor;
     
     return std::sqrt(dx.dot(dx));
+}
+// ----------------------------------------------------------------------------
+RealMatrix PhaseFieldFracture_FeFv_Tri3::giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor )
+{
+    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+#ifndef NDEBUG
+    if ( (int)node.size() != 3 )
+        throw std::runtime_error("\nError: Basis function requires 3 nodes be specified for calculation of Jacobian matrix!\nSource: " + _name);
+#endif
+    
+    RealMatrix coorMat(3,2);
+    
+#pragma GCC ivdep
+    for ( int i = 0; i < 3; i++ )
+    {
+        RealVector nodeCoor = analysisModel().domainManager().giveCoordinatesOf(node[i]);
+        coorMat(i,0) = nodeCoor(0);
+        coorMat(i,1) = nodeCoor(1);
+    }
+    
+   return _basisFunctionDerivatives*coorMat;
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_FeFv_Tri3::giveLengthOf( std::vector<Node*>& face )

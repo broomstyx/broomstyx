@@ -152,7 +152,7 @@ void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
         
         // Shape functions derivatives
         RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
-        double J = 0.5*(Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1));
+        double J = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
         
         std::vector<RealVector> dpsiNat = _basisFunction->giveBasisFunctionDerivativesAt(cns->_gp[i].coordinates);
         RealMatrix dpsiNatMat(2,6);
@@ -344,7 +344,7 @@ PlaneStrain_Fe_Tri6::giveFieldOutputAt( Cell* targetCell, const std::string& fie
         
         // Jacobian matrix and determinant
         RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
-        double J = 0.5*(Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1));
+        double J = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
         
         weight(i) = J*cns->_gp[i].weight;
     }
@@ -381,7 +381,7 @@ PlaneStrain_Fe_Tri6::giveStaticCoefficientMatrixAt( Cell*           targetCell
         {
             // Jacobian matrix and determinant
             RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
-            double J = 0.5*(Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1));
+            double J = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
             
             // Bmat
             RealMatrix bmat = this->giveBmatAt(targetCell, cns->_gp[i].coordinates);
@@ -444,7 +444,7 @@ PlaneStrain_Fe_Tri6::giveStaticLeftHandSideAt( Cell*           targetCell
         {
             // Jacobian matrix and determinant
             RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
-            double J = 0.5*(Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1));
+            double J = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
             
             // Compute local strains
             auto gpns = this->getNumericsStatusAt(cns->_gp[i]);
@@ -606,7 +606,7 @@ PlaneStrain_Fe_Tri6::giveStaticRightHandSideAt( Cell*                 targetCell
                 
                 // Jacobian matrix and determinant
                 RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
-                double J = 0.5*(Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1));
+                double J = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
                 
                 // Get element density
                 std::vector<Material*> material = this->giveMaterialSetFor(targetCell);

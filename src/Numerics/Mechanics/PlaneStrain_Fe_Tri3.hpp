@@ -83,6 +83,8 @@ namespace broomstyx
         RealVector _strain;
         RealVector _stress;
         RealMatrix _gradU;
+        RealMatrix _JmatInv;
+        double     _Jdet;
         MaterialStatus* _materialStatus[2];
     };
     
@@ -144,12 +146,17 @@ namespace broomstyx
 
     private:
         Triangle_P1 _basisFunction;
+        RealVector  _basisFunctionValues;
+        RealMatrix  _basisFunctionDerivatives;
+        
+        RealVector  _gpNatCoor;
+        double      _wt;
         
         NumericsStatus_PlaneStrain_Fe_Tri3*
                    getNumericsStatusAt( Cell* targetCell );
-        double     giveAreaOf( Cell* targetCell );
         RealMatrix giveBmatAt( Cell* targetCell );
         RealMatrix giveGradBmatAt( Cell* targetCell );
+        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
         RealVector giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType );
         std::vector<Dof*> giveNodalDofsAt( Cell* targetCell );
     };

@@ -278,13 +278,11 @@ StVenantTorsion_Fe_Tri6::giveStaticCoefficientMatrixAt( Cell*           targetCe
         {
             // Jacobian matrix and determinant
             RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, gpLoc[i]);
-            double jac = 0.5*(Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1));
+            double jac = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
             
             // Shape functions and derivatives
             RealVector nmat = this->giveNmatAt(gpLoc[i]);
             RealMatrix bmat = this->giveBmatAt(targetCell, gpLoc[i]);
-            RealVector bmat_x({bmat(0,0), bmat(0,1), bmat(0,2), bmat(0,3), bmat(0,4), bmat(0,5)});
-            RealVector bmat_y({bmat(1,0), bmat(1,1), bmat(1,2), bmat(1,3), bmat(1,4), bmat(1,5)});
             
             // Cartesian coordinates of Gauss point
             double x = nmat.dot(xNode);

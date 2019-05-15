@@ -97,6 +97,8 @@ namespace broomstyx
         double     _surfEgy;
         double     _bulkEgy;
         RealVector _gradPhi;
+        RealMatrix _JmatInv;
+        double     _Jdet;
         
         bool   _hasPhsFldConstraint;
         bool   _hasPhsFldPrescribedOnFace[3];
@@ -104,8 +106,6 @@ namespace broomstyx
         double _valueOnFace[3];
         bool   _hasNotComputedTransmissibilities;
         double _transmissibility[3];
-        
-        RealMatrix _bmatU;
         
         MaterialStatus* _materialStatus[2];
     };
@@ -175,18 +175,24 @@ namespace broomstyx
 
     private:
         Triangle_P1 _basisFunction;
+        RealVector  _basisFunctionValues;
+        RealMatrix  _basisFunctionDerivatives;
+        
+        RealVector  _gpNatCoor;
+        double      _wt;
         
         double _l;
         double _Gc;
         
         NumericsStatus_PhaseFieldFracture_FeFv_Tri3*
                    getNumericsStatusAt( Cell* targetCell );
-        double     giveAreaOf( Cell* targetCell );
+//        double     giveAreaOf( Cell* targetCell );
         RealMatrix giveBmatAt( Cell* targetCell );
         std::vector< std::vector<Node*> >
                    giveFaceNodesOf( Cell* targetCell );
         RealMatrix giveGradBmatAt( Cell* targetCell );        
         double     giveDistanceToMidpointOf( std::vector<Node*>& face, RealVector& coor);
+        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
         double     giveLengthOf( std::vector<Node*>& face );
         RealVector giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType );
         std::vector<Dof*> 

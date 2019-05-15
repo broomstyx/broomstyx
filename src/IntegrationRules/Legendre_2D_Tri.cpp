@@ -33,30 +33,28 @@ Legendre_2D_Tri::~Legendre_2D_Tri() {}
 std::tuple< std::vector<RealVector>, RealVector > 
 Legendre_2D_Tri::giveIntegrationPointsAndWeights()
 {
-    const double frc_1_6 = 1./6.;
-    const double frc_1_3 = 1./3.;
-    const double frc_2_3 = 2./3.;
-    const double frc_3_5 = 3./5.;
-    const double frc_27_48 = 27./48.;
-    const double frc_25_48 = 25./48.;
-    
     std::vector<RealVector> gpLoc(_nIntegrationPoints, RealVector());
     RealVector gpWt;
     
     switch (_nIntegrationPoints)
     {
         case 3: // Degree of precision = 2
-            gpLoc[0] = {frc_1_6, frc_1_6};
-            gpLoc[1] = {frc_2_3, frc_1_6};
-            gpLoc[2] = {frc_1_6, frc_2_3};
-            gpWt = {frc_1_3, frc_1_3, frc_1_3};
+            gpLoc[0] = {0.166666666666667, 0.166666666666667};
+            gpLoc[1] = {0.666666666666667, 0.166666666666667};
+            gpLoc[2] = {0.166666666666667, 0.666666666666667};
+            gpWt = {0.166666666666667,
+                    0.166666666666667,
+                    0.166666666666667};
             break;
         case 4: // Degree of precision = 3
-            gpLoc[0] = {frc_1_3, frc_1_3};
+            gpLoc[0] = {0.333333333333333, 0.333333333333333};
             gpLoc[1] = {0.2, 0.2};
-            gpLoc[2] = {frc_3_5, 0.2};
-            gpLoc[3] = {frc_1_3, frc_3_5};
-            gpWt = {-frc_27_48, frc_25_48, frc_25_48, frc_25_48};
+            gpLoc[2] = {0.6, 0.2};
+            gpLoc[3] = {0.2, 0.6};
+            gpWt = {-0.28125, 
+                    0.260416666666667,
+                    0.260416666666667,
+                    0.260416666666667};
             break;
         case 6: // Degree of precision = 4
             gpLoc[0] = {0.816847572980459, 0.091576213509771};
@@ -65,8 +63,12 @@ Legendre_2D_Tri::giveIntegrationPointsAndWeights()
             gpLoc[3] = {0.108103018168070, 0.445948490915965};
             gpLoc[4] = {0.445948490915965, 0.108103018168070};
             gpLoc[5] = {0.445948490915965, 0.445948490915965};
-            gpWt = {0.109951743655322, 0.109951743655322, 0.109951743655322,
-                    0.223381589678011, 0.223381589678011, 0.223381589678011};
+            gpWt = {0.054975871827661,
+                    0.054975871827661,
+                    0.054975871827661,
+                    0.111690794839006,
+                    0.111690794839006,
+                    0.111690794839006};
             break;
         default:
             throw std::runtime_error("Invalid number of Gauss points specified for 'Legendre_2D_Tri'!");
