@@ -23,9 +23,9 @@
 
 // Input file declaration:
 // 
-// ELEMENT_TYPES
+// *NUMERICS <n_numerics>
 //    ...
-//    <tag> PhsFieldBrittleFracture_HybFeFv_Tri3
+//    <tag> PhaseFieldFracture_FeFv_Tri3
 //            NodalDof <dof1> <dof2>
 //            CellDof <dof3>
 //            Stage <stg>
