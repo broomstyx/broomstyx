@@ -186,7 +186,6 @@ namespace broomstyx
         
         NumericsStatus_PhaseFieldFracture_FeFv_Tri3*
                    getNumericsStatusAt( Cell* targetCell );
-//        double     giveAreaOf( Cell* targetCell );
         RealMatrix giveBmatAt( Cell* targetCell );
         std::vector< std::vector<Node*> >
                    giveFaceNodesOf( Cell* targetCell );
