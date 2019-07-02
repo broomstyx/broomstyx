@@ -300,8 +300,8 @@ DarcyFlow_2D_1Phase_Fv_Tri::giveStaticCoefficientMatrixAt
                           
                 RealVector kvec;
                 kvec = kmat*nhat;
-                double k1 = std::sqrt(kvec.dot(kvec));
-                coefVal(0) += k1/(_mu*d1)*length;
+                double K1 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
+                coefVal(0) += K1/d1*length;
             }
             else if ( neighbor[i] )
             {
