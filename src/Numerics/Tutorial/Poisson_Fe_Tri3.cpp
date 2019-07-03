@@ -79,9 +79,10 @@ Poisson_Fe_Tri3::~Poisson_Fe_Tri3()
 // ----------------------------------------------------------------------------
 void Poisson_Fe_Tri3::deleteNumericsAt(Cell* targetCell)
 {
+    auto cns = this->getNumericsStatusAt(targetCell);
     delete cns;
 }
-
+// ----------------------------------------------------------------------------
 void Poisson_Fe_Tri3::finalizeDataAt( Cell* targetCell )
 {
     // Retrieve numerics status at cell
@@ -182,6 +183,8 @@ Poisson_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
     
     if ( stage == _stage[0] && (subsys == _subsystem[0] || subsys == UNASSIGNED) )
     {
+        auto cns = this->getNumericsStatusAt(targetCell);
+
         // Retrieve nodal DOFs local to element
         std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);
         
@@ -224,7 +227,7 @@ Poisson_Fe_Tri3::giveStaticLeftHandSideAt(Cell*            targetCell
         
         // Element area and local displacements
         rowDof = this->giveNodalDofsAt(targetCell);
-        RealVector u = this->giveLocalDisplacementsAt(rowDof, current_value);
+        RealVector u = this->giveLocalValuesAt(rowDof, current_value);
             
         // Compute local gradients
         RealMatrix bmat = giveBmatAt(targetCell);
@@ -250,7 +253,8 @@ Poisson_Fe_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
     
     if ( stage == _stage[0] && (subsys == _subsystem[0] || subsys == UNASSIGNED) )
     {
-        if ( bndCond.conditionType() == "Traction" )
+        std::string cndType = bndCond.conditionType();
+        if ( cndType == "NormalGradient" )
         {
             // Retrieve nodes of boundary element
             std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
@@ -260,7 +264,7 @@ Poisson_Fe_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
             // ----------------------------------------------------------------
             
             if ( (int)node.size() != 2 )
-                throw std::runtime_error("Error: Traction boundary condition for '" + _name + "' requires 2-node boundary elements!");
+                throw std::runtime_error("Error: Neumann boundary condition for '" + _name + "' requires 2-node boundary elements!");
             
             RealVector coor0, coor1, dx;
             coor0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
@@ -288,36 +292,6 @@ Poisson_Fe_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
             rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
         }
-        else if ( bndCond.conditionType() == "ConcentratedForce" ) // Boundary conditions for 1-node point
-        {
-            // Retrieve nodes of boundary element
-            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-            
-            // ----------------------------------------------------------------
-            // Note: Boundary element must be a 1-node point
-            // ----------------------------------------------------------------
-            
-            if ( (int)node.size() != 1 )
-                throw std::runtime_error("Error: Concentrated force boundary condition for '" + _name + "' requires 1-node boundary elements!");
-            
-            // Determine proper value of boundary condition
-            RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-            double bcVal = bndCond.valueAt(coor, time);
-
-            // Construct local RHS vector (only for relevant DOFs)
-            rhs.init(1);
-            rhs(0) = bcVal;
-
-            // Construct global address vector
-            rowDof.assign(1, nullptr);
-
-            // Note that bndCond.targetDof() assumes 1-based notation but
-            // first element of nodalDof is stored at index 0!
-            // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
-            rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
-        }
     }
     
     return std::make_tuple(std::move(rowDof), std::move(rhs));
@@ -340,12 +314,8 @@ Poisson_Fe_Tri3::giveStaticRightHandSideAt( Cell*                 targetCell
         std::string cndType = fldCond.conditionType();
         if ( cndType == "SourceTerm" )
         {
-            //auto cns = this->getNumericsStatusAt(targetCell);
+            auto cns = this->getNumericsStatusAt(targetCell);
             
-            // Get element density
-            //std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
-            //double rho = material[0]->giveMaterialVariable("Density", cns->_materialStatus[0]);
-
             // Retrieve nodal DOFs for element
             rowDof = this->giveNodalDofsAt(targetCell);
             
@@ -357,7 +327,7 @@ Poisson_Fe_Tri3::giveStaticRightHandSideAt( Cell*                 targetCell
             rhs(0) = val;
             rhs(1) = val;
             rhs(2) = val;
-        }        
+        }
     }
     
     return std::make_tuple(std::move(rowDof), std::move(rhs));
@@ -387,7 +357,7 @@ void Poisson_Fe_Tri3::imposeConstraintAt( Cell*                    targetCell
 // ----------------------------------------------------------------------------
 void Poisson_Fe_Tri3::initializeNumericsAt( Cell* targetCell )
 {
-    targetCell->numericsStatus = new NumericsStatus_PlaneStrain_Fe_Tri3();
+    targetCell->numericsStatus = new NumericsStatus_Poisson_Fe_Tri3();
     auto cns = this->getNumericsStatusAt(targetCell);
     
     // Pre-calculate det(J) and inv(J);

@@ -110,4 +110,3 @@ namespace broomstyx
 }
 
 #endif /* STVENANTTORSION_FE_TRI6_HPP */
-
