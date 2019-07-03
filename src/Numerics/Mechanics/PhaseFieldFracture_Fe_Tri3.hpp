@@ -24,7 +24,7 @@
 // ----------------------------------------------------------------------------
 // Input file declaration:
 // 
-// ELEMENT_TYPES
+// *NUMERICS <n_numerics>
 //    ...
 //    <tag> PhaseFieldFracture_Fe_Tri3
 //            NodalDof <dof1> <dof2> <dof3>

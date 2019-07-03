@@ -67,7 +67,7 @@ PhaseFieldFracture_FeFv_Tri3::PhaseFieldFracture_FeFv_Tri3()
     _nStages = 1;
     _nSubsystems = 2;
     
-    _name = "PhsFieldBrittleFracture_Hyb_FeFv_Tri3";
+    _name = "PhaseFieldFracture_FeFv_Tri3";
     
     // Lone Gauss point coordinate and weight
     _gpNatCoor = {1./3., 1./3.};
@@ -1022,13 +1022,6 @@ PhaseFieldFracture_FeFv_Tri3::getNumericsStatusAt( Cell* targetCell )
     
     return cns;
 }
-//// ----------------------------------------------------------------------------
-//double PhaseFieldFracture_FeFv_Tri3::giveAreaOf( Cell* targetCell )
-//{
-//    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-//    
-//    return _basisFunction.giveAreaOf(node);
-//}
 // ----------------------------------------------------------------------------
 RealMatrix PhaseFieldFracture_FeFv_Tri3::giveBmatAt( Cell* targetCell )
 {

@@ -24,43 +24,24 @@
 /* --------------------------------------------------------------------------
  * Input file declaration:
  * 
- * *NUMERICS <n_numerics>
+ * ELEMENT_TYPES
  *    ...
- *    <tag> PlaneStrain_Fe_Tri3
- *            NodalDof <dof1> <dof2>
+ *    <tag> Poisson_Fe_Tri3
+ *            NodalDof <dof1>
  *            Stage <stg>
- *            NodalFieldOutput <n1>
- *                   ...             ...
- *                   ...             ...
  *            CellFieldOutput <n2>
  *                   ...             ...
  *                   ...             ...
  * 
  * Field data tags:
  * 
- *  s_xx : stress along xx
- *  s_yy : stress along yy
- *  s_zz : stress along zz
- *  s_xy : stress along xy
- *  ux_x : du1/dx1
- *  uy_x : du2/dx1
- *  ux_y : du1/dx2
- *  uy_y : du2/dx2
- *  g_xy : total engineering strain along xy
- * ep_xx : plastic strain along xx
- * ep_yy : plastic strain along yy
- * ep_zz : plastic strain along zz
- * ep_xy : plastic strain along xy
- *   ene : elastic strain energy
- * 
- * Material set:
- *  material 1 --> solid density
- *  material 2 --> constitutive law for the solid (elasticity)
+ *  u_x : gradient along x
+ *  u_y : gradient along y
  * 
  ****************************************************************************/
 
-#ifndef PLANESTRAIN_FE_TRI3_HPP
-#define	PLANESTRAIN_FE_TRI3_HPP
+#ifndef POISSON_FE_TRI3_HPP
+#define	POISSON_FE_TRI3_HPP
 
 #include "../Numerics.hpp"
 #include "../../Core/DofManager.hpp"
@@ -71,28 +52,25 @@ namespace broomstyx
 {
     class MaterialStatus;
         
-    class NumericsStatus_PlaneStrain_Fe_Tri3 final : public NumericsStatus
+    class NumericsStatus_Poisson_Fe_Tri3 final : public NumericsStatus
     {
-        friend class PlaneStrain_Fe_Tri3;
+        friend class Poisson_Fe_Tri3;
         
     public:
-        NumericsStatus_PlaneStrain_Fe_Tri3();
-        virtual ~NumericsStatus_PlaneStrain_Fe_Tri3();
+        NumericsStatus_Poisson_Fe_Tri3();
+        virtual ~NumericsStatus_Poisson_Fe_Tri3();
         
     private:
-        RealVector _strain;
-        RealVector _stress;
-        RealMatrix _gradU;
+        RealVector _gradU;
         RealMatrix _JmatInv;
         double     _Jdet;
-        MaterialStatus* _materialStatus[2];
     };
     
-    class PlaneStrain_Fe_Tri3 final : public Numerics 
+    class Poisson_Fe_Tri3 final : public Numerics 
     {
     public:
-        PlaneStrain_Fe_Tri3();
-        virtual ~PlaneStrain_Fe_Tri3();
+        Poisson_Fe_Tri3();
+        virtual ~Poisson_Fe_Tri3();
 
         void   deleteNumericsAt( Cell* targetCell ) override;
         void   finalizeDataAt( Cell* targetCell ) override;
@@ -140,7 +118,6 @@ namespace broomstyx
                                , const BoundaryCondition& bndCond
                                , const TimeData&          time ) override;
         
-        void initializeMaterialsAt( Cell* targetCell ) override;
         void initializeNumericsAt( Cell* targetCell ) override;
         void setDofStagesAt( Cell* targetCell ) override;
 
@@ -152,14 +129,13 @@ namespace broomstyx
         RealVector  _gpNatCoor;
         double      _wt;
         
-        NumericsStatus_PlaneStrain_Fe_Tri3*
+        NumericsStatus_Poisson_Fe_Tri3*
                    getNumericsStatusAt( Cell* targetCell );
         RealMatrix giveBmatAt( Cell* targetCell );
-        RealMatrix giveGradBmatAt( Cell* targetCell );
         RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
-        RealVector giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType );
+        RealVector giveLocalValuesAt( std::vector<Dof*>& dof, ValueType valType );
         std::vector<Dof*> giveNodalDofsAt( Cell* targetCell );
     };
 }
 
-#endif	/* PLANESTRAIN_FE_TRI3_HPP */
+#endif	/* POISSON_FE_TRI3_HPP */

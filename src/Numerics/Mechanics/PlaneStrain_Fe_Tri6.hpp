@@ -24,7 +24,7 @@
 /* --------------------------------------------------------------------------
  * Input file declaration:
  * 
- * ELEMENT_TYPES
+ * *NUMERICS <n_numerics>
  *    ...
  *    <tag> CPEF6
  *            NodalDof <dof1> <dof2>
