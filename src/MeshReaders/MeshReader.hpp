@@ -36,6 +36,10 @@ namespace broomstyx {
     public:
         MeshReader() {}
         virtual ~MeshReader() {}
+        
+        // Disable copy constructor and assignment operator
+        MeshReader( const MeshReader& ) = delete;
+        MeshReader& operator=( const MeshReader& ) = delete;
 
         virtual void readMeshFile( std::string filename ) = 0;
         virtual std::vector<int>

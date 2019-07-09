@@ -35,6 +35,10 @@ namespace broomstyx
     public:
         OutputWriter() {}
         virtual ~OutputWriter() {}
+        
+        // Disable copy constructor and assignment operator
+        OutputWriter( const OutputWriter& ) = delete;
+        OutputWriter& operator=( const OutputWriter& ) = delete;
 
         // Virtual public methods
         virtual void initialize() = 0;

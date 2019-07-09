@@ -42,6 +42,10 @@ namespace broomstyx
         Node();
         virtual ~Node();
         
+        // Disable copy constructor and assignment operator
+        Node( const Node& ) = delete;
+        Node& operator=( const Node& ) = delete;
+        
         int id();
         
     private:

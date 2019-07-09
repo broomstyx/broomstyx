@@ -35,6 +35,10 @@ namespace broomstyx
     {
         friend class AnalysisModel;
     public:
+        // Disable copy constructor and assignment operator
+        NumericsManager( const NumericsManager& ) = delete;
+        NumericsManager& operator=( const NumericsManager& ) = delete;
+        
         std::vector<Numerics*> giveAllNumerics();
         Numerics* giveNumerics( int label );
         void      readNumericsFrom( FILE* fp );

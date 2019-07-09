@@ -45,6 +45,10 @@ namespace broomstyx
     public:
         Cell();
         virtual ~Cell();
+        
+        // Disable copy constructor and assignment operator
+        Cell( const Cell& ) = delete;
+        Cell& operator=( const Cell& ) = delete;
 
         RealVector cellData;
         NumericsStatus* numericsStatus;

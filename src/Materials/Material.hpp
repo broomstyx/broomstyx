@@ -44,6 +44,10 @@ namespace broomstyx
     public:
         Material();
         virtual ~Material();
+        
+        // Disable copy constructor and assignment operator
+        Material( const Material& ) = delete;
+        Material& operator=( const Material& ) = delete;
 
         virtual MaterialStatus* createMaterialStatus();
         virtual void destroy( MaterialStatus*& matStatus );

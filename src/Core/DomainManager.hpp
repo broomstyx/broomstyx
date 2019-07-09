@@ -45,6 +45,10 @@ namespace broomstyx
         friend class AnalysisModel;
         
     public:
+        // Disable copy constructor and assignment operator
+        DomainManager( const DomainManager& ) = delete;
+        DomainManager& operator=( const DomainManager& ) = delete;
+        
         struct PhysicalEntity
         {
             int dimension;

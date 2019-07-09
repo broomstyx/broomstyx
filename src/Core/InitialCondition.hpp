@@ -37,7 +37,7 @@ namespace broomstyx
     public:
         InitialCondition();
         virtual ~InitialCondition();
-
+        
         std::string domainLabel() const;
         void        readDataFrom( FILE* fp );
         std::string conditionType() const;

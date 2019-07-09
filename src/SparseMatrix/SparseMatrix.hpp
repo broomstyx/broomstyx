@@ -37,6 +37,10 @@ namespace broomstyx
     public:
         SparseMatrix();
         virtual ~SparseMatrix();
+        
+        // Disable copy constructor and assignment operator
+        SparseMatrix( const SparseMatrix& ) = delete;
+        SparseMatrix& operator=( const SparseMatrix& ) = delete;
 
         std::tuple< int,int > giveMatrixDimensions();
         int     giveNumberOfNonzeros();

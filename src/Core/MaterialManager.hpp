@@ -36,6 +36,10 @@ namespace broomstyx
         friend class AnalysisModel;
         
     public:
+        // Disable copy constructor and assignment operator
+        MaterialManager( const MaterialManager& ) = delete;
+        MaterialManager& operator=( const MaterialManager& ) = delete;
+        
         Material* giveMaterial(int label);
         void initializeMaterials();
         void readMaterialsFrom(FILE* fp);

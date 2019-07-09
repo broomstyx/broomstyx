@@ -42,6 +42,9 @@ namespace broomstyx
         friend AnalysisModel& analysisModel();
         
     public:
+        // Disable copy constructor and assignment operator
+        AnalysisModel( const AnalysisModel& ) = delete;
+        AnalysisModel& operator=( const AnalysisModel& ) = delete;
         
         void initializeYourself( std::string filename );
         void solveYourself();

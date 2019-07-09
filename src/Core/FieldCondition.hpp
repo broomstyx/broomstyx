@@ -39,7 +39,7 @@ namespace broomstyx
     public:
         FieldCondition();
         virtual ~FieldCondition();
-
+        
         std::string conditionType() const;
         std::string domainLabel() const;
         void        readDataFrom( FILE* fp );
