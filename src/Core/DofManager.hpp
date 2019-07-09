@@ -53,6 +53,10 @@ namespace broomstyx
         friend class AnalysisModel;
         
     public:
+        // Disable copy constructor and assignment operator
+        DofManager( const DofManager& ) = delete;
+        DofManager& operator=( const DofManager& ) = delete;
+        
         void   addToSecondaryVariableAt( Dof* targetDof, double val );
         void   createCellDofsAt( Cell* targetCell );
         void   createFaceDofsAt( Cell* targetFace );

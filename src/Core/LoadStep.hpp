@@ -40,6 +40,10 @@ namespace broomstyx
     public:
         LoadStep(int lsNum, int nStg);
         virtual ~LoadStep();
+        
+        // Disable copy constructor and assignment operator
+        LoadStep( const LoadStep& ) = delete;
+        LoadStep& operator=( const LoadStep& ) = delete;
 
         int  giveLoadStepNum();
         void readDataFrom( FILE* fp );

@@ -37,6 +37,10 @@ namespace broomstyx
     public:
         LinearSolver();
         virtual ~LinearSolver();
+        
+        // Disable copy constructor and assignment operator
+        LinearSolver( const LinearSolver& ) = delete;
+        LinearSolver& operator=( const LinearSolver& ) = delete;
 
         virtual void allocateInternalMemoryFor( SparseMatrix* coefMat );
         virtual RealVector backSubstitute( SparseMatrix* coefMat, RealVector& rhs );

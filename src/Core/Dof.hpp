@@ -48,6 +48,10 @@ namespace broomstyx
         {}
 
         virtual ~Dof() {}
+        
+        // Disable copy constructor and assignment operator
+        Dof( const Dof& ) = delete;
+        Dof& operator=( const Dof& ) = delete;
 
     private:
         int _group;
