@@ -25,14 +25,16 @@
 #define STVENANTTORSION_FE_TRI6_HPP
 
 #include "../Numerics.hpp"
+#include "../../BasisFunctions/Line_P2.hpp"
+#include "../../BasisFunctions/Triangle_P2.hpp"
+#include "../../IntegrationRules/Legendre_1D.hpp"
+#include "../../IntegrationRules/Legendre_2D_Tri.hpp"
 
 namespace broomstyx
 {
     class Dof;
     class EvalPoint;
-    class IntegrationRule;
     class MaterialStatus;
-    class ScalarBasisFunction;
 
     // Cell numerics status
     class CellNumericsStatus_StVenantTorsion_Fe_Tri6 final : public NumericsStatus
@@ -85,12 +87,12 @@ namespace broomstyx
         void setDofStagesAt( Cell* targetCell ) override;
 
     private:
-        ScalarBasisFunction* _basisFunction;
-        ScalarBasisFunction* _edgeBasisFunction;
+        Triangle_P2 _basisFunction;
+        Line_P2     _edgeBasisFunction;
 
-        IntegrationRule* _integrationRule;
-        IntegrationRule* _edgeIntegrationRule;
-        IntegrationRule* _torqueIntegrationRule;
+        Legendre_2D_Tri _integrationRule;
+        Legendre_1D     _edgeIntegrationRule;
+        Legendre_2D_Tri _torqueIntegrationRule;
 
         double _beta;
 
