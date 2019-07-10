@@ -77,14 +77,6 @@ StVenantTorsion_Fe_Tri6::StVenantTorsion_Fe_Tri6()
     
     _name = "StVenantTorsion_Fe_Tri6";
     
-    // _basisFunction = new Triangle_P2();
-    // _integrationRule = new Legendre_2D_Tri(6);
-    
-    // _edgeBasisFunction = new Line_P2();
-    // _edgeIntegrationRule = new Legendre_1D(3);
-    
-    // _torqueIntegrationRule = new Legendre_2D_Tri(6);
-    
     _az = nullptr;
     _kx = nullptr;
     _ky = nullptr;
@@ -101,12 +93,6 @@ StVenantTorsion_Fe_Tri6::~StVenantTorsion_Fe_Tri6()
     
     std::printf("  Calculated center of twist\n    x = %.6e\n    y = %.6e\n\n", xc, yc);
     std::fflush(stdout);
-    
-    // delete _basisFunction;
-    // delete _edgeBasisFunction;
-    // delete _integrationRule;
-    // delete _edgeIntegrationRule;
-    // delete _torqueIntegrationRule;
     
     // Delete lagrange multiplier DOF
     analysisModel().dofManager().destroyNumericsDof(_az);
