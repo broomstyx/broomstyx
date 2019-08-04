@@ -1,0 +1,20 @@
+{
+    "configurations": [
+        {
+            "name": "Linux",
+            "includePath": [
+                "${workspaceFolder}/build-cmake",
+                "${workspaceFolder}/**",
+                "/opt/intel/mkl/include",
+                "${workspaceFolder}/../dune-common",
+                "${workspaceFolder}/../dune-istl"
+            ],
+            "defines": [],
+            "compilerPath": "/usr/bin/gcc",
+            "cStandard": "c11",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "clang-x64"
+        }
+    ],
+    "version": 4
+}
