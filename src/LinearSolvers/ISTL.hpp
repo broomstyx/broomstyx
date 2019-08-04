@@ -54,7 +54,7 @@ namespace broomstyx
         int    _maxIter;
 
         std::string _preconditioner;
-        RealVector   _initGuess;
+        RealVector  _initGuess;
 
         std::unique_ptr< InverseOperatorType > _solver;
     };
