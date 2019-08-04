@@ -31,6 +31,7 @@
 #include <dune/istl/operators.hh>
 #include <dune/istl/solvers.hh>
 #include <dune/istl/preconditioners.hh>
+#include <dune/istl/paamg/amg.hh>
 #include <string>
 #include "../Core/ObjectFactory.hpp"
 #include "../SparseMatrix/ISTLMat.hpp"
@@ -51,10 +52,10 @@ namespace detail
     {
     public:
         //! export types
-        typedef M matrix_type;
-        typedef X domain_type;
-        typedef Y range_type;
-        typedef typename X::field_type field_type;
+        using matrix_type = M;
+        using domain_type = X;
+        using range_type = Y;
+        using field_type = typename X::field_type;
 
         //! constructor: just store a reference to a matrix
         explicit OpenMPMatrixAdapter (const M& A) : _A_(A) {}
@@ -142,7 +143,10 @@ void ISTL::readDataFrom( FILE* fp )
 
     _tol = getRealInputFrom(fp, "Failed to read relative tolerance for iterative linear solver from input file!", src);
     _maxIter = getIntegerInputFrom(fp, "Failed to read max. iterations for iterative linear solver from input file!", src);
-    _relax = getRealInputFrom(fp, "Failed to read ILU0 preconditioner relaxation parameter from input file!", src);
+    _preconditioner = getStringInputFrom(fp, "Failed to read preconditioner type from input file!", src);
+    if ( _preconditioner != "ILU0" &&
+         _preconditioner != "AMG" )
+         throw std::runtime_error("ERROR! Invalid preconditioner type '" + _preconditioner + "' encountered in input file!\n");
 }
 
 void ISTL::setInitialGuessTo( RealVector& initGuess )
@@ -159,37 +163,76 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
         std::abort();
     }
 
-    typedef typename ISTLMat :: MatrixType M;
+    using M = typename ISTLMat :: MatrixType;
 
     M& mat = matrix->exportMatrix();
 
-    typedef detail::OpenMPMatrixAdapter< M, BlockVectorType, BlockVectorType > AssembledOperatorType;
+    using AssembledOperatorType = detail::OpenMPMatrixAdapter< M, BlockVectorType, BlockVectorType >;
     AssembledOperatorType op( mat );
     
-    typedef Dune::SeqILU< M, BlockVectorType, BlockVectorType > PreconditionerType;
-    PreconditionerType precon( mat, _relax, true );
-
-    Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, int(_maxIter), int(0));
-
-    const int dim = rhs.dim();
-    BlockVectorType B( rhs.dim() );
-    BlockVectorType X( rhs.dim() );
-    for( int i=0; i<dim; ++i )
+    if ( _preconditioner == "ILU0" )
     {
-        B[ i ][0] = rhs( i );
-        X[ i ][0] = _initGuess( i );
+        using PreconditionerType = Dune::SeqILU< M, BlockVectorType, BlockVectorType >;
+        PreconditionerType precon( mat, 1.0, true );
+    
+        Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, int(_maxIter), int(0));
+
+        const int dim = rhs.dim();
+        BlockVectorType B( rhs.dim() );
+        BlockVectorType X( rhs.dim() );
+        for( int i=0; i<dim; ++i )
+        {
+            B[ i ][0] = rhs( i );
+            X[ i ][0] = _initGuess( i );
+        }
+
+        Dune::InverseOperatorResult info;
+        solver.apply( X, B, _tol, info );
+
+        RealVector x( dim );
+        for( int i=0; i<dim; ++i )
+        {
+            x( i ) = X[ i ][ 0 ];
+        }
+
+        return x;
     }
-
-    Dune::InverseOperatorResult info;
-    solver.apply( X, B, _tol, info );
-
-    RealVector x( dim );
-    for( int i=0; i<dim; ++i )
+    else if ( _preconditioner == "AMG" )
     {
-        x( i ) = X[ i ][ 0 ];
-    }
+        // typedef Dune::Amg::AMG< M, BlockVectorType, BlockVectorType > PreconditionerType;
+        // using Smoother = AmgTraits::Smoother;
+        // using SmootherArgs = Dune::Amg::SmootherTraits<Smoother>::Arguments;
+        // using Criterion = Dune::Amg::CoarsenCriterion<Dune::Amg::SymmetricCriterion<BCRSMat, Dune::Amg::FirstDiagonal>>;
 
-    return x;
+        // Dune::Amg::Parameters params(15,2000,1.2,1.6,Dune::Amg::atOnceAccu);
+        // Criterion criterion(params);
+        // SmootherArgs smootherArgs;
+        // smootherArgs.iterations = 1;
+        // smootherArgs.relaxationFactor = 1;
+
+        // PreconditionerType precon(op, );
+        // Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, int(_maxIter), int(0));
+
+        // const int dim = rhs.dim();
+        // BlockVectorType B( rhs.dim() );
+        // BlockVectorType X( rhs.dim() );
+        // for( int i=0; i<dim; ++i )
+        // {
+        //     B[ i ][0] = rhs( i );
+        //     X[ i ][0] = _initGuess( i );
+        // }
+
+        // Dune::InverseOperatorResult info;
+        // solver.apply( X, B, _tol, info );
+
+        // RealVector x( dim );
+        // for( int i=0; i<dim; ++i )
+        // {
+        //     x( i ) = X[ i ][ 0 ];
+        // }
+
+        // return x;
+    }
 }
 
 #endif /* HAVE_DUNE_ISTL */

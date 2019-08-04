@@ -34,9 +34,9 @@ namespace broomstyx
 {
     class ISTL : public LinearSolver
     {
-        typedef Dune::FieldVector< double, 1 > BlockType;
-        typedef Dune::BlockVector< BlockType > BlockVectorType;
-        typedef Dune::InverseOperator< BlockVectorType, BlockVectorType > InverseOperatorType;
+        using BlockType = Dune::FieldVector< double, 1 >;
+        using BlockVectorType = Dune::BlockVector< BlockType >;
+        using InverseOperatorType = Dune::InverseOperator< BlockVectorType, BlockVectorType >;
         
     public:
         ISTL();
@@ -52,8 +52,8 @@ namespace broomstyx
     private:
         double _tol;
         int    _maxIter;
-        double _relax;
 
+        std::string _preconditioner;
         RealVector   _initGuess;
 
         std::unique_ptr< InverseOperatorType > _solver;
