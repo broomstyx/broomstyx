@@ -51,6 +51,7 @@ namespace broomstyx
 
     private:
         double _tol;
+        double _abstol;
         int    _maxIter;
         int    _verbosity;
 

@@ -141,6 +141,7 @@ void ISTL::readDataFrom( FILE* fp )
 	std::string src = "ISTL (LinearSolver)";
 
     _tol = getRealInputFrom(fp, "Failed to read relative tolerance for iterative linear solver from input file!\n", src);
+    _abstol = getRealInputFrom(fp, "Failed to read absolute tolerance for iterative linear solver from input file!\n", src);
     _maxIter = getIntegerInputFrom(fp, "Failed to read max. iterations for iterative linear solver from input file!\n", src);
     _preconditioner = getStringInputFrom(fp, "Failed to read preconditioner type from input file!\n", src);
     if ( _preconditioner != "ILU0" &&
@@ -158,99 +159,105 @@ void ISTL::setInitialGuessTo( RealVector& initGuess )
 
 RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
 {
-    ISTLMat* matrix = dynamic_cast< ISTLMat* > (coefMat);
-    if( ! matrix )
+    // Proceed only when residual norm is larger than absolute tolerance
+    if ( std::sqrt(rhs.dot(rhs)) <= _abstol )
+        return _initGuess;
+    else
     {
-        std::cerr << "ERROR" << std::endl;
-        std::abort();
-    }
-
-    using MatrixType = typename ISTLMat::MatrixType;
-
-    MatrixType& mat = matrix->exportMatrix();
-
-    using AssembledOperatorType = detail::OpenMPMatrixAdapter< MatrixType, BlockVectorType, BlockVectorType >;
-    AssembledOperatorType op( mat );
-    
-    if ( _preconditioner == "ILU0" )
-    {
-        if ( _verbosity > 0 )
-            std::printf("\n");
-
-        using PreconditionerType = Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType >;
-        PreconditionerType precon( mat, 1.0, true );
-    
-        Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, _verbosity);
-
-        const int dim = rhs.dim();
-        BlockVectorType B( rhs.dim() );
-        BlockVectorType X( rhs.dim() );
-        for( int i = 0; i < dim; ++i )
+        ISTLMat* matrix = dynamic_cast< ISTLMat* > (coefMat);
+        if( ! matrix )
         {
-            B[ i ][0] = rhs( i );
-            X[ i ][0] = _initGuess( i );
+            std::cerr << "ERROR" << std::endl;
+            std::abort();
         }
 
-        Dune::InverseOperatorResult info;
-        solver.apply( X, B, _tol, info );
+        using MatrixType = typename ISTLMat::MatrixType;
 
-        if ( _verbosity > 0 )
-            std::printf("\n    %-40s"," "); // hack for pretty printing
+        MatrixType& mat = matrix->exportMatrix();
 
-        RealVector x( dim );
-        for( int i = 0; i < dim; ++i )
-        {
-            x( i ) = X[ i ][ 0 ];
-        }
-
-        return x;
-    }
-    else if ( _preconditioner == "AMG" )
-    {
-        using Operator = Dune::MatrixAdapter<MatrixType,BlockVectorType,BlockVectorType>;
-        Operator fop(mat);
-
-        using Smoother = Dune::SeqSSOR<MatrixType,BlockVectorType,BlockVectorType>;
-        using SmootherArgs = Dune::Amg::SmootherTraits<Smoother>::Arguments;
-        using Criterion = Dune::Amg::CoarsenCriterion<Dune::Amg::SymmetricCriterion<MatrixType, Dune::Amg::FirstDiagonal>>;
-
-        Dune::Amg::Parameters params(15,2000,1.2,1.6,Dune::Amg::atOnceAccu);
-        Criterion criterion(params);
-        criterion.setDebugLevel(_verbosity);
-        SmootherArgs smootherArgs;
-        smootherArgs.iterations = 1;
-        smootherArgs.relaxationFactor = 1;
-
-        if ( _verbosity > 0 )
-            std::printf("\n");
-
-        using PreconditionerType = Dune::Amg::AMG< Operator, BlockVectorType, Smoother >;
-        PreconditionerType precon(fop, criterion, smootherArgs);
+        using AssembledOperatorType = detail::OpenMPMatrixAdapter< MatrixType, BlockVectorType, BlockVectorType >;
+        AssembledOperatorType op( mat );
         
-        Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, _verbosity);
+        if ( _preconditioner == "ILU0" )
+        {
+            if ( _verbosity > 0 )
+                std::printf("\n");
+
+            using PreconditionerType = Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType >;
+            PreconditionerType precon( mat, 1.0, true );
         
-        const int dim = rhs.dim();
-        BlockVectorType B( rhs.dim() );
-        BlockVectorType X( rhs.dim() );
-        for( int i = 0; i < dim; ++i )
-        {
-            B[ i ][0] = rhs( i );
-            X[ i ][0] = _initGuess( i );
+            Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, _verbosity);
+
+            const int dim = rhs.dim();
+            BlockVectorType B( rhs.dim() );
+            BlockVectorType X( rhs.dim() );
+            for( int i = 0; i < dim; ++i )
+            {
+                B[ i ][0] = rhs( i );
+                X[ i ][0] = _initGuess( i );
+            }
+
+            Dune::InverseOperatorResult info;
+            solver.apply( X, B, _tol, info );
+
+            if ( _verbosity > 0 )
+                std::printf("\n    %-40s"," "); // hack for pretty printing
+
+            RealVector x( dim );
+            for( int i = 0; i < dim; ++i )
+            {
+                x( i ) = X[ i ][ 0 ];
+            }
+
+            return x;
         }
-
-        Dune::InverseOperatorResult info;
-        solver.apply( X, B, _tol, info );
-
-        if ( _verbosity > 0 )
-            std::printf("\n    %-40s"," "); // hack for pretty printing
-
-        RealVector x( dim );
-        for( int i = 0; i < dim; ++i )
+        else if ( _preconditioner == "AMG" )
         {
-            x( i ) = X[ i ][ 0 ];
-        }
+            using Operator = Dune::MatrixAdapter<MatrixType,BlockVectorType,BlockVectorType>;
+            Operator fop(mat);
 
-        return x;
+            using Smoother = Dune::SeqSSOR<MatrixType,BlockVectorType,BlockVectorType>;
+            using SmootherArgs = Dune::Amg::SmootherTraits<Smoother>::Arguments;
+            using Criterion = Dune::Amg::CoarsenCriterion<Dune::Amg::SymmetricCriterion<MatrixType, Dune::Amg::FirstDiagonal>>;
+
+            Dune::Amg::Parameters params(15,2000,1.2,1.6,Dune::Amg::atOnceAccu);
+            Criterion criterion(params);
+            criterion.setDebugLevel(_verbosity);
+            SmootherArgs smootherArgs;
+            smootherArgs.iterations = 1;
+            smootherArgs.relaxationFactor = 1;
+
+            if ( _verbosity > 0 )
+                std::printf("\n");
+
+            using PreconditionerType = Dune::Amg::AMG< Operator, BlockVectorType, Smoother >;
+            PreconditionerType precon(fop, criterion, smootherArgs);
+            
+            Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, _verbosity);
+            
+            const int dim = rhs.dim();
+            BlockVectorType B( rhs.dim() );
+            BlockVectorType X( rhs.dim() );
+            for( int i = 0; i < dim; ++i )
+            {
+                B[ i ][0] = rhs( i );
+                X[ i ][0] = _initGuess( i );
+            }
+
+            Dune::InverseOperatorResult info;
+            solver.apply( X, B, _tol, info );
+
+            if ( _verbosity > 0 )
+                std::printf("\n    %-40s"," "); // hack for pretty printing
+
+            RealVector x( dim );
+            for( int i = 0; i < dim; ++i )
+            {
+                x( i ) = X[ i ][ 0 ];
+            }
+
+            return x;
+        }
     }
 }
 
