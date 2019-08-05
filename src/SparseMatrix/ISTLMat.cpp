@@ -34,11 +34,17 @@ ISTLMat::ISTLMat() : _matrix() {}
 
 void ISTLMat::addToComponent( int rowNum, int colNum, double val )
 {
+#ifdef _OPENMP
+#pragma omp atomic
+#endif
     (*_matrix)[ rowNum ][ colNum ][ 0 ][ 0 ] += val;
 }
 
 void ISTLMat::atomicAddToComponent( int rowNum, int colNum, double val )
 {
+#ifdef _OPENMP
+#pragma omp atomic
+#endif
     (*_matrix)[ rowNum ][ colNum ][ 0 ][ 0 ] += val;
 }
 
