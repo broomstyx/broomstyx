@@ -52,6 +52,7 @@ namespace broomstyx
     private:
         double _tol;
         int    _maxIter;
+        int    _verbosity;
 
         std::string _preconditioner;
         RealVector  _initGuess;

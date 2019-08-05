@@ -140,13 +140,15 @@ void ISTL::readDataFrom( FILE* fp )
 {
 	std::string src = "ISTL (LinearSolver)";
 
-    _tol = getRealInputFrom(fp, "Failed to read relative tolerance for iterative linear solver from input file!", src);
-    _maxIter = getIntegerInputFrom(fp, "Failed to read max. iterations for iterative linear solver from input file!", src);
-    verifyKeyword(fp, "Preconditioner", src);
-    _preconditioner = getStringInputFrom(fp, "Failed to read preconditioner type from input file!", src);
+    _tol = getRealInputFrom(fp, "Failed to read relative tolerance for iterative linear solver from input file!\n", src);
+    _maxIter = getIntegerInputFrom(fp, "Failed to read max. iterations for iterative linear solver from input file!\n", src);
+    _preconditioner = getStringInputFrom(fp, "Failed to read preconditioner type from input file!\n", src);
     if ( _preconditioner != "ILU0" &&
          _preconditioner != "AMG" )
-         throw std::runtime_error("ERROR! Invalid preconditioner type '" + _preconditioner + "' encountered in input file!\n");
+        throw std::runtime_error("ERROR! Invalid preconditioner type '" + _preconditioner + "' encountered in input file!\n");
+    _verbosity = getIntegerInputFrom(fp, "Failed to read verbosity level from input file!", src);
+    if ( _verbosity < 0 || _verbosity > 2 )
+        throw std::runtime_error("ERROR! Invalid verbosity level '" + std::to_string(_verbosity) + "' encountered in input file!\n");
 }
 
 void ISTL::setInitialGuessTo( RealVector& initGuess )
@@ -172,10 +174,13 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
     
     if ( _preconditioner == "ILU0" )
     {
+        if ( _verbosity > 0 )
+            std::printf("\n");
+
         using PreconditionerType = Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType >;
         PreconditionerType precon( mat, 1.0, true );
     
-        Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, 0);
+        Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, _verbosity);
 
         const int dim = rhs.dim();
         BlockVectorType B( rhs.dim() );
@@ -188,6 +193,9 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
 
         Dune::InverseOperatorResult info;
         solver.apply( X, B, _tol, info );
+
+        if ( _verbosity > 0 )
+            std::printf("\n    %-40s"," "); // hack for pretty printing
 
         RealVector x( dim );
         for( int i = 0; i < dim; ++i )
@@ -208,14 +216,19 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
 
         Dune::Amg::Parameters params(15,2000,1.2,1.6,Dune::Amg::atOnceAccu);
         Criterion criterion(params);
+        criterion.setDebugLevel(_verbosity);
         SmootherArgs smootherArgs;
         smootherArgs.iterations = 1;
         smootherArgs.relaxationFactor = 1;
 
+        if ( _verbosity > 0 )
+            std::printf("\n");
+
         using PreconditionerType = Dune::Amg::AMG< Operator, BlockVectorType, Smoother >;
         PreconditionerType precon(fop, criterion, smootherArgs);
-        Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, 0);
-
+        
+        Dune::BiCGSTABSolver< BlockVectorType > solver( op, precon, _tol, _maxIter, _verbosity);
+        
         const int dim = rhs.dim();
         BlockVectorType B( rhs.dim() );
         BlockVectorType X( rhs.dim() );
@@ -227,6 +240,9 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
 
         Dune::InverseOperatorResult info;
         solver.apply( X, B, _tol, info );
+
+        if ( _verbosity > 0 )
+            std::printf("\n    %-40s"," "); // hack for pretty printing
 
         RealVector x( dim );
         for( int i = 0; i < dim; ++i )
