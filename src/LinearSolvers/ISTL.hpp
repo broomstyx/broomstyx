@@ -55,10 +55,20 @@ namespace broomstyx
         int    _maxIter;
         int    _verbosity;
 
-        std::string _preconditioner;
+        std::string _preconditionerType;
+        std::string _solverType;
         RealVector  _initGuess;
 
-        std::unique_ptr< InverseOperatorType > _solver;
+        // AMG and KAMG parameters
+        int _maxDepth;
+        int _coarseningLimit;
+        std::string _cycleType;
+        std::string _addmultType;
+
+        std::shared_ptr< Dune::LinearOperator< BlockVectorType, BlockVectorType > > _amg_op;
+        std::shared_ptr< Dune::LinearOperator< BlockVectorType, BlockVectorType > > _op;
+        std::shared_ptr< Dune::Preconditioner< BlockVectorType, BlockVectorType > > _preconditioner;
+        std::shared_ptr< Dune::InverseOperator< BlockVectorType, BlockVectorType > > _solver;
     };
 }
 
