@@ -56,6 +56,7 @@ namespace broomstyx
         int    _verbosity;
 
         std::string _preconditionerType;
+        std::string _smootherType;
         std::string _solverType;
         RealVector  _initGuess;
 

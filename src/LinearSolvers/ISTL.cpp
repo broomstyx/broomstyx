@@ -124,7 +124,6 @@ namespace detail
     };
 }
 
-
 ISTL::ISTL() {}
 
 ISTL::~ISTL() {}
@@ -169,6 +168,17 @@ void ISTL::readDataFrom( FILE* fp )
         _addmultType = getStringInputFrom(fp, "Failed to read additive/multiplicative multigrid type from input file!\n", src);
         if ( _addmultType != "A" && _addmultType != "M" )
             throw std::runtime_error("ERROR! Invalid additive/multiplicative multigrid type '" + _cycleType + "' encountered in input file!\n");
+        
+        if ( _preconditionerType != "FastAMG" )
+        {
+            _smootherType = getStringInputFrom(fp, "Failed to read smoother type for AMG/KAMG preconditioner from input file!\n", src);
+            if ( _smootherType != "SSOR" && 
+                 _smootherType != "SOR" && 
+                 _smootherType != "GS" && 
+                 _smootherType != "Jac" && 
+                 _smootherType != "ILU" )
+                throw std::runtime_error("ERROR! Invalid smoother type '" + _smootherType + "' encountered in input file!\n");
+        }
     }
     else
         throw std::runtime_error("ERROR! Invalid preconditioner type '" + _preconditionerType + "' encountered in input file!\n");
@@ -204,8 +214,8 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
         using AssembledOperatorType = detail::OpenMPMatrixAdapter< MatrixType, BlockVectorType, BlockVectorType >;
         _op = std::make_shared< AssembledOperatorType >( mat );
 
-        if ( _verbosity > 0 )
-            std::printf("\n");
+        if ( _verbosity > 0 || _preconditionerType == "FastAMG" )
+            std::printf("\n"); // For pretty printing
 
         if ( _preconditionerType == "ILU0" )
             _preconditioner = std::make_shared< Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType > >( mat, 1.0, true );
@@ -242,18 +252,61 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
             }
             else
             {
-                // using Smoother = Dune::SeqSSOR< MatrixType, BlockVectorType, BlockVectorType >;
-                using Smoother = Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType >;
-                using SmootherArgs = Dune::Amg::SmootherTraits< Smoother >::Arguments;
-                
-                SmootherArgs smootherArgs;
-                smootherArgs.iterations = 1;
-                smootherArgs.relaxationFactor = 1;
-
-                if ( _preconditionerType == "AMG" )
-                    _preconditioner = std::make_shared< Dune::Amg::AMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
-                else
-                    _preconditioner = std::make_shared< Dune::Amg::KAMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                if ( _smootherType == "SSOR" )
+                {
+                    using Smoother = Dune::SeqSSOR< MatrixType, BlockVectorType, BlockVectorType >;
+                    using SmootherArgs = Dune::Amg::SmootherTraits< Smoother >::Arguments;
+                    SmootherArgs smootherArgs;
+                    
+                    if ( _preconditionerType == "AMG" )
+                        _preconditioner = std::make_shared< Dune::Amg::AMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                    else
+                        _preconditioner = std::make_shared< Dune::Amg::KAMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                }
+                else if ( _smootherType == "SOR" )
+                {
+                    using Smoother = Dune::SeqSOR< MatrixType, BlockVectorType, BlockVectorType >;
+                    using SmootherArgs = Dune::Amg::SmootherTraits< Smoother >::Arguments;
+                    SmootherArgs smootherArgs;
+                    
+                    if ( _preconditionerType == "AMG" )
+                        _preconditioner = std::make_shared< Dune::Amg::AMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                    else
+                        _preconditioner = std::make_shared< Dune::Amg::KAMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                }
+                else if ( _smootherType == "GS" )
+                {
+                    using Smoother = Dune::SeqGS< MatrixType, BlockVectorType, BlockVectorType >;
+                    using SmootherArgs = Dune::Amg::SmootherTraits< Smoother >::Arguments;
+                    SmootherArgs smootherArgs;
+                    
+                    if ( _preconditionerType == "AMG" )
+                        _preconditioner = std::make_shared< Dune::Amg::AMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                    else
+                        _preconditioner = std::make_shared< Dune::Amg::KAMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                }
+                else if ( _smootherType == "Jac" )
+                {
+                    using Smoother = Dune::SeqJac< MatrixType, BlockVectorType, BlockVectorType >;
+                    using SmootherArgs = Dune::Amg::SmootherTraits< Smoother >::Arguments;
+                    SmootherArgs smootherArgs;
+                    
+                    if ( _preconditionerType == "AMG" )
+                        _preconditioner = std::make_shared< Dune::Amg::AMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                    else
+                        _preconditioner = std::make_shared< Dune::Amg::KAMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                }
+                else if ( _smootherType == "ILU" )
+                {
+                    using Smoother = Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType >;
+                    using SmootherArgs = Dune::Amg::SmootherTraits< Smoother >::Arguments;
+                    SmootherArgs smootherArgs;
+                    
+                    if ( _preconditionerType == "AMG" )
+                        _preconditioner = std::make_shared< Dune::Amg::AMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                    else
+                        _preconditioner = std::make_shared< Dune::Amg::KAMG< Operator, BlockVectorType, Smoother > >(*fop, criterion, smootherArgs);
+                }
             }
         }
 
