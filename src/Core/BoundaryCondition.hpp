@@ -39,7 +39,7 @@ namespace broomstyx
     public:
         BoundaryCondition();
         virtual ~BoundaryCondition();
-
+        
         std::string boundaryName() const;
         std::string conditionType() const;
         void        readDataFrom( FILE* fp );

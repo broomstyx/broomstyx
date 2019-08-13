@@ -34,6 +34,10 @@ namespace broomstyx
     public:
         UserFunction() {}
         virtual ~UserFunction() {}
+        
+        // Disable copy constructor and assignment operator
+        UserFunction( const UserFunction& ) = delete;
+        UserFunction& operator=( const UserFunction& ) = delete;
 
         virtual double at( const RealVector& coor, const TimeData& time ) = 0;
     };

@@ -43,6 +43,10 @@ namespace broomstyx
         friend class AnalysisModel;
         
     public:
+        // Disable copy constructor and assignment operator
+        SolutionManager( const SolutionManager& ) = delete;
+        SolutionManager& operator=( const SolutionManager& ) = delete;
+        
         void          commenceSolution();
         LoadStep*     giveCurrentLoadStep();
         int           giveNumberOfSolutionStages();

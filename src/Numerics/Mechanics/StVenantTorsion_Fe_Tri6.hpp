@@ -1,6 +1,6 @@
 /*
   Copyright (c) 2014 - 2019 University of Bergen
-  
+
   This file is part of the BROOMStyx project.
 
   BROOMStyx is free software: you can redistribute it and/or modify
@@ -25,24 +25,26 @@
 #define STVENANTTORSION_FE_TRI6_HPP
 
 #include "../Numerics.hpp"
+#include "../../BasisFunctions/Line_P2.hpp"
+#include "../../BasisFunctions/Triangle_P2.hpp"
+#include "../../IntegrationRules/Legendre_1D.hpp"
+#include "../../IntegrationRules/Legendre_2D_Tri.hpp"
 
 namespace broomstyx
 {
     class Dof;
     class EvalPoint;
-    class IntegrationRule;
     class MaterialStatus;
-    class ScalarBasisFunction;
-    
+
     // Cell numerics status
     class CellNumericsStatus_StVenantTorsion_Fe_Tri6 final : public NumericsStatus
     {
         friend class StVenantTorsion_Fe_Tri6;
-        
+
     public:
         CellNumericsStatus_StVenantTorsion_Fe_Tri6( int nGaussPts );
         virtual ~CellNumericsStatus_StVenantTorsion_Fe_Tri6();
-        
+
     private:
         RealVector _nodalStrain_zx;
         RealVector _nodalStrain_zy;
@@ -53,18 +55,18 @@ namespace broomstyx
         RealVector _zDisp;
         double     _torqueContrib;
     };
-        
+
     class StVenantTorsion_Fe_Tri6 final : public Numerics
     {
     public:
         StVenantTorsion_Fe_Tri6();
         virtual ~StVenantTorsion_Fe_Tri6();
-        
+
         void deleteNumericsAt( Cell* targetCell ) override;
         void finalizeDataAt( Cell* targetCell ) override;
-        
+
         RealVector giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum ) override;
-        
+
         std::tuple< std::vector<Dof*>
                   , std::vector<Dof*>
                   , RealVector >
@@ -72,33 +74,33 @@ namespace broomstyx
                                           , int             stage
                                           , int             subsys
                                           , const TimeData& time ) override;
-        
+
         std::tuple< std::vector<Dof*>, RealVector >
              giveStaticRightHandSideAt( Cell*                    targetCell
                                       , int                      stage
                                       , int                      subsys
                                       , const BoundaryCondition& bndCond
                                       , const TimeData&          time ) override;
-        
+
         void initializeNumericsAt( Cell* targetCell ) override;
         void readAdditionalDataFrom( FILE* fp ) override;
         void setDofStagesAt( Cell* targetCell ) override;
-        
+
     private:
-        ScalarBasisFunction* _basisFunction;
-        ScalarBasisFunction* _edgeBasisFunction;
-        
-        IntegrationRule* _integrationRule;
-        IntegrationRule* _edgeIntegrationRule;
-        IntegrationRule* _torqueIntegrationRule;
-        
+        Triangle_P2 _basisFunction;
+        Line_P2     _edgeBasisFunction;
+
+        Legendre_2D_Tri _integrationRule;
+        Legendre_1D     _edgeIntegrationRule;
+        Legendre_2D_Tri _torqueIntegrationRule;
+
         double _beta;
-        
+
         Dof* _az;
         Dof* _kx;
         Dof* _ky;
         int  _dofGrp;
-        
+
         CellNumericsStatus_StVenantTorsion_Fe_Tri6*
                    getNumericsStatusAt( Cell* targetCell );
         RealMatrix giveBmatAt( Cell* targetCell, const RealVector& natCoor );

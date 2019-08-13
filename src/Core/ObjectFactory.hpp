@@ -50,7 +50,11 @@ namespace broomstyx
     public:
         ObjectFactory();
         virtual ~ObjectFactory();
-
+        
+        // Disable copy constructor and assignment operator
+        ObjectFactory( const ObjectFactory& ) = delete;
+        ObjectFactory& operator=( const ObjectFactory& ) = delete;
+        
         bool hasError();
         
         LinearSolver*   instantiateLinearSolver( std::string name );

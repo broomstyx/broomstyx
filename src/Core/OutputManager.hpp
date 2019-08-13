@@ -39,6 +39,10 @@ namespace broomstyx
         friend class WeightedSum;
         
     public:
+        // Disable copy constructor and assignment operator
+        OutputManager( const OutputManager& ) = delete;
+        OutputManager& operator=( const OutputManager& ) = delete;
+        
         void initializeOutputWriter();
         void initializeCSVOutput();
         void readOutputWriterFromFile( FILE* fp );

@@ -3,3 +3,6 @@ nbproject/*
 config.h
 build/*
 CMakeFiles/*
+.vscode/*
+build-cmake/*
+src/.vscode/*

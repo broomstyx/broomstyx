@@ -56,6 +56,10 @@ namespace broomstyx
     public:
         Numerics();
         virtual ~Numerics();
+        
+        // Disable copy constructor and assignment operator
+        Numerics( const Numerics& ) = delete;
+        Numerics& operator=( const Numerics& ) = delete;
 
         std::string giveName();
         

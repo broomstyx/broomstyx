@@ -62,6 +62,9 @@ CellNumericsStatus_StVenantTorsion_Fe_Tri6::~CellNumericsStatus_StVenantTorsion_
 
 // Constructor
 StVenantTorsion_Fe_Tri6::StVenantTorsion_Fe_Tri6()
+    : _integrationRule(6)
+    , _edgeIntegrationRule(3)
+    , _torqueIntegrationRule(6)
 {
     _dim = 2;
     _dofPerCell = 0;
@@ -73,14 +76,6 @@ StVenantTorsion_Fe_Tri6::StVenantTorsion_Fe_Tri6()
     _nSubsystems = 1;
     
     _name = "StVenantTorsion_Fe_Tri6";
-    
-    _basisFunction = new Triangle_P2();
-    _integrationRule = new Legendre_2D_Tri(6);
-    
-    _edgeBasisFunction = new Line_P2();
-    _edgeIntegrationRule = new Legendre_1D(3);
-    
-    _torqueIntegrationRule = new Legendre_2D_Tri(6);
     
     _az = nullptr;
     _kx = nullptr;
@@ -98,12 +93,6 @@ StVenantTorsion_Fe_Tri6::~StVenantTorsion_Fe_Tri6()
     
     std::printf("  Calculated center of twist\n    x = %.6e\n    y = %.6e\n\n", xc, yc);
     std::fflush(stdout);
-    
-    delete _basisFunction;
-    delete _edgeBasisFunction;
-    delete _integrationRule;
-    delete _edgeIntegrationRule;
-    delete _torqueIntegrationRule;
     
     // Delete lagrange multiplier DOF
     analysisModel().dofManager().destroyNumericsDof(_az);
@@ -176,8 +165,8 @@ void StVenantTorsion_Fe_Tri6::finalizeDataAt( Cell* targetCell )
     // Calculate element contribution to torque
     std::vector<RealVector> gpLoc;
     RealVector gpWt;
-    std::tie(gpLoc,gpWt) = _torqueIntegrationRule->giveIntegrationPointsAndWeights();
-    int nTgp = _torqueIntegrationRule->giveNumberOfIntegrationPoints();
+    std::tie(gpLoc,gpWt) = _torqueIntegrationRule.giveIntegrationPointsAndWeights();
+    int nTgp = _torqueIntegrationRule.giveNumberOfIntegrationPoints();
     
     cns->_torqueContrib = 0.;
     for ( int i = 0; i < nTgp; i++ )
@@ -266,8 +255,8 @@ StVenantTorsion_Fe_Tri6::giveStaticCoefficientMatrixAt( Cell*           targetCe
         
         std::vector<RealVector> gpLoc;
         RealVector gpWt;
-        int nGaussPts = _integrationRule->giveNumberOfIntegrationPoints();
-        std::tie(gpLoc,gpWt) = _integrationRule->giveIntegrationPointsAndWeights();
+        int nGaussPts = _integrationRule.giveNumberOfIntegrationPoints();
+        std::tie(gpLoc,gpWt) = _integrationRule.giveIntegrationPointsAndWeights();
         
         RealMatrix kmat(6,6);
         RealVector pmat_x(6), pmat_y(6), qmat(6), qmat_x(6), qmat_y(6);
@@ -407,12 +396,12 @@ StVenantTorsion_Fe_Tri6::giveStaticRightHandSideAt( Cell*                    tar
         rhs.init(3);
         
         // Edge gauss point locations and weights
-        int nGaussPts = _edgeIntegrationRule->giveNumberOfIntegrationPoints();
+        int nGaussPts = _edgeIntegrationRule.giveNumberOfIntegrationPoints();
         std::vector<RealVector> gpLoc;
         RealVector gpWt;
         
         // Cycle through Gauss points
-        std::tie(gpLoc,gpWt) = _edgeIntegrationRule->giveIntegrationPointsAndWeights();
+        std::tie(gpLoc,gpWt) = _edgeIntegrationRule.giveIntegrationPointsAndWeights();
         
         // Determine outward direction from associated domain element
         double b = 0;
@@ -453,8 +442,8 @@ StVenantTorsion_Fe_Tri6::giveStaticRightHandSideAt( Cell*                    tar
         for ( int i = 0; i < nGaussPts; i++)
         {
             // Retrieve shape functions and their derivatives
-            RealVector psi = _edgeBasisFunction->giveBasisFunctionsAt(gpLoc[i]);
-            std::vector<RealVector> dpsi = _edgeBasisFunction->giveBasisFunctionDerivativesAt(gpLoc[i]);
+            RealVector psi = _edgeBasisFunction.giveBasisFunctionsAt(gpLoc[i]);
+            std::vector<RealVector> dpsi = _edgeBasisFunction.giveBasisFunctionDerivativesAt(gpLoc[i]);
             
             double x = psi.dot(xNode);
             double y = psi.dot(yNode);
@@ -485,8 +474,8 @@ void StVenantTorsion_Fe_Tri6::initializeNumericsAt( Cell* targetCell )
     std::vector<RealVector> gpCoor;
     RealVector gpWt;
     
-    int nGaussPts = _integrationRule->giveNumberOfIntegrationPoints();
-    std::tie(gpCoor, gpWt) = _integrationRule->giveIntegrationPointsAndWeights();
+    int nGaussPts = _integrationRule.giveNumberOfIntegrationPoints();
+    std::tie(gpCoor, gpWt) = _integrationRule.giveIntegrationPointsAndWeights();
     
     targetCell->numericsStatus = new CellNumericsStatus_StVenantTorsion_Fe_Tri6(nGaussPts);
 }
@@ -548,7 +537,7 @@ RealMatrix StVenantTorsion_Fe_Tri6::giveBmatAt( Cell* targetCell, const RealVect
     RealMatrix dpsi;
     
     RealMatrix jmat = this->giveJacobianMatrixAt(targetCell, natCoor);
-    std::vector<RealVector> dpsiNat = _basisFunction->giveBasisFunctionDerivativesAt(natCoor);
+    std::vector<RealVector> dpsiNat = _basisFunction.giveBasisFunctionDerivativesAt(natCoor);
     
     RealMatrix dpsiNatMat(2,6);
 
@@ -565,7 +554,7 @@ RealMatrix StVenantTorsion_Fe_Tri6::giveBmatAt( Cell* targetCell, const RealVect
 // ----------------------------------------------------------------------------
 RealVector StVenantTorsion_Fe_Tri6::giveNmatAt( const RealVector& natCoor )
 {
-    RealVector psi = _basisFunction->giveBasisFunctionsAt(natCoor);
+    RealVector psi = _basisFunction.giveBasisFunctionsAt(natCoor);
     
     return psi;
 }
@@ -578,7 +567,7 @@ RealMatrix StVenantTorsion_Fe_Tri6::giveJacobianMatrixAt( Cell* targetCell, cons
         throw std::runtime_error("\nError: Basis function requires 6 nodes be specified for calculation of Jacobian matrix!\nSource: " + _name);
 #endif
     
-    std::vector<RealVector> dpsi = _basisFunction->giveBasisFunctionDerivativesAt(natCoor);
+    std::vector<RealVector> dpsi = _basisFunction.giveBasisFunctionDerivativesAt(natCoor);
     RealVector x(6), y(6);
     
 #pragma GCC ivdep

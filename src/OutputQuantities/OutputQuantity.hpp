@@ -37,6 +37,10 @@ namespace broomstyx
     public:
         OutputQuantity() {}
         virtual ~OutputQuantity() {}
+        
+        // Disable copy constructor and assignment operator
+        OutputQuantity( const OutputQuantity& ) = delete;
+        OutputQuantity& operator=( const OutputQuantity& ) = delete;
 
         std::string giveLabel() { return _outputLabel; }
         void setOutputLabelTo( std::string label ) { _outputLabel = label; }

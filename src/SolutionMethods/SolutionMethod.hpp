@@ -40,6 +40,10 @@ namespace broomstyx
     public:
         SolutionMethod();
         virtual ~SolutionMethod();
+        
+        // Disable copy constructor and assignment operator
+        SolutionMethod( const SolutionMethod& ) = delete;
+        SolutionMethod& operator=( const SolutionMethod& ) = delete;
 
         void getCurrentLoadStep();
         

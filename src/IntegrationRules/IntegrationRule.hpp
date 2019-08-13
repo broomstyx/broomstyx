@@ -35,6 +35,10 @@ namespace broomstyx
     public:
         IntegrationRule( int nPoints );
         virtual ~IntegrationRule();
+        
+        // Disable copy constructor and assignment operator
+        IntegrationRule( const IntegrationRule& ) = delete;
+        IntegrationRule& operator=( const IntegrationRule& ) = delete;
     
         int giveNumberOfIntegrationPoints();
         virtual std::tuple< std::vector<RealVector>, RealVector > giveIntegrationPointsAndWeights() = 0;

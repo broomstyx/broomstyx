@@ -36,7 +36,7 @@ namespace broomstyx
     public:
         EvalPoint() {}
         virtual ~EvalPoint() {}
-
+        
         RealVector coordinates;
         double     weight;
         NumericsStatus* numericsStatus;
