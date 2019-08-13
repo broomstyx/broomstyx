@@ -154,8 +154,15 @@ void DofManager::finalizeDofPrimaryValues()
         for ( int j = 1; j <= (int)_nodalDofInfo.size(); j++)
         {
             Dof* targetDof = analysisModel().domainManager().giveNodalDof(j, targetNode);
-            targetDof->_primVarConverged = targetDof->_primVarCurrent;
-            targetDof->_secVar = 0.0;
+            if ( targetDof->_isSlave )
+            {
+                targetDof->_primVarConverged = targetDof->_masterDof->_primVarConverged;
+                targetDof->_primVarCurrent = targetDof->_masterDof->_primVarCurrent;
+            }
+            else
+                targetDof->_primVarConverged = targetDof->_primVarCurrent;
+            
+            targetDof->_secVar = 0.;
         }
     }
 
@@ -169,8 +176,15 @@ void DofManager::finalizeDofPrimaryValues()
         for ( int j = 1; j <= (int)_cellDofInfo.size(); j++)
         {
             Dof* targetDof = analysisModel().domainManager().giveCellDof(j, targetCell);
-            targetDof->_primVarConverged = targetDof->_primVarCurrent;
-            targetDof->_secVar = 0.0;
+            if ( targetDof->_isSlave )
+            {
+                targetDof->_primVarConverged = targetDof->_masterDof->_primVarConverged;
+                targetDof->_primVarCurrent = targetDof->_masterDof->_primVarCurrent;
+            }
+            else
+                targetDof->_primVarConverged = targetDof->_primVarCurrent;
+            
+            targetDof->_secVar = 0.;
         }        
     }
     
