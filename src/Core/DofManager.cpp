@@ -338,9 +338,6 @@ double DofManager::giveValueOfPrimaryVariableAt( Dof* targetDof, ValueType valTy
 // ----------------------------------------------------------------------------
 double DofManager::giveValueOfSecondaryVariableAt( Dof* targetDof )
 {
-    if ( targetDof->_isSlave )
-        targetDof = targetDof->_masterDof;
-    
     return targetDof->_secVar;
 }
 // ----------------------------------------------------------------------------
@@ -611,8 +608,6 @@ void DofManager::writeConvergedDofValuesTo( Node* targetNode )
     for ( int i = 0; i < (int)_nodalDofInfo.size(); i++)
     {
         Dof* curDof = targetNode->_dof[i];
-        if ( curDof->_isSlave )
-            curDof = curDof->_masterDof;
         
         analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[i].primField, curDof->_primVarConverged);
         analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[i].secField, curDof->_secVar);
