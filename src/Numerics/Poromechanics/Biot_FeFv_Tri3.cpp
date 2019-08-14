@@ -212,8 +212,7 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
     
     RealVector fmatU;
-    fmatU = _wt*cns->_Jdet*(trp(bmatU)*cns->_stress);
-    // fmatU = _wt*cns->_Jdet*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*cns->_head*bmatDiv);
+    fmatU = _wt*cns->_Jdet*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*cns->_head*bmatDiv);
     
     analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
     analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
@@ -1221,7 +1220,7 @@ double Biot_FeFv_Tri3::giveTransmissibilityCoefficientAt
                                  
     RealVector kvec;
     kvec = kmat*nhat;
-    double k1 = std::sqrt(kvec.dot(kvec));
+    double K1 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
     
     // B. Neighbor cell
     // Coordinates of cell center
@@ -1241,7 +1240,7 @@ double Biot_FeFv_Tri3::giveTransmissibilityCoefficientAt
             {k_xy, k_yy}};
                      
     kvec = kmat*nhat;
-    double k2 = std::sqrt(kvec.dot(kvec));
+    double K2 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
     
-    return length/(_mu*d1/k1 + _mu*d2/k2);
+    return length/(d1/K1 + d2/K2);
 }
