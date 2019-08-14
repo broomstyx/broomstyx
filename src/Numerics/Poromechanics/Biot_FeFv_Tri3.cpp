@@ -113,7 +113,7 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     // Value of hydraulic head at cell
     Dof* dof1 = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
     cns->_head = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof1, converged_value);
-
+    
     // Permeability tensor for cell
     double k_xx, k_yy, k_xy;
     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
@@ -166,12 +166,12 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     vertexNode[0] = node[2];
     vertexNode[1] = node[0];
     vertexNode[2] = node[1];
-    
+
     RealVector centerFlux(3);
     for ( int i = 0; i < 3; i++ )
     {
-        RealVector temp = this->giveOutwardUnitNormalOf(face[i]);
-        RealVector nhat({temp(0), temp(1), 0.});
+        RealVector nhat2d = this->giveOutwardUnitNormalOf(face[i]);
+        RealVector nhat({nhat2d(0), nhat2d(1), 0.});
         
         RealVector x = analysisModel().domainManager().giveCoordinatesOf(node[i]);
         RealVector x0 = analysisModel().domainManager().giveCoordinatesOf(vertexNode[i]);
@@ -303,7 +303,7 @@ Biot_FeFv_Tri3::giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag
     else if ( fieldTag == "q_x" )
         fieldVal(0) = cns->_centerFlux[0];
     else if ( fieldTag == "q_y" )
-        fieldVal(0) = cns->_centerFlux[0];
+        fieldVal(0) = cns->_centerFlux[1];
     else if ( fieldTag == "sp_xx" )
     {
         Dof* dof = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
@@ -376,8 +376,8 @@ Biot_FeFv_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
         std::tie(bmatU,bmatDiv) = this->giveBmatAt(targetCell);
         
         RealMatrix kmatUU;
-        kmatUU = _wt*cns->_Jdet*trp(bmatU)*cmat*bmatU;
         RealVector kmatUP;
+        kmatUU = _wt*cns->_Jdet*trp(bmatU)*cmat*bmatU;
         kmatUP = -_wt*cns->_Jdet*_alpha*_rhoF*_gAccel*bmatDiv;
         
         int counter = 0;
@@ -450,10 +450,17 @@ Biot_FeFv_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
                 colDof[counter] = analysisModel().domainManager().giveCellDof(_cellDof[0], neighbor[i]);
                 
                 // Transmissibility coefficient
-                double transCoef = this->giveTransmissibilityCoefficientAt(face[i], targetCell, neighbor[i]);
-                
-                coefVal(42) += transCoef;
-                coefVal(counter) = -transCoef;
+                if ( cns->_hasNotComputedTransmissibilities )
+                {
+                    for ( int i = 0; i < 3; i++ )
+                        if ( !cns->_headIsPrescribedOnFace[i] && !cns->_fluxIsPrescribedOnFace[i] )
+                            cns->_transmissibility[i] = this->giveTransmissibilityCoefficientAt(face[i], targetCell, neighbor[i]);
+                    
+                    cns->_hasNotComputedTransmissibilities = false;
+                }
+
+                coefVal(42) += cns->_transmissibility[i];
+                coefVal(counter) = -cns->_transmissibility[i];
             }
         }
     }
@@ -538,8 +545,16 @@ Biot_FeFv_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
                 Dof* dof2 = analysisModel().domainManager().giveCellDof(_cellDof[0], neighbor[i]);
                 double h2 = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof2, current_value);
 
-                double transCoef = this->giveTransmissibilityCoefficientAt(face[i], targetCell, neighbor[i]);
-                outflow(i) = transCoef*(h1 - h2);
+                if ( cns->_hasNotComputedTransmissibilities )
+                {
+                    for ( int i = 0; i < 3; i++ )
+                        if ( !cns->_headIsPrescribedOnFace[i] && !cns->_fluxIsPrescribedOnFace[i] )
+                            cns->_transmissibility[i] = this->giveTransmissibilityCoefficientAt(face[i], targetCell, neighbor[i]);
+                    
+                    cns->_hasNotComputedTransmissibilities = false;
+                }
+
+                outflow(i) = cns->_transmissibility[i]*(h1 - h2);
             }
         }
 
@@ -702,13 +717,10 @@ Biot_FeFv_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
 
                             double bcVal = bndCond.valueAt(midpt, time);
 
-                            // Store boundary condition value on face
                             auto cns = this->getNumericsStatusAt(curDomCell);
-
-                            // curDomCell->gaussPt[0].gpData(10+i) = bcVal;
-
                             if ( bndCond.conditionType() == "HydraulicHead" ) // Dirichlet BC
                             {
+                                // Store boundary condition value on face
                                 cns->_headOnFace[i] = bcVal;
 
                                 // Hydraulic conductivity component normal to face
@@ -868,7 +880,7 @@ Biot_FeFv_Tri3::giveTransientLeftHandSideAt( Cell*           targetCell
         rowDof.assign(1, cellDof);
         lhs.init(1);
         
-        lhs(0) = _wt*cns->_Jdet*(_alpha*bmatDiv.dot(u) + h/_M);
+        lhs(0) = _wt*cns->_Jdet*(_alpha*bmatDiv.dot(u) + _rhoF*_gAccel*h/_M);
     }
     
     return std::make_tuple(std::move(rowDof), std::move(lhs));
@@ -1208,7 +1220,7 @@ double Biot_FeFv_Tri3::giveTransmissibilityCoefficientAt
                                  
     RealVector kvec;
     kvec = kmat*nhat;
-    double k1 = std::sqrt(kvec.dot(kvec));
+    double K1 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
     
     // B. Neighbor cell
     // Coordinates of cell center
@@ -1228,7 +1240,7 @@ double Biot_FeFv_Tri3::giveTransmissibilityCoefficientAt
             {k_xy, k_yy}};
                      
     kvec = kmat*nhat;
-    double k2 = std::sqrt(kvec.dot(kvec));
+    double K2 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
     
-    return length/(_mu*d1/k1 + _mu*d2/k2);
+    return length/(d1/K1 + d2/K2);
 }
