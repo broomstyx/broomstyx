@@ -280,6 +280,20 @@ namespace broomstyx
             return _ptr[ idx ];
         }
 
+        // Vector cross product
+        RealVector cross( const RealVector& B )
+        {
+#ifndef NDEBUG
+            if ( _dim != 3 || B._dim != 3 )
+                throw std::runtime_error("\nVector cross product only operates on vectors with dim = 3!");
+#endif
+            double c0 = _ptr[1]*B._ptr[2] - _ptr[2]*B._ptr[1];
+            double c1 = _ptr[2]*B._ptr[0] - _ptr[0]*B._ptr[2];
+            double c2 = _ptr[0]*B._ptr[1] - _ptr[1]*B._ptr[0];
+
+            return RealVector({c0, c1, c2});
+        }
+
         // Dimensions of vector
         int dim() const { return _dim; }
 
