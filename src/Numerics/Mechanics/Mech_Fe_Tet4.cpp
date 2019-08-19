@@ -637,12 +637,12 @@ RealMatrix Mech_Fe_Tet4::giveBmatAt( Cell* targetCell )
 #pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
-        bmat(0,4*i)   = dpsi(0,i);
-        bmat(1,4*i+1) = dpsi(1,i);
-        bmat(2,4*i+2) = dpsi(2,i);
-        bmat(3,4*i+1) = dpsi(2,i); bmat(3,4*i+2) = dpsi(1,i);
-        bmat(4,4*i)   = dpsi(2,i); bmat(4,4*i+2) = dpsi(0,i);
-        bmat(5,4*i)   = dpsi(1,i); bmat(5,4*i+1) = dpsi(0,i);
+        bmat(0,3*i)   = dpsi(0,i);
+        bmat(1,3*i+1) = dpsi(1,i);
+        bmat(2,3*i+2) = dpsi(2,i);
+        bmat(3,3*i+1) = dpsi(2,i); bmat(3,3*i+2) = dpsi(1,i);
+        bmat(4,3*i)   = dpsi(2,i); bmat(4,3*i+2) = dpsi(0,i);
+        bmat(5,3*i)   = dpsi(1,i); bmat(5,3*i+1) = dpsi(0,i);
     }
     
     return bmat;
@@ -658,8 +658,8 @@ RealMatrix Mech_Fe_Tet4::giveJacobianMatrixAt( Cell* targetCell, const RealVecto
 {
     std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
 #ifndef NDEBUG
-    if ( (int)node.size() != 3 )
-        throw std::runtime_error("\nError: Basis function requires 3 nodes be specified for calculation of Jacobian matrix!\nSource: " + _name);
+    if ( (int)node.size() != 4 )
+        throw std::runtime_error("\nError: Basis function requires 4 nodes be specified for calculation of Jacobian matrix!\nSource: " + _name);
 #endif
     
     RealMatrix coorMat(4,3);
@@ -692,9 +692,9 @@ std::vector<Dof*> Mech_Fe_Tet4::giveNodalDofsAt( Cell* targetCell )
 #pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
-        dof[4*i]   = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[i]);
-        dof[4*i+1] = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[i]);
-        dof[4*i+2] = analysisModel().domainManager().giveNodalDof(_nodalDof[2], node[i]);
+        dof[3*i]   = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[i]);
+        dof[3*i+1] = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[i]);
+        dof[3*i+2] = analysisModel().domainManager().giveNodalDof(_nodalDof[2], node[i]);
     }
     return dof;
 }
