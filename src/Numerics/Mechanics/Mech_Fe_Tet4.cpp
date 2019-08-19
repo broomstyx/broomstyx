@@ -173,90 +173,133 @@ std::vector<RealVector> Mech_Fe_Tet4::giveEvaluationPointsFor( Cell *targetCell)
     
     return coor;
 }
-// // ----------------------------------------------------------------------------
-// std::tuple< RealVector, RealVector >
-// Mech_Fe_Tet4::giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag )
-// {
-//     RealVector fieldVal(1), weight(1);
+// ----------------------------------------------------------------------------
+std::tuple< RealVector, RealVector >
+Mech_Fe_Tet4::giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag )
+{
+    RealVector fieldVal(1), weight(1);
     
-//     auto cns = this->getNumericsStatusAt(targetCell);
-//     weight(0) = _wt*cns->_Jdet;
+    auto cns = this->getNumericsStatusAt(targetCell);
+    weight(0) = _wt*cns->_Jdet;
     
-//     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
+    std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
     
-//     if ( fieldTag == "unassigned" )
-//         fieldVal(0) = 0.;
-//     else if ( fieldTag == "s_xx" )
-//         fieldVal(0) = cns->_stress(0);
-//     else if ( fieldTag == "s_yy" )
-//         fieldVal(0) = cns->_stress(1);
-//     else if ( fieldTag == "s_zz" )
-//         fieldVal(0) = cns->_stress(2);
-//     else if ( fieldTag == "s_xy" )
-//         fieldVal(0) = cns->_stress(3);
-//     else if ( fieldTag == "ux_x" )
-//         fieldVal(0) = cns->_gradU(0,0);
-//     else if ( fieldTag == "uy_x" )
-//         fieldVal(0) = cns->_gradU(0,1);
-//     else if ( fieldTag == "ux_y" )
-//         fieldVal(0) = cns->_gradU(1,0);
-//     else if ( fieldTag == "uy_y" )
-//         fieldVal(0) = cns->_gradU(1,1);
-//     else if ( fieldTag == "g_xy" )
-//         fieldVal(0) = cns->_gradU(1,0) + cns->_gradU(0,1);
-//     else if ( fieldTag == "ep_xx" )
-//     {
-//         try
-//         {
-//             fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_xx", cns->_materialStatus[1]);
-//         }
-//         catch (...)
-//         {
-//             fieldVal(0) = 0.;
-//         }
-//     }
-//     else if ( fieldTag == "ep_yy" )
-//     {
-//         try
-//         {
-//             fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_yy", cns->_materialStatus[1]);
-//         }
-//         catch (...)
-//         {
-//             fieldVal(0) = 0.;
-//         }
-//     }
-//     else if ( fieldTag == "ep_zz" )
-//     {
-//         try
-//         {
-//             fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_zz", cns->_materialStatus[1]);
-//         }
-//         catch (...)
-//         {
-//             fieldVal(0) = 0.;
-//         }
-//     }
-//     else if ( fieldTag == "ep_xy" )
-//     {
-//         try
-//         {
-//             fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_xy", cns->_materialStatus[1]);
-//         }
-//         catch (...)
-//         {
-//             fieldVal(0) = 0.;
-//         }
-//     }
-//     else if ( fieldTag == "ene" )
-//         fieldVal(0) = 0.5*(cns->_stress(0)*cns->_gradU(0,0) +
-//                            cns->_stress(1)*cns->_gradU(1,1) +
-//                            cns->_stress(3)*(cns->_gradU(1,0) + cns->_gradU(0,1)));
-//     else
-//         throw std::runtime_error("Invalid tag '" + fieldTag + "' supplied in field output request made to numerics '" + _name + "'!");
+    if ( fieldTag == "unassigned" )
+        fieldVal(0) = 0.;
+    else if ( fieldTag == "s_xx" )
+        fieldVal(0) = cns->_stress(0);
+    else if ( fieldTag == "s_yy" )
+        fieldVal(0) = cns->_stress(1);
+    else if ( fieldTag == "s_zz" )
+        fieldVal(0) = cns->_stress(2);
+    else if ( fieldTag == "s_yz" )
+        fieldVal(0) = cns->_stress(3);
+    else if ( fieldTag == "s_xz" )
+        fieldVal(0) = cns->_stress(4);
+    else if ( fieldTag == "s_xy" )
+        fieldVal(0) = cns->_stress(5);
+    else if ( fieldTag == "ux_x" )
+        fieldVal(0) = cns->_gradU(0,0);
+    else if ( fieldTag == "uy_x" )
+        fieldVal(0) = cns->_gradU(0,1);
+    else if ( fieldTag == "uz_x" )
+        fieldVal(0) = cns->_gradU(0,2);
+    else if ( fieldTag == "ux_y" )
+        fieldVal(0) = cns->_gradU(1,0);
+    else if ( fieldTag == "uy_y" )
+        fieldVal(0) = cns->_gradU(1,1);
+    else if ( fieldTag == "uz_y" )
+        fieldVal(0) = cns->_gradU(1,2);
+    else if ( fieldTag == "ux_z" )
+        fieldVal(0) = cns->_gradU(2,0);
+    else if ( fieldTag == "uy_z" )
+        fieldVal(0) = cns->_gradU(2,1);
+    else if ( fieldTag == "uz_z" )
+        fieldVal(0) = cns->_gradU(2,2);
+    else if ( fieldTag == "g_yz" )
+        fieldVal(0) = cns->_gradU(1,2) + cns->_gradU(2,1);
+    else if ( fieldTag == "g_xz" )
+        fieldVal(0) = cns->_gradU(2,0) + cns->_gradU(0,2);
+    else if ( fieldTag == "g_xy" )
+        fieldVal(0) = cns->_gradU(1,0) + cns->_gradU(0,1);
+    else if ( fieldTag == "ep_xx" )
+    {
+        try
+        {
+            fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_xx", cns->_materialStatus[1]);
+        }
+        catch (...)
+        {
+            fieldVal(0) = 0.;
+        }
+    }
+    else if ( fieldTag == "ep_yy" )
+    {
+        try
+        {
+            fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_yy", cns->_materialStatus[1]);
+        }
+        catch (...)
+        {
+            fieldVal(0) = 0.;
+        }
+    }
+    else if ( fieldTag == "ep_zz" )
+    {
+        try
+        {
+            fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_zz", cns->_materialStatus[1]);
+        }
+        catch (...)
+        {
+            fieldVal(0) = 0.;
+        }
+    }
+    else if ( fieldTag == "gp_yz" )
+    {
+        try
+        {
+            fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_yz", cns->_materialStatus[1]);
+        }
+        catch (...)
+        {
+            fieldVal(0) = 0.;
+        }
+    }
+    else if ( fieldTag == "ep_xz" )
+    {
+        try
+        {
+            fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_xz", cns->_materialStatus[1]);
+        }
+        catch (...)
+        {
+            fieldVal(0) = 0.;
+        }
+    }
+    else if ( fieldTag == "ep_xy" )
+    {
+        try
+        {
+            fieldVal(0) = material[1]->giveMaterialVariable("plasticStrain_xy", cns->_materialStatus[1]);
+        }
+        catch (...)
+        {
+            fieldVal(0) = 0.;
+        }
+    }
+    else if ( fieldTag == "ene" )
+        fieldVal(0) = 0.5*(cns->_stress(0)*cns->_gradU(0,0) +
+                           cns->_stress(1)*cns->_gradU(1,1) +
+                           cns->_stress(2)*cns->_gradU(2,2) +
+                           cns->_stress(3)*(cns->_gradU(1,2) + cns->_gradU(2,1)) +
+                           cns->_stress(3)*(cns->_gradU(0,2) + cns->_gradU(2,0)) +
+                           cns->_stress(3)*(cns->_gradU(0,1) + cns->_gradU(1,0)));
+    else
+        throw std::runtime_error("Invalid tag '" + fieldTag + "' supplied in field output request made to numerics '" + _name + "'!");
     
-//     return std::make_tuple(std::move(fieldVal), std::move(weight));
-// }
+    return std::make_tuple(std::move(fieldVal), std::move(weight));
+}
 // ----------------------------------------------------------------------------
 std::tuple< std::vector<Dof*>
           , std::vector<Dof*>
@@ -339,92 +382,104 @@ Mech_Fe_Tet4::giveStaticLeftHandSideAt(Cell*            targetCell
     
     return std::make_tuple(std::move(rowDof), std::move(lhs));
 }
-// // ----------------------------------------------------------------------------
-// std::tuple< std::vector<Dof*>
-//           , RealVector >
-// Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
-//                                               , int                      stage
-//                                               , int                      subsys
-//                                               , const BoundaryCondition& bndCond
-//                                               , const TimeData&          time )
-// {   
-//     std::vector<Dof*> rowDof;
-//     RealVector rhs;
+// ----------------------------------------------------------------------------
+std::tuple< std::vector<Dof*>
+          , RealVector >
+Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
+                                              , int                      stage
+                                              , int                      subsys
+                                              , const BoundaryCondition& bndCond
+                                              , const TimeData&          time )
+{   
+    std::vector<Dof*> rowDof;
+    RealVector rhs;
     
-//     if ( stage == _stage[0] && (subsys == _subsystem[0] || subsys == UNASSIGNED) )
-//     {
-//         if ( bndCond.conditionType() == "Traction" )
-//         {
-//             // Retrieve nodes of boundary element
-//             std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+    if ( stage == _stage[0] && (subsys == _subsystem[0] || subsys == UNASSIGNED) )
+    {
+        if ( bndCond.conditionType() == "Traction" )
+        {
+            // Retrieve nodes of boundary element
+            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
             
-//             // ----------------------------------------------------------------
-//             // Note: Boundary element must be a 2-node line
-//             // ----------------------------------------------------------------
+            // ----------------------------------------------------------------
+            // Note: Boundary element must be a 2-node line
+            // ----------------------------------------------------------------
             
-//             if ( (int)node.size() != 2 )
-//                 throw std::runtime_error("Error: Traction boundary condition for '"+ _name + "' requires 2-node boundary elements!");
+            if ( (int)node.size() != 3 )
+                throw std::runtime_error("Error: Traction boundary condition for '"+ _name + "' requires 3-node boundary elements!");
             
-//             RealVector coor0, coor1, dx;
-//             coor0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-//             coor1 = analysisModel().domainManager().giveCoordinatesOf(node[1]);
-//             dx = coor1 - coor0;
-//             double length = std::sqrt(dx.dot(dx));
+            RealVector coor0, coor1, coor2, dr0, dr1, dr2;
+            coor0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
+            coor1 = analysisModel().domainManager().giveCoordinatesOf(node[1]);
+            coor2 = analysisModel().domainManager().giveCoordinatesOf(node[2]);
 
-//             // Determine proper value of boundary condition
-//             RealVector midpt = 0.5*(coor0 + coor1);
-//             double bcVal = bndCond.valueAt(midpt, time);
+            // Calculate area using Heron's formula
+            dr0 = coor1 - coor0;
+            dr1 = coor2 - coor1;
+            dr2 = coor0 - coor2;
+            double a = std::sqrt(dr0.dot(dr0));
+            double b = std::sqrt(dr1.dot(dr1));
+            double c = std::sqrt(dr2.dot(dr2));
+            double s = 0.5*(a + b + c);
+            double area = std::sqrt(s*(s - a)*(s - b)*(s - c));
 
-//             // Construct local RHS vector (only for relevant DOFs)
-//             rhs.init(2);
-//             rhs(0) = 0.5*length*bcVal;
-//             rhs(1) = 0.5*length*bcVal;
+            // Determine proper value of boundary condition
+            RealVector center;
+            center = (coor0 + coor1 + coor2)/3.;
+            double bcVal = bndCond.valueAt(center, time);
 
-//             // Construct global address vector
-//             rowDof.assign(2, nullptr);
+            // Construct local RHS vector (only for relevant DOFs)
+            rhs.init(3);
+            rhs(0) = area*bcVal/3.;
+            rhs(1) = area*bcVal/3.;
+            rhs(2) = area*bcVal/3.;
 
-//             // Note that bndCond.targetDof() assumes 1-based notation but
-//             // first element of nodalDof is stored at index 0!
-//             // So you need to make adjustments
-//             int dofNum = _nodalDof[bndCond.targetDof() - 1];
+            // Construct global address vector
+            rowDof.assign(3, nullptr);
 
-//             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
-//             rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
-//         }
-//         else if ( bndCond.conditionType() == "ConcentratedForce" ) // Boundary conditions for 1-node point
-//         {
-//             // Retrieve nodes of boundary element
-//             std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+            // Note that bndCond.targetDof() assumes 1-based notation but
+            // first element of nodalDof is stored at index 0!
+            // So you need to make adjustments
+            int dofNum = _nodalDof[bndCond.targetDof() - 1];
+
+            rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
+            rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
+            rowDof[2] = analysisModel().domainManager().giveNodalDof(dofNum, node[2]);
+        }
+        else if ( bndCond.conditionType() == "ConcentratedForce" ) // Boundary conditions for 1-node point
+        {
+            // Retrieve nodes of boundary element
+            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
             
-//             // ----------------------------------------------------------------
-//             // Note: Boundary element must be a 1-node point
-//             // ----------------------------------------------------------------
+            // ----------------------------------------------------------------
+            // Note: Boundary element must be a 1-node point
+            // ----------------------------------------------------------------
             
-//             if ( (int)node.size() != 1 )
-//                 throw std::runtime_error("Error: Concentrated force boundary condition for '" + _name + "' requires 1-node boundary elements!");
+            if ( (int)node.size() != 1 )
+                throw std::runtime_error("Error: Concentrated force boundary condition for '" + _name + "' requires 1-node boundary elements!");
             
-//             // Determine proper value of boundary condition
-//             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-//             double bcVal = bndCond.valueAt(coor, time);
+            // Determine proper value of boundary condition
+            RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[0]);
+            double bcVal = bndCond.valueAt(coor, time);
 
-//             // Construct local RHS vector (only for relevant DOFs)
-//             rhs.init(1);
-//             rhs(0) = bcVal;
+            // Construct local RHS vector (only for relevant DOFs)
+            rhs.init(1);
+            rhs(0) = bcVal;
 
-//             // Construct global address vector
-//             rowDof.assign(1, nullptr);
+            // Construct global address vector
+            rowDof.assign(1, nullptr);
 
-//             // Note that bndCond.targetDof() assumes 1-based notation but
-//             // first element of nodalDof is stored at index 0!
-//             // So you need to make adjustments
-//             int dofNum = _nodalDof[bndCond.targetDof() - 1];
+            // Note that bndCond.targetDof() assumes 1-based notation but
+            // first element of nodalDof is stored at index 0!
+            // So you need to make adjustments
+            int dofNum = _nodalDof[bndCond.targetDof() - 1];
 
-//             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
-//         }
-//     }
+            rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
+        }
+    }
     
-//     return std::make_tuple(std::move(rowDof), std::move(rhs));
-// }
+    return std::make_tuple(std::move(rowDof), std::move(rhs));
+}
 // ----------------------------------------------------------------------------
 std::tuple< std::vector<Dof*>
           , RealVector >
@@ -520,6 +575,11 @@ void Mech_Fe_Tet4::initializeMaterialsAt( Cell* targetCell )
 // ----------------------------------------------------------------------------
 void Mech_Fe_Tet4::initializeNumericsAt( Cell* targetCell )
 {
+    // Check that cell is a 4-node tetrahedron
+    int nNodes = analysisModel().domainManager().giveNumberOfNodesOf(targetCell);
+    if ( nNodes != 4 )
+        throw std::runtime_error("ERROR: Domain cell with " + std::to_string(nNodes) + " nodes detected! 'Mech_Fe_Tet4' requires 4-node tetrahedra.\n");
+
     targetCell->numericsStatus = new NumericsStatus_Mech_Fe_Tet4();
     auto cns = this->getNumericsStatusAt(targetCell);
     
