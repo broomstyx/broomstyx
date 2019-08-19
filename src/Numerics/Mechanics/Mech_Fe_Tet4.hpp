@@ -70,7 +70,7 @@
 #include "../Numerics.hpp"
 #include "../../Core/DofManager.hpp"
 #include "../../Core/NumericsManager.hpp"
-#include "../../BasisFunctions/Triangle_P1.hpp"
+#include "../../BasisFunctions/Tetrahedron_P1.hpp"
 
 namespace broomstyx
 {
@@ -150,7 +150,7 @@ namespace broomstyx
         void setDofStagesAt( Cell* targetCell ) override;
 
     private:
-        Triangle_P1 _basisFunction;
+        Tetrahedron_P1 _basisFunction;
         RealVector  _basisFunctionValues;
         RealMatrix  _basisFunctionDerivatives;
         

@@ -50,7 +50,7 @@ NumericsStatus_Mech_Fe_Tet4::~NumericsStatus_Mech_Fe_Tet4()
 
 // Constructor
 Mech_Fe_Tet4::Mech_Fe_Tet4()
-{    
+{   
     _dim = 3;
     _dofPerNode = 3;
     _nNodes = 4;
