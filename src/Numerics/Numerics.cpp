@@ -244,7 +244,7 @@ RealVector Numerics::giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum )
     
     // Return statement just to suppress compilation warnings.
     RealVector dummy;
-    return dummy;;
+    return dummy;
 }
 // ----------------------------------------------------------------------------
 std::vector<RealVector> Numerics::giveEvaluationPointsFor( Cell* targetCell )

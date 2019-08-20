@@ -154,8 +154,15 @@ void DofManager::finalizeDofPrimaryValues()
         for ( int j = 1; j <= (int)_nodalDofInfo.size(); j++)
         {
             Dof* targetDof = analysisModel().domainManager().giveNodalDof(j, targetNode);
-            targetDof->_primVarConverged = targetDof->_primVarCurrent;
-            targetDof->_secVar = 0.0;
+            if ( targetDof->_isSlave )
+            {
+                targetDof->_primVarConverged = targetDof->_masterDof->_primVarConverged;
+                targetDof->_primVarCurrent = targetDof->_masterDof->_primVarCurrent;
+            }
+            else
+                targetDof->_primVarConverged = targetDof->_primVarCurrent;
+            
+            targetDof->_secVar = 0.;
         }
     }
 
@@ -169,8 +176,15 @@ void DofManager::finalizeDofPrimaryValues()
         for ( int j = 1; j <= (int)_cellDofInfo.size(); j++)
         {
             Dof* targetDof = analysisModel().domainManager().giveCellDof(j, targetCell);
-            targetDof->_primVarConverged = targetDof->_primVarCurrent;
-            targetDof->_secVar = 0.0;
+            if ( targetDof->_isSlave )
+            {
+                targetDof->_primVarConverged = targetDof->_masterDof->_primVarConverged;
+                targetDof->_primVarCurrent = targetDof->_masterDof->_primVarCurrent;
+            }
+            else
+                targetDof->_primVarConverged = targetDof->_primVarCurrent;
+            
+            targetDof->_secVar = 0.;
         }        
     }
     
@@ -338,9 +352,6 @@ double DofManager::giveValueOfPrimaryVariableAt( Dof* targetDof, ValueType valTy
 // ----------------------------------------------------------------------------
 double DofManager::giveValueOfSecondaryVariableAt( Dof* targetDof )
 {
-    if ( targetDof->_isSlave )
-        targetDof = targetDof->_masterDof;
-    
     return targetDof->_secVar;
 }
 // ----------------------------------------------------------------------------
@@ -611,8 +622,6 @@ void DofManager::writeConvergedDofValuesTo( Node* targetNode )
     for ( int i = 0; i < (int)_nodalDofInfo.size(); i++)
     {
         Dof* curDof = targetNode->_dof[i];
-        if ( curDof->_isSlave )
-            curDof = curDof->_masterDof;
         
         analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[i].primField, curDof->_primVarConverged);
         analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[i].secField, curDof->_secVar);

@@ -184,7 +184,7 @@ Poisson_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
     if ( stage == _stage[0] && (subsys == _subsystem[0] || subsys == UNASSIGNED) )
     {
         auto cns = this->getNumericsStatusAt(targetCell);
-        
+
         // Retrieve nodal DOFs local to element
         std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);
         

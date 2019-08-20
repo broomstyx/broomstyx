@@ -266,17 +266,12 @@ void Paraview::writeOutput( double time )
         int nCellNodes = analysisModel().domainManager().giveNumberOfNodesOf(curCell);
         
         int cellType;
-        if ( dim == 2 )
-        {
-            if ( nCellNodes == 3 )
-                cellType = 5;
-            else
-                throw std::runtime_error("Unrecognized cell type by Paraview output writer!\ndim = "
-                        + std::to_string(dim) + ", perimeter nodes = "
-                        + std::to_string(nCellNodes));
-        }
+        if ( dim == 2 && nCellNodes == 3 )
+            cellType = 5;
+        else if ( dim == 3 && nCellNodes == 4 )
+            cellType = 10;
         else
-            throw std::runtime_error("3D cells not yet programmed in Paraview output writer!");
+            throw std::runtime_error("Cells of dim = " + std::to_string(dim) + " and nNodes = " + std::to_string(nCellNodes) + " not yet programmed in Paraview output writer!");
         
         std::fprintf(vtuFile, "\t\t\t\t\t%d\n", cellType);
     }

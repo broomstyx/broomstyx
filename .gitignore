@@ -1,3 +1,5 @@
 build-cmake/*
 CMakeFiles/*
 nbproject/*
+.vscode/*
+src/.vscode/*
