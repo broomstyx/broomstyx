@@ -153,7 +153,11 @@ void ISTL::readDataFrom( FILE* fp )
     _maxIter = getIntegerInputFrom(fp, "Failed to read max. iterations for iterative linear solver from input file!\n", src);
     verifyKeyword(fp, "Preconditioner", src);
     _preconditionerType = getStringInputFrom(fp, "Failed to read preconditioner type from input file!\n", src);
-    if ( _preconditionerType == "ILU0" || _preconditionerType == "ILDL" )
+    if ( _preconditionerType == "ILU" )
+    {
+        _fillIn = getIntegerInputFrom(fp, "Failed to read fill-in level for ILU preconditioner from input file!\n", src);
+    }
+    else if ( _preconditionerType == "ILDL" )
     {
         // No specific parameters needed
     }
@@ -217,8 +221,8 @@ RealVector ISTL::solve( SparseMatrix* coefMat, RealVector& rhs )
         if ( _verbosity > 0 || _preconditionerType == "FastAMG" )
             std::printf("\n"); // For pretty printing
 
-        if ( _preconditionerType == "ILU0" )
-            _preconditioner = std::make_shared< Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType > >( mat, 1.0, true );
+        if ( _preconditionerType == "ILU" )
+            _preconditioner = std::make_shared< Dune::SeqILU< MatrixType, BlockVectorType, BlockVectorType > >( mat, _fillIn, 1.0, true );
         else if ( _preconditionerType == "ILDL" )
             _preconditioner = std::make_shared< Dune::SeqILDL< MatrixType, BlockVectorType, BlockVectorType > >( mat, 1.0 );
         else if ( _preconditionerType == "AMG" || _preconditionerType == "KAMG" || _preconditionerType == "FastAMG" )

@@ -60,6 +60,9 @@ namespace broomstyx
         std::string _solverType;
         RealVector  _initGuess;
 
+        // ILU(n) parameters
+        int _fillIn;
+
         // AMG and KAMG parameters
         int _maxDepth;
         int _coarseningLimit;
