@@ -72,7 +72,7 @@ void ISTLMat::initializeProfile( int dim1, int dim2 )
     _dim1 = dim1;
     _dim2 = dim2;
     // TODO: estimate nnz, here 30
-    _matrix.reset( new MatrixType( dim1, dim2, 15, 1.4, MatrixType::implicit ) );
+    _matrix.reset( new MatrixType( dim1, dim2, 30, 1.4, MatrixType::implicit ) );
 }
 
 void ISTLMat::initializeValues()
