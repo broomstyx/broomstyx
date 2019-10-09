@@ -156,7 +156,7 @@ void DofManager::finalizeDofPrimaryValues()
             Dof* targetDof = analysisModel().domainManager().giveNodalDof(j, targetNode);
             if ( targetDof->_isSlave )
             {
-                targetDof->_primVarConverged = targetDof->_masterDof->_primVarConverged;
+                targetDof->_primVarConverged = targetDof->_masterDof->_primVarCurrent;
                 targetDof->_primVarCurrent = targetDof->_masterDof->_primVarCurrent;
             }
             else
