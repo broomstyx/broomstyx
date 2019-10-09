@@ -10,4 +10,4 @@ rm -rf build
 mkdir build
 cd build
 
-cmake ..
+cmake -DENABLE_OPENMP=ON ..
