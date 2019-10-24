@@ -414,7 +414,7 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticCoefficientMatrixAt
         
         if ( subsys == _subsystem[1] || subsys == UNASSIGNED )
         {
-            double startIdx = counter;
+            int startIdx = counter;
             
             // Compute g''(phi)*elasticEnergy
             RealMatrix ddgPhi_Psi0 = material[1]->giveModulusFrom(conState, cns->_materialStatus[1], "PhaseField");
