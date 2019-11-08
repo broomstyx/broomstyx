@@ -29,6 +29,7 @@
 
 #include "../Core/AnalysisModel.hpp"
 #include "../Core/ObjectFactory.hpp"
+#include "../Core/Diagnostics.hpp"
 #include "../Core/DofManager.hpp"
 #include "../Core/DomainManager.hpp"
 #include "../Core/NumericsManager.hpp"
@@ -73,6 +74,7 @@ int LinearStatic::computeSolutionFor( int stage
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
+    diagnostics().addSetupTime(tictoc.count());
     
     // Initialize global coefficient matrix
     _spMatrix->initializeValues();
@@ -103,6 +105,7 @@ int LinearStatic::computeSolutionFor( int stage
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
+    diagnostics().addSolveTime(tictoc.count());
 
     // Update DOF values
     std::printf("    %-40s", "Updating DOF values ...");
@@ -122,6 +125,7 @@ int LinearStatic::computeSolutionFor( int stage
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
+    diagnostics().addUpdateTime(tictoc.count());
 
     return 0;
 }
@@ -225,7 +229,11 @@ void LinearStatic::assembleEquations( int stage
                                     , const TimeData& time
                                     , RealVector& rhs )
 {    
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
+    tic = std::chrono::high_resolution_clock::now();
 
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -267,10 +275,17 @@ void LinearStatic::assembleEquations( int stage
             }
         }
     }
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addCoefMatAssemblyTime(tictoc.count());
 
     // Assemble right hand side contribution of natural boundary conditions
     // and source/sink terms
+    tic = std::chrono::high_resolution_clock::now();
     this->assembleRightHandSide(stage, bndCond, fldCond, time, rhs);
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addRhsAssemblyTime(tictoc.count());
 }
 // ---------------------------------------------------------------------------
 void LinearStatic::assembleRightHandSide( int stage

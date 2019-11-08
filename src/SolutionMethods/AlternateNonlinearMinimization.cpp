@@ -31,6 +31,7 @@
 
 #include "../Core/AnalysisModel.hpp"
 #include "../Core/ObjectFactory.hpp"
+#include "../Core/Diagnostics.hpp"
 #include "../Core/DofManager.hpp"
 #include "../Core/DomainManager.hpp"
 #include "../Core/LoadStep.hpp"
@@ -68,7 +69,7 @@ int AlternateNonlinearMinimization::computeSolutionFor
     , const std::vector<FieldCondition>& fldCond
     , const TimeData& time )
 {
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::time_point<std::chrono::system_clock> tic, toc, innertic, innertoc;
     std::chrono::duration<double> tictoc;
     
     _substepCount += 1;
@@ -84,8 +85,9 @@ int AlternateNonlinearMinimization::computeSolutionFor
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
-    
+
     // Initialize global vectors
+    tic = std::chrono::high_resolution_clock::now();
     std::vector<RealVector> dU(_nSubsystems, RealVector());
     auto resid = dU;
     auto rhs = dU;
@@ -97,6 +99,10 @@ int AlternateNonlinearMinimization::computeSolutionFor
         dU[i].init(_nUnknowns[i]);
         sum_dU[i].init(_nUnknowns[i]);
     }
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addSetupTime(tictoc.count());
     
     // Start iterations
     tic = std::chrono::high_resolution_clock::now();
@@ -105,9 +111,13 @@ int AlternateNonlinearMinimization::computeSolutionFor
     while ( !converged && iterCount <= _maxIter )
     {
         // Perform pre-iteration operations, if any ...
+        innertic = std::chrono::high_resolution_clock::now();
         std::vector<Numerics*> numVec = analysisModel().numericsManager().giveAllNumerics();
         for ( Numerics* curNumerics : numVec )
             curNumerics->performPreIterationOperationsAt(stage, iterCount);
+        innertoc = std::chrono::high_resolution_clock::now();
+        tictoc = innertoc - innertic;
+        diagnostics().addPostprocessingTime(tictoc.count());
         
         // Reinitialize data for calculation of residual convergence
         for ( int i = 0; i < _nDofGroups; i++ )
@@ -149,6 +159,7 @@ int AlternateNonlinearMinimization::computeSolutionFor
         if ( !numericsConverged )
             converged = false;
         
+        
         if ( iterCount > 0 )
             _loadStep->writeConvergenceDataForStage(stage, normDat);
         
@@ -167,7 +178,11 @@ int AlternateNonlinearMinimization::computeSolutionFor
             for ( int i = 0; i < _nSubsystems; i++ )
                 _solver[i]->clearInternalMemory();
             
+            innertic = std::chrono::high_resolution_clock::now();
             _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addOutputWriteTime(tictoc.count());
         }
         else if ( iterCount == _maxIter )
         {
@@ -175,7 +190,11 @@ int AlternateNonlinearMinimization::computeSolutionFor
             for ( int i = 0; i < _nSubsystems; i++ )
                 _solver[i]->clearInternalMemory();
             
+            innertic = std::chrono::high_resolution_clock::now();
             _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addOutputWriteTime(tictoc.count());
             ++iterCount;
         }
         else
@@ -236,8 +255,14 @@ int AlternateNonlinearMinimization::computeSolutionFor
                         this->assembleJacobian(stage, _subsysNum[curSubsys], time);
 
                         // Solve system
+                        innertic = std::chrono::high_resolution_clock::now();
+                        
                         _solver[curSubsys]->allocateInternalMemoryFor(_spMatrix[curSubsys]);
                         dU[curSubsys] = _solver[curSubsys]->solve(_spMatrix[curSubsys], resid[curSubsys]);
+                        
+                        innertoc = std::chrono::high_resolution_clock::now();
+                        tictoc = innertoc - innertic;
+                        diagnostics().addSolveTime(tictoc.count());
                         
                         // Execute line search
                         if ( _enableLineSearch[curSubsys] )
@@ -254,6 +279,7 @@ int AlternateNonlinearMinimization::computeSolutionFor
                             double etaH = _initMultiplier(curSubsys);
                             
                             // Compute slope at initial value of eta
+                            innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -264,6 +290,10 @@ int AlternateNonlinearMinimization::computeSolutionFor
                                     if ( eqNo != UNASSIGNED )
                                         analysisModel().dofManager().updatePrimaryVariableAt(dof[i], etaH*dU[curSubsys](eqNo), correction );
                                 }
+                            
+                            innertoc = std::chrono::high_resolution_clock::now();
+                            tictoc = innertoc - innertic;
+                            diagnostics().addUpdateTime(tictoc.count());
                             
                             // Calculate initial residual
                             // Perform pre-iteration operations, if any ...
@@ -302,6 +332,7 @@ int AlternateNonlinearMinimization::computeSolutionFor
                                 }
                                 
                                 // Recalculate residual for current value of eta
+                                innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -312,11 +343,20 @@ int AlternateNonlinearMinimization::computeSolutionFor
                                         if ( eqNo != UNASSIGNED )
                                             analysisModel().dofManager().updatePrimaryVariableAt(dof[i], eta*dU[curSubsys](eqNo), replacement_correction );
                                     }
+
+                                innertoc = std::chrono::high_resolution_clock::now();
+                                tictoc = innertoc - innertic;
+                                diagnostics().addUpdateTime(tictoc.count());
                                 
                                 // Perform pre-iteration operations, if any ...
+                                innertic = std::chrono::high_resolution_clock::now();
                                 std::vector<Numerics*> numVec = analysisModel().numericsManager().giveAllNumerics();
                                 for ( Numerics* curNumerics : numVec )
                                     curNumerics->performPreIterationOperationsAt(stage, iterCount);
+
+                                innertoc = std::chrono::high_resolution_clock::now();
+                                tictoc = innertoc - innertic;
+                                diagnostics().addPostprocessingTime(tictoc.count());
 
                                 lsRhs = this->assembleRightHandSide(stage, _subsysNum[curSubsys], bndCond, fldCond, time);
                                 lsLhs = this->assembleLeftHandSide(stage, _subsysNum[curSubsys], time);
@@ -341,6 +381,8 @@ int AlternateNonlinearMinimization::computeSolutionFor
                                 if ( sRatio < _slackTolerance(curSubsys) )
                                     lineSearchConverged = true;
                             }
+
+                            innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -356,9 +398,14 @@ int AlternateNonlinearMinimization::computeSolutionFor
                                         analysisModel().dofManager().updateResidualAt(dof[i], resid[curSubsys](eqNo));
                                     }
                                 }
+
+                            innertoc = std::chrono::high_resolution_clock::now();
+                            tictoc = innertoc - innertic;
+                            diagnostics().addUpdateTime(tictoc.count());
                         }
                         else
                         {
+                            innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -376,12 +423,17 @@ int AlternateNonlinearMinimization::computeSolutionFor
                                         analysisModel().dofManager().updateResidualAt(dof[i], resid[curSubsys](eqNo));
                                     }
                                 }
+
+                            innertoc = std::chrono::high_resolution_clock::now();
+                            tictoc = innertoc - innertic;
+                            diagnostics().addUpdateTime(tictoc.count());
                         }
                     }
                 }
 
                 // Apply over-relaxation (also ensures that the cumulative correction is accounted for and not
                 // only the final correction of the subsystem
+                innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -395,6 +447,10 @@ int AlternateNonlinearMinimization::computeSolutionFor
                             analysisModel().dofManager().updatePrimaryVariableAt(dof[i], sum_dU[curSubsys](eqNo), correction);
                         }   
                     }
+
+                innertoc = std::chrono::high_resolution_clock::now();
+                tictoc = innertoc - innertic;
+                diagnostics().addUpdateTime(tictoc.count());
 
                 std::printf("\n\n    Subsys # %d: Inner iterations performed = %d\n", _subsysNum[curSubsys], localIterCount);
                 std::fflush(stdout);
@@ -549,6 +605,11 @@ bool AlternateNonlinearMinimization::checkSubsystemConvergenceAt( int stage
                                                                 , int globalIterCount
                                                                 , int localIterCount )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+
+    tic = std::chrono::high_resolution_clock::now();
+
     // Get all active DOFs at current stage
     std::vector<Dof*> dof = analysisModel().dofManager().giveActiveDofsAtStage(stage);
     
@@ -661,6 +722,10 @@ bool AlternateNonlinearMinimization::checkSubsystemConvergenceAt( int stage
         }
         std::fflush(stdout);
     }
-    
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addConvergenceCheckTime(tictoc.count());
+
     return isConverged;
 }

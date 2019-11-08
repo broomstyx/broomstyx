@@ -25,6 +25,7 @@
 #include <chrono>
 #include <stdexcept>
 #include <string>
+#include "Diagnostics.hpp"
 #include "DofManager.hpp"
 #include "DomainManager.hpp"
 #include "MaterialManager.hpp"
@@ -67,6 +68,11 @@ AnalysisModel::~AnalysisModel()
 // Public methods
 void AnalysisModel::initializeYourself( std::string filename )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    
+    tic = std::chrono::high_resolution_clock::now();
+
     std::printf("\n----------------------------------------------------------------------");
     std::printf("\n               I N S T A N T I A T I O N    P H A S E");
     std::printf("\n----------------------------------------------------------------------\n\n");
@@ -125,6 +131,10 @@ void AnalysisModel::initializeYourself( std::string filename )
     
     // Impose multi-freedom constraints
     _dofManager->imposeMultiFreedomConstraints();
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addSetupTime(tictoc.count());
 }
 
 void AnalysisModel::solveYourself()

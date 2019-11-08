@@ -22,7 +22,9 @@
 */
 
 #include "SolutionMethod.hpp"
+#include <chrono>
 #include "../Core/AnalysisModel.hpp"
+#include "../Core/Diagnostics.hpp"
 #include "../Core/DomainManager.hpp"
 #include "../Core/NumericsManager.hpp"
 #include "../Core/SolutionManager.hpp"
@@ -43,6 +45,11 @@ void SolutionMethod::imposeConstraintsAt( int stage
                                         , const std::vector<BoundaryCondition>& bndCond
                                         , const TimeData& time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+
+    tic = std::chrono::high_resolution_clock::now();
+
     // Loop through all boundary conditions
     for ( int ibc = 0; ibc < (int)bndCond.size(); ibc++ )
     {
@@ -82,11 +89,20 @@ void SolutionMethod::imposeConstraintsAt( int stage
                 numerics->imposeConstraintAt(curCell, stage, bndCond[ibc],time);
             }
         }
-    }    
+    }
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addSetupTime(tictoc.count());
 }
 // ---------------------------------------------------------------------------
 bool broomstyx::SolutionMethod::checkConvergenceOfNumericsAt( int stage )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+
+    tic = std::chrono::high_resolution_clock::now();
+
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     int nUnconvergedCells = 0;
     
@@ -104,6 +120,10 @@ bool broomstyx::SolutionMethod::checkConvergenceOfNumericsAt( int stage )
             nUnconvergedCells += 1;
     }
     
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addConvergenceCheckTime(tictoc.count());
+
     if ( nUnconvergedCells > 0 )
         return false;
     else
