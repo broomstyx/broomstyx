@@ -246,6 +246,20 @@ namespace broomstyx
 
             return *this;
         }
+
+        // In-place scalar multiplication
+        RealVector& operator*= ( double factor )
+        {
+            cblas_dscal(_dim, factor, _ptr, 1);
+            return *this;         
+        }
+
+        // In-place scalar division
+        RealVector& operator/= ( double factor )
+        {
+            cblas_dscal(_dim, 1./factor, _ptr, 1);
+            return *this;         
+        }
         
         // Vector component access as variableName(i)
         double& operator()( int idx )
