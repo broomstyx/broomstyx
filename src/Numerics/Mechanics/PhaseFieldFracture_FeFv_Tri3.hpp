@@ -90,6 +90,7 @@ namespace broomstyx
         virtual ~NumericsStatus_PhaseFieldFracture_FeFv_Tri3();
         
     private:
+        double     _area;
         double     _phi;
         RealVector _strain;
         RealVector _stress;
@@ -97,8 +98,9 @@ namespace broomstyx
         double     _surfEgy;
         double     _bulkEgy;
         RealVector _gradPhi;
-        RealMatrix _JmatInv;
-        double     _Jdet;
+        RealMatrix _dPsi;
+        // RealMatrix _JmatInv;
+        // double     _Jdet;
         
         bool   _hasPhsFldConstraint;
         bool   _hasPhsFldPrescribedOnFace[3];
@@ -189,7 +191,7 @@ namespace broomstyx
         RealMatrix giveBmatAt( Cell* targetCell );
         std::vector< std::vector<Node*> >
                    giveFaceNodesOf( Cell* targetCell );
-        RealMatrix giveGradBmatAt( Cell* targetCell );        
+        // RealMatrix giveGradBmatAt( Cell* targetCell );        
         double     giveDistanceToMidpointOf( std::vector<Node*>& face, RealVector& coor);
         RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
         double     giveLengthOf( std::vector<Node*>& face );
