@@ -22,10 +22,12 @@
 */
 
 #include "OutputManager.hpp"
+#include <chrono>
 #include <stdexcept>
 #include <string>
 
 #include "ObjectFactory.hpp"
+#include "../Core/Diagnostics.hpp"
 #include "../OutputQuantities/OutputQuantity.hpp"
 #include "../OutputWriters/OutputWriter.hpp"
 #include "../Util/readOperations.hpp"
@@ -138,11 +140,23 @@ void OutputManager::readDataForCSVOutputFrom( FILE* fp )
 
 void OutputManager::writeOutput( double time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    
+    tic = std::chrono::high_resolution_clock::now();
     _outputWriter->writeOutput(time);
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addOutputWriteTime(tictoc.count());
 }
 
 void OutputManager::writeOutputQuantities( double time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    
+    tic = std::chrono::high_resolution_clock::now();
+
     if ( _nCsvOutput > 0 )
     {
         std::fprintf( _csvFile, "%.15e, ", time);
@@ -157,5 +171,9 @@ void OutputManager::writeOutputQuantities( double time )
         }
         std::fflush(_csvFile);
         std::printf("  --> %s\n", _csvFilename.c_str());
-    }        
+    }
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addOutputWriteTime(tictoc.count());
 }

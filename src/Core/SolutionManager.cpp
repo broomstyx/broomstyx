@@ -26,6 +26,7 @@
 #include <stdexcept>
 
 #include "AnalysisModel.hpp"
+#include "Diagnostics.hpp"
 #include "ObjectFactory.hpp"
 #include "DomainManager.hpp"
 #include "DomainManager.hpp"
@@ -66,10 +67,12 @@ SolutionManager::~SolutionManager()
 // ----------------------------------------------------------------------------
 void SolutionManager::commenceSolution()
 {
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::time_point<std::chrono::system_clock> outertic, outertoc, tic, toc;
     std::chrono::duration<double> tictoc;
     
     // Set stages for nodal and elemental degrees of freedom
+    outertic = std::chrono::high_resolution_clock::now();
+    tic = std::chrono::high_resolution_clock::now();
     int nDomCells = analysisModel().domainManager().giveNumberOfDomainCells();
     for ( int i = 0; i < nDomCells; i++ )
     {
@@ -78,7 +81,10 @@ void SolutionManager::commenceSolution()
         Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
         numerics->setDofStagesAt(curCell);
     }
-    
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addSetupTime(tictoc.count());
+
     // Impose initial conditions
     std::printf("\n  %-40s", "Imposing initial conditions ...");
     std::fflush(stdout);
@@ -87,6 +93,7 @@ void SolutionManager::commenceSolution()
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
+    diagnostics().addSetupTime(tictoc.count());
     
     // Write output corresponding to initial state
     TimeData time;
@@ -101,6 +108,10 @@ void SolutionManager::commenceSolution()
         _curLoadStep = _loadStep[i];
         _curLoadStep->solveYourself();
     }
+
+    outertoc = std::chrono::high_resolution_clock::now();
+    tictoc = outertoc - outertic;
+    std::printf("SolnManager time = %f\n\n", tictoc.count());
 }
 // ----------------------------------------------------------------------------
 LoadStep* SolutionManager::giveCurrentLoadStep()

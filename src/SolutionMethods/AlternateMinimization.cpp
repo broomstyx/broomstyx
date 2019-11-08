@@ -33,6 +33,7 @@
 
 #include "../Core/AnalysisModel.hpp"
 #include "../Core/ObjectFactory.hpp"
+#include "../Core/Diagnostics.hpp"
 #include "../Core/DofManager.hpp"
 #include "../Core/DomainManager.hpp"
 #include "../Core/LoadStep.hpp"
@@ -70,7 +71,7 @@ int AlternateMinimization::computeSolutionFor( int stage
                                              , const std::vector<FieldCondition>& fldCond
                                              , const TimeData& time )
 {
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::time_point<std::chrono::system_clock> tic, toc, innertic, innertoc;
     std::chrono::duration<double> tictoc;
     
     _substepCount += 1;
@@ -87,6 +88,7 @@ int AlternateMinimization::computeSolutionFor( int stage
     std::printf("done (time = %f sec.)\n", tictoc.count());
     
     // Initialize global vectors
+    tic = std::chrono::high_resolution_clock::now();
     std::vector<RealVector> dU(_nSubsystems, RealVector());
     auto resid = dU;
     auto initResid = dU;
@@ -96,6 +98,10 @@ int AlternateMinimization::computeSolutionFor( int stage
     for ( int i = 0; i < _nSubsystems; i++)
         dU[i].init(_nUnknowns[i]);
     
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addSetupTime(tictoc.count());
+    
     // Start iterations
     tic = std::chrono::high_resolution_clock::now();
     bool converged = false;
@@ -103,9 +109,13 @@ int AlternateMinimization::computeSolutionFor( int stage
     while ( !converged && iterCount <= _maxIter )
     {
         // Perform pre-iteration operations, if any ...
+        innertic = std::chrono::high_resolution_clock::now();
         std::vector<Numerics*> numerics = analysisModel().numericsManager().giveAllNumerics();
         for ( Numerics* curNumerics : numerics )
             curNumerics->performPreIterationOperationsAt(stage, iterCount);
+        innertoc = std::chrono::high_resolution_clock::now();
+        tictoc = innertoc - innertic;
+        diagnostics().addPostprocessingTime(tictoc.count());
         
         // Reinitialize data for calculation of residual convergence
         for ( int i = 0; i < _nDofGroups; i++ )
@@ -120,8 +130,8 @@ int AlternateMinimization::computeSolutionFor( int stage
         // methods for imposing constraints
         for ( int i = 0; i < _nSubsystems; i++)
         {
-            rhs[i] = assembleRightHandSide(stage, _subsysNum[i], bndCond, fldCond, time);
-            lhs[i] = assembleLeftHandSide(stage, _subsysNum[i], time);
+            rhs[i] = this->assembleRightHandSide(stage, _subsysNum[i], bndCond, fldCond, time);
+            lhs[i] = this->assembleLeftHandSide(stage, _subsysNum[i], time);
             resid[i] = rhs[i] - lhs[i];
         }
         
@@ -133,7 +143,7 @@ int AlternateMinimization::computeSolutionFor( int stage
         
         // Compute convergence norms
         RealMatrix normDat;
-        
+
         // Disallow convergence at initial guess
         if ( iterCount == 0 )
             converged = false;
@@ -171,7 +181,11 @@ int AlternateMinimization::computeSolutionFor( int stage
             for ( int i = 0; i < _nSubsystems; i++ )
                 _solver[i]->clearInternalMemory();
             
+            innertic = std::chrono::high_resolution_clock::now();
             _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addOutputWriteTime(tictoc.count());
         }
         else
         {
@@ -195,11 +209,18 @@ int AlternateMinimization::computeSolutionFor( int stage
                 this->assembleJacobian(stage, _subsysNum[i], time);
                 
                 // Solve system and apply over-relaxation
+                innertic = std::chrono::high_resolution_clock::now();
+                
                 _solver[i]->allocateInternalMemoryFor(_spMatrix[i]);
                 if ( _solver[i]->takesInitialGuess() )
                     _solver[i]->setInitialGuessTo(dU[i]);
                 dU[i] = _solver[i]->solve(_spMatrix[i], resid[i]);
                 
+                innertoc = std::chrono::high_resolution_clock::now();
+                tictoc = innertoc - innertic;
+                diagnostics().addSolveTime(tictoc.count());
+                
+                innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -214,6 +235,10 @@ int AlternateMinimization::computeSolutionFor( int stage
                             analysisModel().dofManager().updatePrimaryVariableAt(dof[j], dU[i](eqNo), correction);
                         }   
                     }
+
+                innertoc = std::chrono::high_resolution_clock::now();
+                tictoc = innertoc - innertic;
+                diagnostics().addUpdateTime(tictoc.count());
             }
         }
     }
@@ -446,6 +471,10 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
                                                       , int subsys
                                                       , const TimeData& time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     // Find subsystem index
     int idx = this->giveIndexForSubsystem(subsys);
     
@@ -502,6 +531,10 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
     _sumAbsFlux = sumAbsFlux;
     _fluxCount = fluxCount;
     
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addLhsAssemblyTime(tictoc.count());
+
     return lhs;
 }
 // ---------------------------------------------------------------------------
@@ -509,6 +542,10 @@ void AlternateMinimization::assembleJacobian( int stage
                                             , int subsys
                                             , const TimeData& time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
 
 #ifdef _OPENMP
@@ -541,6 +578,10 @@ void AlternateMinimization::assembleJacobian( int stage
             }
         }
     }
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addCoefMatAssemblyTime(tictoc.count());
 }
 // ---------------------------------------------------------------------------
 RealVector AlternateMinimization::assembleRightHandSide( int stage
@@ -548,7 +589,11 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                                                        , const std::vector<BoundaryCondition>& bndCond
                                                        , const std::vector<FieldCondition>& fldCond
                                                        , const TimeData& time )
-{   
+{
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     // Get subsystem index
     int idx = this->giveIndexForSubsystem(subsys);
     RealVector rhs(_nUnknowns[idx]);
@@ -661,13 +706,21 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
     _sumAbsFlux = sumAbsFlux;
     _fluxCount = fluxCount;
     
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addRhsAssemblyTime(tictoc.count());
+
     return rhs;
 }
 // ---------------------------------------------------------------------------
 std::tuple<bool,RealMatrix>
 AlternateMinimization::computeConvergenceNormsFrom( const std::vector<RealVector>& resid
                                                   , const std::vector<Dof*>& dof )
-{    
+{
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     /*********************************************** 
      * Initialize matrix to store convergence data
      *   col 0: norm
@@ -750,6 +803,10 @@ AlternateMinimization::computeConvergenceNormsFrom( const std::vector<RealVector
 //        }
     }
     
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addConvergenceCheckTime(tictoc.count());
+
     return std::make_tuple(isConverged,normDat);
 }
 // ---------------------------------------------------------------------------

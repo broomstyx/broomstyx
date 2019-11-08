@@ -31,6 +31,7 @@
 
 #include "AnalysisModel.hpp"
 #include "Cell.hpp"
+#include "Diagnostics.hpp"
 #include "DomainManager.hpp"
 #include "DofManager.hpp"
 #include "DomainManager.hpp"
@@ -178,7 +179,7 @@ void LoadStep::readDataFrom( FILE *fp )
 // -----------------------------------------------------------------------------
 void LoadStep::solveYourself()
 {
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::time_point<std::chrono::system_clock> tic, toc, setupTic, setupToc;
     std::chrono::duration<double> tictoc;
     
 //    // HACK MESSAGES
@@ -197,6 +198,7 @@ void LoadStep::solveYourself()
     std::printf("\n  %-40s\n", "Initializing solvers ...");
     std::fflush(stdout);
     tic = std::chrono::high_resolution_clock::now();
+    setupTic = std::chrono::high_resolution_clock::now();
     
     for ( int i = 0; i < (int)_solutionMethod.size(); i++ )
         if ( _solutionMethod[i] )
@@ -273,6 +275,10 @@ void LoadStep::solveYourself()
         _solutionMethod[i]->imposeConstraintsAt(i, _boundaryCondition, time);
         _solutionMethod[i]->formSparsityProfileForStage(i);    
     }
+
+    setupToc = std::chrono::high_resolution_clock::now();
+    tictoc = setupToc - setupTic;
+    diagnostics().addSetupTime(tictoc.count());
     
     // ------------------------------------------------------------------
     //                       Solution proper
@@ -298,11 +304,12 @@ void LoadStep::solveYourself()
         if ( curSubstep > _maxSubsteps )
             throw std::runtime_error("Maximum number of substeps exceeded!");
         
+        tic = std::chrono::high_resolution_clock::now();
+        
         std::printf("\n  -----------------------------------------");
         std::printf("\n    LOADSTEP # %d, Substep # %d", _loadStepNum, curSubstep);
         std::printf("\n  -----------------------------------------");
         
-        tic = std::chrono::high_resolution_clock::now();
         std::printf("\n    Target time: %.14E\n", time.target);        
         
         int nStage = analysisModel().solutionManager().giveNumberOfSolutionStages();
@@ -361,15 +368,26 @@ void LoadStep::solveYourself()
         
         if ( forceBreak )
         {
+            std::chrono::time_point<std::chrono::system_clock> innertic, innertoc;
+            
             // Perform any needed computations at cells before finalizing data
+            innertic = std::chrono::high_resolution_clock::now();
             this->performPrefinalCalculationsAtCells();
             
             // Finalize data (unconverged results)
             analysisModel().dofManager().finalizeDofPrimaryValues();
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addUpdateTime(tictoc.count());
+            
             analysisModel().domainManager().finalizeCellData();
-
+            
             // Perform post-processing for nodal field values
+            innertic = std::chrono::high_resolution_clock::now();
             analysisModel().domainManager().performNodalPostProcessing();
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addPostprocessingTime(tictoc.count());
             
             // Write unconverged results and then terminate program
             analysisModel().outputManager().writeOutput(time.target);
@@ -378,15 +396,26 @@ void LoadStep::solveYourself()
         }
         else
         {
+            std::chrono::time_point<std::chrono::system_clock> innertic, innertoc;
+
             // Perform any needed computations at cells before finalizing data
+            innertic = std::chrono::high_resolution_clock::now();
             this->performPrefinalCalculationsAtCells();
             
             // Finalize data
             analysisModel().dofManager().finalizeDofPrimaryValues();
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addUpdateTime(tictoc.count());
+            
+            innertic = std::chrono::high_resolution_clock::now();
             analysisModel().domainManager().finalizeCellData();
-
+            
             // Perform post-processing for nodal field values
             analysisModel().domainManager().performNodalPostProcessing();
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addPostprocessingTime(tictoc.count());
             
             // Update time and target time for next substep
             time.current = time.target;
@@ -400,6 +429,7 @@ void LoadStep::solveYourself()
             toc = std::chrono::high_resolution_clock::now();
             tictoc = toc - tic;
             std::printf("\n    Substep completed in %f sec.\n", tictoc.count());
+            //diagnostics().debugAddSubstepTime(tictoc.count());
 
             ++skipCount;
             if ( skipCount == _writeInterval )
@@ -415,9 +445,9 @@ void LoadStep::solveYourself()
     }
     
     // Carry out special post-processing procedures
+    tic = std::chrono::high_resolution_clock::now();
     std::printf("  %-40s", "Running postprocessing routines ...");
     std::fflush(stdout);
-    tic = std::chrono::high_resolution_clock::now();
     
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -440,7 +470,11 @@ void LoadStep::solveYourself()
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
-    
+    diagnostics().addPostprocessingTime(tictoc.count());
+
+    setupToc = std::chrono::high_resolution_clock::now();
+    tictoc = setupToc - setupTic;
+
 //    // HACK MESSAGES
 //    std::fclose(fp);
 }
