@@ -87,14 +87,14 @@ namespace broomstyx
         virtual ~NumericsStatus_PhaseFieldFracture_Fe_Tri3();
         
     private:
+        double     _area;
         double     _phi;
         RealVector _strain;
         RealVector _stress;
         RealMatrix _gradU;
         double     _surfEgy;
         double     _bulkEgy;
-        RealMatrix _JmatInv;
-        double     _Jdet;
+        RealMatrix _dPsi;
         
         MaterialStatus* _materialStatus[2];
     };
@@ -175,7 +175,6 @@ namespace broomstyx
         
         NumericsStatus_PhaseFieldFracture_Fe_Tri3*
                    getNumericsStatusAt( Cell* targetCell );
-        RealMatrix giveBmatPhiAt(Cell* targetCell);
         RealMatrix giveBmatUAt(Cell* targetCell);
         RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
         std::tuple< RealVector, RealVector >

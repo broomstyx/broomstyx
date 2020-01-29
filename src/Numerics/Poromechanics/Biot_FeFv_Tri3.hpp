@@ -42,12 +42,12 @@ namespace broomstyx
         virtual ~NumericsStatus_Biot_FeFv_Tri3();
         
     private:
-        RealMatrix _JmatInv;
-        double     _Jdet;
         RealVector _strain;
         RealVector _stress;
         RealMatrix _gradU;
+        RealMatrix _dPsi;
         
+        double _area;
         double _head;
         double _centerFlux[2];
         double _headOnFace[3];
@@ -154,7 +154,6 @@ namespace broomstyx
                    giveBmatAt( Cell* targetCell );
         std::vector< std::vector<Node*> >
                    giveFaceNodesOf( Cell* targetCell );
-        RealMatrix giveGradBmatAt( Cell* targetCell );
         double     giveDistanceToMidpointOf( std::vector<Node*>& face, RealVector& coor);
         RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
         double     giveLengthOf( std::vector<Node*>& face );

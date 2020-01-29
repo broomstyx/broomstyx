@@ -137,7 +137,11 @@ void MKL_Pardiso::initialize()
     // *********************************************************************
     
     // Set number of threads for Pardiso
+#ifdef _OPENMP
     int error = mkl_domain_set_num_threads(_nThreads, MKL_DOMAIN_PARDISO);
+#else
+    int error = mkl_domain_set_num_threads(1, MKL_DOMAIN_PARDISO);
+#endif
     if ( error == 0 )
         throw std::runtime_error("ERROR: Failed to set specified number of threads for MKL Pardiso!\n");
     
@@ -159,15 +163,18 @@ void MKL_Pardiso::initialize()
     _iparm[10] = 1;  // Use nonsymmetric permutation and scaling MPS
     _iparm[11] = 0;  // Conjugate transposed/transpose solve
     _iparm[12] = 1;  // Maximum weighted matching algorithm is switched on (default for non-symmetric)
-    _iparm[20] = 1; // Default pivoting for symmetric indefinite matrices
+    _iparm[20] = 1;  // Default pivoting for symmetric indefinite matrices
 
     if ( _nThreads >= 8 )
         _iparm[23] = 10; // Use improved two-level factorization
     else
         _iparm[23] = 0;
     
+#ifdef _OPENMP
     _iparm[24] = 1; // Use parallel algorithm for forward/back substitution
-    
+#else
+    _iparm[24] = 0; // Use sequential algorithm for forward/back substitution
+#endif
     _iparm[26] = 0; // Do not perform matrix checking
     _iparm[34] = 0; // Use Fortran-style indexing in the sparse matrix profile
     

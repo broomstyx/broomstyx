@@ -192,13 +192,13 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     RealVector uVec = this->giveLocalDisplacementsAt(dof, converged_value);
     
     // Compute shape functions gradients
-    RealMatrix bmatGrad = this->giveGradBmatAt(targetCell);
+    // RealMatrix bmatGrad = this->giveGradBmatAt(targetCell);
     
     // Compute displacement gradient
     RealMatrix uMat({{uVec(0), uVec(1)},
                      {uVec(2), uVec(3)},
                      {uVec(4), uVec(5)}});
-    RealMatrix gradU = bmatGrad*uMat;
+    cns->_gradU = cns->_dPsi*uMat;
     
     // Construct strain vector
     RealMatrix bmatU;
@@ -212,7 +212,7 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
     
     RealVector fmatU;
-    fmatU = _wt*cns->_Jdet*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*cns->_head*bmatDiv);
+    fmatU = cns->_area*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*cns->_head*bmatDiv);
     
     analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
     analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
@@ -265,7 +265,7 @@ Biot_FeFv_Tri3::giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag
 {
     RealVector fieldVal(1), weight(1);
     auto cns = this->getNumericsStatusAt(targetCell);
-    weight(0) = _wt*cns->_Jdet;
+    weight(0) = cns->_area;
     
     if ( fieldTag == "unassigned" )
         fieldVal(0) = 0.;
@@ -377,8 +377,8 @@ Biot_FeFv_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
         
         RealMatrix kmatUU;
         RealVector kmatUP;
-        kmatUU = _wt*cns->_Jdet*trp(bmatU)*cmat*bmatU;
-        kmatUP = -_wt*cns->_Jdet*_alpha*_rhoF*_gAccel*bmatDiv;
+        kmatUU = cns->_area*trp(bmatU)*cmat*bmatU;
+        kmatUP = -cns->_area*_alpha*_rhoF*_gAccel*bmatDiv;
         
         int counter = 0;
         for ( int i = 0; i < 6; i++ )
@@ -584,7 +584,7 @@ Biot_FeFv_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
         cns->_strain = bmatU*uVec;
         cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
         RealVector fmat;
-        fmat = _wt*cns->_Jdet*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*h1*bmatDiv);
+        fmat = cns->_area*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*h1*bmatDiv);
 
         lhs(0) = fmat(0);
         lhs(1) = fmat(1);
@@ -785,7 +785,7 @@ Biot_FeFv_Tri3::giveStaticRightHandSideAt( Cell*                 targetCell
         std::string condType = fldCond.conditionType();
         if ( condType == "SelfWeight" )
         {
-            double force = _sgn*(rho - _alpha*_rhoF)*_gAccel*_wt*cns->_Jdet/3.;
+            double force = _sgn*(rho - _alpha*_rhoF)*_gAccel*cns->_area/3.;
             
             rhs.init(3);
             rhs(0) = force;
@@ -837,7 +837,7 @@ Biot_FeFv_Tri3::giveTransientCoefficientMatrixAt( Cell*           targetCell
         std::tie(bmatU,bmatDiv) = this->giveBmatAt(targetCell);
         
         RealVector kmatPU;
-        kmatPU = _wt*cns->_Jdet*_alpha*bmatDiv;
+        kmatPU = cns->_area*_alpha*bmatDiv;
         
         for (int i = 0; i < 6; i++)
         {
@@ -848,7 +848,7 @@ Biot_FeFv_Tri3::giveTransientCoefficientMatrixAt( Cell*           targetCell
         
         rowDof[6] = cellDof;
         colDof[6] = cellDof;
-        coefVal(6) = _wt*cns->_Jdet*_rhoF*_gAccel/_M;
+        coefVal(6) = cns->_area*_rhoF*_gAccel/_M;
     }
     
     return std::make_tuple(std::move(rowDof), std::move(colDof), std::move(coefVal));
@@ -880,7 +880,7 @@ Biot_FeFv_Tri3::giveTransientLeftHandSideAt( Cell*           targetCell
         rowDof.assign(1, cellDof);
         lhs.init(1);
         
-        lhs(0) = _wt*cns->_Jdet*(_alpha*bmatDiv.dot(u) + _rhoF*_gAccel*h/_M);
+        lhs(0) = cns->_area*(_alpha*bmatDiv.dot(u) + _rhoF*_gAccel*h/_M);
     }
     
     return std::make_tuple(std::move(rowDof), std::move(lhs));
@@ -989,13 +989,16 @@ void Biot_FeFv_Tri3::initializeNumericsAt( Cell* targetCell )
     
     // Pre-calculate det(J) and inv(J);
     RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, _gpNatCoor);
-    cns->_Jdet = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
+    double Jdet = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
+    cns->_area = _wt*Jdet;
     
     // Sanity check
-    if ( cns->_Jdet <= 0 )
+    if ( Jdet <= 0 )
         throw std::runtime_error("Calculation of negative area detected!\nSource: " + _name);
     
-    cns->_JmatInv = inv(Jmat);
+    // Calculate shape functions in the actual space
+    RealMatrix JmatInv = inv(Jmat);
+    cns->_dPsi = JmatInv*_basisFunctionDerivatives;
 }
 // ----------------------------------------------------------------------------
 void Biot_FeFv_Tri3::readAdditionalDataFrom( FILE* fp )
@@ -1069,9 +1072,9 @@ std::tuple< RealMatrix, RealVector >
 Biot_FeFv_Tri3::giveBmatAt( Cell* targetCell )
 {
     auto cns = this->getNumericsStatusAt(targetCell);
-    RealMatrix dpsi = cns->_JmatInv*_basisFunctionDerivatives;
     
     // Fill entries for Bmat
+    RealMatrix& dpsi = cns->_dPsi;
     RealMatrix bmat({{dpsi(0,0), 0.,        dpsi(0,1), 0.,        dpsi(0,2), 0.},
                      {0.,        dpsi(1,0), 0.,        dpsi(1,1), 0.,        dpsi(1,2)},
                      {0.,        0.,        0.,        0.,        0.,        0.},
@@ -1097,12 +1100,6 @@ std::vector<std::vector<Node*> > Biot_FeFv_Tri3::giveFaceNodesOf( Cell* targetCe
     face[2][1] = node[0];
     
     return face;
-}
-// ----------------------------------------------------------------------------
-RealMatrix Biot_FeFv_Tri3::giveGradBmatAt( Cell* targetCell )
-{
-    auto cns = this->getNumericsStatusAt(targetCell);
-    return cns->_JmatInv*_basisFunctionDerivatives;
 }
 // ----------------------------------------------------------------------------
 double Biot_FeFv_Tri3::giveDistanceToMidpointOf( std::vector<Node*>& face
