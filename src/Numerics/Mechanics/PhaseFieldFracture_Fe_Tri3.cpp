@@ -213,6 +213,8 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
     RealVector fieldVal(1), weight(1);
     
     auto cns = this->getNumericsStatusAt(targetCell);
+    std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
+
     weight(0) = cns->_area;
     
     if ( fieldTag == "unassigned" )
@@ -225,13 +227,13 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
         fieldVal(0) = cns->_stress(2);
     else if ( fieldTag == "s_xy" )
         fieldVal(0) = cns->_stress(3);
-    else if ( fieldTag == "ux_x" )
+    else if ( fieldTag == "ux_x" || fieldTag == "e_xx" )
         fieldVal(0) = cns->_gradU(0,0);
     else if ( fieldTag == "uy_x" )
         fieldVal(0) = cns->_gradU(0,1);
     else if ( fieldTag == "ux_y" )
         fieldVal(0) = cns->_gradU(1,0);
-    else if ( fieldTag == "uy_y" )
+    else if ( fieldTag == "uy_y" || fieldTag == "e_yy" )
         fieldVal(0) = cns->_gradU(1,1);
     else if ( fieldTag == "g_xy" )
         fieldVal(0) = cns->_strain(3);
@@ -241,6 +243,8 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
         fieldVal(0) = cns->_surfEgy;
     else if ( fieldTag == "ene_b" )
         fieldVal(0) = cns->_bulkEgy;
+    else if ( fieldTag == "eigVec1_1" || fieldTag == "eigVec1_2" || fieldTag == "eigVec2_1" || fieldTag == "eigVec2_2" )
+        fieldVal(0) = material[1]->giveMaterialVariable(fieldTag, cns->_materialStatus[1]);
     else
         throw std::runtime_error("Invalid tag '" + fieldTag + "' supplied in field output request made to numerics '" + _name + "'!");
     
