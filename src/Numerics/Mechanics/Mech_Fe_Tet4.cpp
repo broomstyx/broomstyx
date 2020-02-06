@@ -126,7 +126,6 @@ void Mech_Fe_Tet4::finalizeDataAt( Cell* targetCell )
     // Update secondary variable at DOFs
     RealVector fmat = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
     
-#pragma GCC unroll 4
     for ( int i = 0; i < 12; i++ )
         analysisModel().dofManager().addToSecondaryVariableAt(dof[i], fmat(i));
 }
@@ -633,8 +632,6 @@ RealMatrix Mech_Fe_Tet4::giveBmatAt( Cell* targetCell )
     RealMatrix dpsi = cns->_JmatInv*_basisFunctionDerivatives;
     
     RealMatrix bmat(6,12);
-
-#pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
         bmat(0,3*i)   = dpsi(0,i);
@@ -664,7 +661,6 @@ RealMatrix Mech_Fe_Tet4::giveJacobianMatrixAt( Cell* targetCell, const RealVecto
     
     RealMatrix coorMat(4,3);
     
-#pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
         RealVector nodeCoor = analysisModel().domainManager().giveCoordinatesOf(node[i]);
@@ -679,7 +675,6 @@ RealMatrix Mech_Fe_Tet4::giveJacobianMatrixAt( Cell* targetCell, const RealVecto
 RealVector Mech_Fe_Tet4::giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType)
 {    
     RealVector u(12);
-#pragma GCC unroll 4
     for ( int i = 0; i < 12; i++ )
         u(i) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], valType);
     return u;
@@ -689,7 +684,6 @@ std::vector<Dof*> Mech_Fe_Tet4::giveNodalDofsAt( Cell* targetCell )
 {
     std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
     std::vector<Dof*> dof(12, nullptr);
-#pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
         dof[3*i]   = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[i]);
