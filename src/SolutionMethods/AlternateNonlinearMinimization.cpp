@@ -135,6 +135,20 @@ int AlternateNonlinearMinimization::computeSolutionFor
             lhs[i] = assembleLeftHandSide(stage, _subsysNum[i], time);
             resid[i] = rhs[i] - lhs[i];
         }
+
+        // Store residuals in DOFs
+        std::vector<Dof*> activeDof = analysisModel().dofManager().giveActiveDofsAtStage(stage);
+
+#pragma omp parallel for
+        for ( int i = 0; i < (int)activeDof.size(); i++ )
+        {
+            int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(activeDof[i]);
+            int eqNum = analysisModel().dofManager().giveEquationNumberAt(activeDof[i]);
+
+            for ( int j = 0; j < _nSubsystems; j++ )
+                if ( ssNum == _subsysNum[j] )
+                    analysisModel().dofManager().updateResidualAt(activeDof[i], -resid[j](eqNum));
+        }
         
         if ( iterCount == 0 )
         {
