@@ -747,14 +747,14 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticRightHandSideAt
                 if ( name == "Acceleration_X" )
                 {
                     rowDof[0] = dof[0];
-                    rowDof[1] = dof[3];
-                    rowDof[2] = dof[6];
+                    rowDof[1] = dof[2];
+                    rowDof[2] = dof[4];
                 }
                 else
                 {
                     rowDof[0] = dof[1];
-                    rowDof[1] = dof[4];
-                    rowDof[2] = dof[7];
+                    rowDof[1] = dof[3];
+                    rowDof[2] = dof[5];
                 }
             }
         }
@@ -963,13 +963,13 @@ void PhaseFieldFracture_FeFv_Tri3::printPostIterationMessage( int stage )
 // ----------------------------------------------------------------------------
 void PhaseFieldFracture_FeFv_Tri3::readAdditionalDataFrom( FILE* fp )
 {
-    std::string key, src = "PhsFieldBrittleFracture_HybFeFv_Tri3 (Numerics)";
+    std::string key;
     
-    verifyKeyword(fp, key = "CharacteristicLength", src);
-    _l = getRealInputFrom(fp, "Failed to read characteristic length from input file!", src);
+    verifyKeyword(fp, key = "CharacteristicLength", _name);
+    _l = getRealInputFrom(fp, "Failed to read characteristic length from input file!", _name);
     
-    verifyKeyword(fp, key = "CriticalEnergyReleaseRate", src);
-    _Gc = getRealInputFrom(fp, "Failed to read critical energy release rate from input file!", src);
+    verifyKeyword(fp, key = "CriticalEnergyReleaseRate", _name);
+    _Gc = getRealInputFrom(fp, "Failed to read critical energy release rate from input file!", _name);
 }
 // ----------------------------------------------------------------------------
 void PhaseFieldFracture_FeFv_Tri3::removeConstraintsOn( Cell* targetCell )
@@ -1051,12 +1051,6 @@ std::vector<std::vector<Node*> > PhaseFieldFracture_FeFv_Tri3::giveFaceNodesOf( 
     
     return face;
 }
-// // ----------------------------------------------------------------------------
-// RealMatrix PhaseFieldFracture_FeFv_Tri3::giveGradBmatAt( Cell* targetCell )
-// {
-//     auto cns = this->getNumericsStatusAt(targetCell);
-//     return cns->_JmatInv*_basisFunctionDerivatives;
-// }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_FeFv_Tri3::giveDistanceToMidpointOf( std::vector<Node*>& face
                                                                , RealVector&         coor )
