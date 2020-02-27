@@ -75,16 +75,16 @@ Numerics::giveCellFieldOutputAtEvaluationPointsOf( Cell* targetCell, int fieldNu
     auto result = this->giveFieldOutputAt(targetCell, fieldTag);
     return result;
 }
-// ----------------------------------------------------------------------------
-int Numerics::giveIndexOfCellDof( int dofNum )
-{
-    return _cellDof[ dofNum - 1 ];
-}
-// ----------------------------------------------------------------------------
-int Numerics::giveIndexOfNodalDof( int dofNum )
-{
-    return _nodalDof[ dofNum - 1 ];
-}
+// // ----------------------------------------------------------------------------
+// int Numerics::giveIndexOfCellDof( int dofNum )
+// {
+//     return _cellDof[ dofNum - 1 ];
+// }
+// // ----------------------------------------------------------------------------
+// int Numerics::giveIndexOfNodalDof( int dofNum )
+// {
+//     return _nodalDof[ dofNum - 1 ];
+// }
 // ----------------------------------------------------------------------------
 int Numerics::giveSpatialDimension()
 {
@@ -141,17 +141,23 @@ void Numerics::readDataFrom( FILE* fp )
     {
         verifyKeyword(fp, str = "NodalDof", _name);
         _nodalDof.assign(_dofPerNode, 0);
-        for ( int i = 0; i < _dofPerNode; i++)
-            _nodalDof[i] = getIntegerInputFrom(fp, "Failed to read nodal DOF assignment from input file!", _name);
+        for ( int i = 0; i < _dofPerNode; i++ )
+        {
+            std::string name = getStringInputFrom(fp, "Failed to read nodal DOF assignment from input file!", _name);
+            _nodalDof[i] = analysisModel().dofManager().giveIndexForNodalDof(name);
+        }
     }
     
-    // Element degrees of freedom to be used for numerics type
+    // Cell degrees of freedom to be used for numerics type
     if ( _dofPerCell > 0 )
     {
         verifyKeyword(fp, str = "CellDof", _name);
         _cellDof.assign(_dofPerCell, 0);
-        for ( int i = 0; i < _dofPerCell; i++)
-            _cellDof[i] = getIntegerInputFrom(fp, "Failed to read cell DOF assignment from input file!", _name);
+        for ( int i = 0; i < _dofPerCell; i++ )
+        {
+            std::string name = getStringInputFrom(fp, "Failed to read cell DOF assignment from input file!", _name);
+            _cellDof[i] = analysisModel().dofManager().giveIndexForCellDof(name);
+        }
     }
     
     // Stages to be used for numerics type

@@ -124,7 +124,8 @@ void StVenantTorsion_ErrNorm_WarpFcn::readDataFrom( FILE* fp )
     _domainTag = getStringInputFrom(fp, "Failed to read physical label for domain from input file!", _name);
     
     verifyKeyword(fp, "NodalDof", _name);
-    _dofNum = getIntegerInputFrom(fp, "Failed to read nodal DOF number from input file!", _name);
+    std::string name = getStringInputFrom(fp, "Failed to read DOF name from input file!", _name);
+    _dofNum = analysisModel().dofManager().giveIndexForNodalDof(name);
     _fcnName = getStringInputFrom(fp, "Failed to read user function name for analytical solution from input file!", _name);
     
     _analyticSoln = objectFactory().instantiateUserFunction(_fcnName);

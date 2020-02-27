@@ -44,14 +44,14 @@ namespace broomstyx
         std::string conditionType() const;
         void        readDataFrom( FILE* fp );
         int         targetNumerics() const;
-        int         targetDof() const;
+        std::string targetDof() const;
         double      valueAt( const RealVector& coor, const TimeData& time ) const;
 
     private:
         std::string _bndName;
         int         _numericsTag;
         std::string _cndType;
-        int         _dofTag;
+        std::string _dofTag;
         std::string _specType;
 
         double _startVal;

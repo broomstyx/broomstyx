@@ -639,11 +639,7 @@ Biot_FeFv_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
                 // Construct global address vector
                 rowDof.assign(2, nullptr);
 
-                // Note that bndCond.targetDof() assumes 1-based notation but
-                // first element of nodalDof is stored at index 0!
-                // So you need to make adjustments
-                int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+                int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
                 rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
                 rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
             }
@@ -896,11 +892,11 @@ void Biot_FeFv_Tri3::imposeConstraintAt( Cell*                    targetCell
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
         for ( int j = 0; j < (int)node.size(); j++)
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
             analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);
@@ -910,9 +906,9 @@ void Biot_FeFv_Tri3::imposeConstraintAt( Cell*                    targetCell
     // Constraints pertaining to cell DOFS
     if ( bndCond.conditionType() == "CellConstraint" )
     {
-        int targetDofNum = _cellDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForCellDof(bndCond.targetDof());
         std::vector<RealVector> coor = this->giveEvaluationPointsFor(targetCell);
-        Dof* targetDof = analysisModel().domainManager().giveCellDof(targetDofNum, targetCell);
+        Dof* targetDof = analysisModel().domainManager().giveCellDof(dofNum, targetCell);
         
         double bcVal = bndCond.valueAt(coor[0],time);
         analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);

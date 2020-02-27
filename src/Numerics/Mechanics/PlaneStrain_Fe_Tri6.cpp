@@ -531,9 +531,7 @@ PlaneStrain_Fe_Tri6::giveStaticRightHandSideAt( Cell* targetCell
                 rhs = rhs + psi*(bcVal*Je*gpWt(i));
             }
 
-            // Note that bndCond.targetDof() assumes 1-based notation but first
-            // element of nodalDof is stored at index 0.
-            int dofNum = _nodalDof[ bndCond.targetDof() - 1 ];
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
             rowDof.assign(3, nullptr);
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
@@ -566,7 +564,7 @@ PlaneStrain_Fe_Tri6::giveStaticRightHandSideAt( Cell* targetCell
             // Note that bndCond.targetDof() assumes 1-based notation but
             // first element of nodalDof is stored at index 0!
             // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
         }
@@ -653,11 +651,11 @@ void PlaneStrain_Fe_Tri6::imposeConstraintAt( Cell* targetCell
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
         
         for ( int j = 0; j < (int)node.size(); j++)
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
             analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);

@@ -455,10 +455,7 @@ StVenantTorsion_Fe_Tri6::giveStaticRightHandSideAt( Cell*                    tar
             rhs += G*b*psi*(x*dxde + y*dyde)*gpWt(i);
         }
         
-        // Note that bndCond.targetDof() assumes 1-based notation but first
-        // element of nodalDof is stored at index 0.
-        int dofNum = _nodalDof[ bndCond.targetDof() - 1 ];
-        
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());        
         
         rowDof.assign(3, nullptr);
         rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);

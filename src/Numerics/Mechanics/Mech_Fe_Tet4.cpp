@@ -405,7 +405,7 @@ Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
             // ----------------------------------------------------------------
             
             if ( (int)node.size() != 3 )
-                throw std::runtime_error("Error: Traction boundary condition for '"+ _name + "' requires 3-node boundary elements!");
+                throw std::runtime_error("Error: Traction boundary condition for '" + _name + "' requires 3-node boundary elements!");
             
             RealVector coor0, coor1, coor2, dr0, dr1, dr2;
             coor0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
@@ -436,11 +436,7 @@ Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
             // Construct global address vector
             rowDof.assign(3, nullptr);
 
-            // Note that bndCond.targetDof() assumes 1-based notation but
-            // first element of nodalDof is stored at index 0!
-            // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
             rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
             rowDof[2] = analysisModel().domainManager().giveNodalDof(dofNum, node[2]);
@@ -468,11 +464,7 @@ Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
             // Construct global address vector
             rowDof.assign(1, nullptr);
 
-            // Note that bndCond.targetDof() assumes 1-based notation but
-            // first element of nodalDof is stored at index 0!
-            // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
         }
     }
@@ -551,11 +543,11 @@ void Mech_Fe_Tet4::imposeConstraintAt( Cell*                    targetCell
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
         
         for ( int j = 0; j < (int)node.size(); j++)
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
             analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);

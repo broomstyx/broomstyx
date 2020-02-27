@@ -84,5 +84,6 @@ void BoundaryReaction::readDataFrom( FILE *fp )
     
     // Read nodal DOF associated with reaction
     verifyKeyword(fp, "NodalDof", _name);
-    _dofNum = getIntegerInputFrom(fp, "Failed to read DOF number from input file!", _name);
+    std::string name = getStringInputFrom(fp, "Failed to read DOF name from input file!", _name);
+    _dofNum = analysisModel().dofManager().giveIndexForNodalDof(name);
 }

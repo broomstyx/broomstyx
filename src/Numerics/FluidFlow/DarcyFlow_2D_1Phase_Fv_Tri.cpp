@@ -543,7 +543,8 @@ void DarcyFlow_2D_1Phase_Fv_Tri::imposeConstraintAt
     // Constraints pertaining to cell DOFS
     if ( bndCond.conditionType() == "CellConstraint" )
     {
-        if ( bndCond.targetDof() == _cellDof[0] )
+        int targetDofNum = analysisModel().dofManager().giveIndexForCellDof(bndCond.targetDof());
+        if ( targetDofNum == _cellDof[0] )
         {
             Dof* targetDof = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
 

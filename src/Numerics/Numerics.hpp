@@ -65,8 +65,8 @@ namespace broomstyx
         
         std::tuple<RealVector,RealVector> 
              giveCellFieldOutputAtEvaluationPointsOf( Cell* targetCell, int fieldNum );
-        int  giveIndexOfCellDof( int dofNum );
-        int  giveIndexOfNodalDof( int dofNum );
+        // int  giveIndexOfCellDof( int dofNum );
+        // int  giveIndexOfNodalDof( int dofNum );
         int  giveSpatialDimension();
         void readDataFrom( FILE* fp );
 

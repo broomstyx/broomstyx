@@ -72,6 +72,9 @@ namespace broomstyx
         std::vector<Dof*> 
                giveActiveDofsAtStage( int stg );
         int    giveGroupNumberFor( Dof* targetDof );
+        int    giveIndexForCellDof( const std::string& name );
+        int    giveIndexForFaceDof( const std::string& name );
+        int    giveIndexForNodalDof( const std::string& name );
         int    giveEquationNumberAt( Dof* targetDof );
         int    giveNumberOfActiveDofsAtStage( int stgNum );
         int    giveSubsystemNumberFor( Dof* targetDof );
@@ -99,7 +102,7 @@ namespace broomstyx
     private:
         struct DofInfo
         {
-            int tag;
+            std::string tag;
             int group;
             int primField;
             int secField;
