@@ -38,6 +38,10 @@
 
 using namespace broomstyx;
 
+typedef std::chrono::time_point<std::chrono::system_clock> TimePoint;
+typedef std::chrono::duration<double> TimeDuration;
+typedef std::chrono::high_resolution_clock Timer;
+
 AnalysisModel::AnalysisModel()
     : _meshReader(nullptr)
 {}
@@ -68,10 +72,10 @@ AnalysisModel::~AnalysisModel()
 // Public methods
 void AnalysisModel::initializeYourself( std::string filename )
 {
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
-    std::chrono::duration<double> tictoc;
+    TimePoint tic, toc;
+    TimeDuration tictoc;
     
-    tic = std::chrono::high_resolution_clock::now();
+    tic = Timer::now();
 
     std::printf("\n----------------------------------------------------------------------");
     std::printf("\n               I N S T A N T I A T I O N    P H A S E");
@@ -132,7 +136,7 @@ void AnalysisModel::initializeYourself( std::string filename )
     // Impose multi-freedom constraints
     _dofManager->imposeMultiFreedomConstraints();
 
-    toc = std::chrono::high_resolution_clock::now();
+    toc = Timer::now();
     tictoc = toc - tic;
     diagnostics().addSetupTime(tictoc.count());
 }
@@ -177,13 +181,15 @@ void AnalysisModel::readMeshReaderFrom( FILE* fp )
 void AnalysisModel::readInputFile()
 {
     FILE* fp = nullptr;
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
-    std::chrono::duration<double> tictoc;
+    TimePoint tic, toc;
+    TimeDuration tictoc;
     std::string src = "AnalysisModel";
     
     std::printf("\n\n  %-40s", "Reading input file ...");
     std::fflush(stdout);
-    tic = std::chrono::high_resolution_clock::now();
+    
+    tic = Timer::now();
+    
     fp = std::fopen( _inputFilename.c_str(), "r" );
     if ( !fp )
         throw std::runtime_error("\nSpecified input file '" + _inputFilename + "' not found!");
@@ -232,7 +238,7 @@ void AnalysisModel::readInputFile()
     while ( decl != "END" );
     
     std::fclose(fp);
-    toc = std::chrono::high_resolution_clock::now();
+    toc = Timer::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
 }
