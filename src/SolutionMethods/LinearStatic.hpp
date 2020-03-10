@@ -25,7 +25,7 @@
 #define	LINEARSTATIC_HPP
 
 #include "SolutionMethod.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {

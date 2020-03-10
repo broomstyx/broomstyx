@@ -31,8 +31,8 @@
 #include "Node.hpp"
 #include "DomainManager.hpp"
 #include "SolutionManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Util/readOperations.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

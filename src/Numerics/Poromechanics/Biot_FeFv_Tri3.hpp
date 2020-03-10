@@ -24,10 +24,8 @@
 #ifndef BIOT_FEFV_TRI3_HPP
 #define	BIOT_FEFV_TRI3_HPP
 
-#include "../Numerics.hpp"
-//#include "../../Core/DofManager.hpp"
-//#include "../../Core/NumericsManager.hpp"
-#include "../../BasisFunctions/Triangle_P1.hpp"
+#include "Numerics/Numerics.hpp"
+#include "BasisFunctions/Triangle_P1.hpp"
 
 namespace broomstyx
 {

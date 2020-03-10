@@ -39,10 +39,10 @@
 #include "NumericsManager.hpp"
 #include "OutputManager.hpp"
 #include "SolutionManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../SolutionMethods/SolutionMethod.hpp"
-#include "../Util/readOperations.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Numerics/Numerics.hpp"
+#include "SolutionMethods/SolutionMethod.hpp"
+#include "Util/readOperations.hpp"
 #include "ObjectFactory.hpp"
 
 using namespace broomstyx;

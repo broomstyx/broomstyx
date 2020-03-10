@@ -33,8 +33,8 @@
 #include "ObjectFactory.hpp"
 #include "OutputManager.hpp"
 #include "SolutionManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Util/readOperations.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

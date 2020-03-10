@@ -22,7 +22,7 @@
 */
 
 #include "WarpingFunction_Ellipse.hpp"
-#include "../../Core/ObjectFactory.hpp"
+#include "Core/ObjectFactory.hpp"
 
 using namespace broomstyx;
 

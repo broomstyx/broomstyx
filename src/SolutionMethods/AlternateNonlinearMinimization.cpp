@@ -29,20 +29,20 @@
 #include <tuple>
 #include <omp.h>
 
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/Diagnostics.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/LoadStep.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Core/SolutionManager.hpp"
-#include "../LinearSolvers/LinearSolver.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
-#include "../Util/linearAlgebra.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/Diagnostics.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/LoadStep.hpp"
+#include "Core/NumericsManager.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Core/SolutionManager.hpp"
+#include "LinearSolvers/LinearSolver.hpp"
+#include "Numerics/Numerics.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 #define REPORT_SUBSYSTEM_STATUS false
 

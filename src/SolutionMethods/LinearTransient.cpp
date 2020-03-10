@@ -27,18 +27,18 @@
 #include <stdexcept>
 #include <tuple>
 
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/Diagnostics.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../Core/SolutionManager.hpp"
-#include "../LinearSolvers/LinearSolver.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../Util/linearAlgebra.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/Diagnostics.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/NumericsManager.hpp"
+#include "Core/SolutionManager.hpp"
+#include "LinearSolvers/LinearSolver.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Numerics/Numerics.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

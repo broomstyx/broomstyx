@@ -29,12 +29,12 @@
 #include <string>
 #include <omp.h>
 
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Util/RealVector.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/RealVector.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

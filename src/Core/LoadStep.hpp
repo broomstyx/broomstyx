@@ -28,8 +28,8 @@
 #include <vector>
 #include "BoundaryCondition.hpp"
 #include "FieldCondition.hpp"
-#include "../Util/RealMatrix.hpp"
-#include "../Util/RealVector.hpp"
+#include "Util/RealMatrix.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {    

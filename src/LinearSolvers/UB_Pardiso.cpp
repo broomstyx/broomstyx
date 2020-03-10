@@ -33,10 +33,10 @@
 #include <string>
 #include <tuple>
 
-#include "../Core/ObjectFactory.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
-#include "../Util/RealVector.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
+#include "Util/RealVector.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

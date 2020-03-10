@@ -25,10 +25,10 @@
 #include <cstring>
 #include <stdexcept>
 
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/SolutionManager.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/SolutionManager.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

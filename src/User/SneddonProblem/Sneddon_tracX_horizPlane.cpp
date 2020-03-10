@@ -22,7 +22,7 @@
 */
 
 #include "Sneddon_tracX_horizPlane.hpp"
-#include "../../Core/ObjectFactory.hpp"
+#include "Core/ObjectFactory.hpp"
 #include "SneddonProblem.hpp"
 
 using namespace broomstyx;

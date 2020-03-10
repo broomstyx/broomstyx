@@ -30,12 +30,12 @@
 #include <string>
 #include <tuple>
 
-#include "../Core/BoundaryCondition.hpp"
-#include "../Core/Cell.hpp"
-#include "../Core/FieldCondition.hpp"
-#include "../Core/InitialCondition.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/TimeData.hpp"
+#include "Core/BoundaryCondition.hpp"
+#include "Core/Cell.hpp"
+#include "Core/FieldCondition.hpp"
+#include "Core/InitialCondition.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/TimeData.hpp"
 
 namespace broomstyx
 {

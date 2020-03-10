@@ -25,7 +25,7 @@
 #define	LINEARTRANSIENTBE_HPP
 
 #include "LinearStatic.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {

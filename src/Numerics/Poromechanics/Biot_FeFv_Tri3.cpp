@@ -23,12 +23,12 @@
 
 #include "Biot_FeFv_Tri3.hpp"
 #include <cmath>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../Util/linearAlgebra.hpp"
-#include "../../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Materials/Material.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

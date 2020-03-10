@@ -67,7 +67,7 @@
 #ifndef PLANESTRAIN_FE_TRI6_HPP
 #define	PLANESTRAIN_FE_TRI6_HPP
 
-#include "../Numerics.hpp"
+#include "Numerics/Numerics.hpp"
 
 namespace broomstyx
 {

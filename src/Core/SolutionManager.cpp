@@ -33,9 +33,9 @@
 #include "LoadStep.hpp"
 #include "Node.hpp"
 #include "OutputManager.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../User/UserFunction.hpp"
-#include "../Util/readOperations.hpp"
+#include "Numerics/Numerics.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

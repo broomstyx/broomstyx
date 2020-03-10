@@ -67,10 +67,10 @@
 #ifndef MECH_FE_TET4_HPP
 #define	MECH_FE_TET4_HPP
 
-#include "../Numerics.hpp"
-#include "../../Core/DofManager.hpp"
-#include "../../Core/NumericsManager.hpp"
-#include "../../BasisFunctions/Tetrahedron_P1.hpp"
+#include "Numerics/Numerics.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/NumericsManager.hpp"
+#include "BasisFunctions/Tetrahedron_P1.hpp"
 
 namespace broomstyx
 {

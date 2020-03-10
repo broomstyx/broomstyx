@@ -26,7 +26,7 @@
 
 #include <cstdio>
 #include <string>
-#include "../Util/RealVector.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {

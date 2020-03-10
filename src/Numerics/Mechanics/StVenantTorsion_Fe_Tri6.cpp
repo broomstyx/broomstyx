@@ -25,21 +25,21 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/EvalPoint.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../User/UserFunction.hpp"
-#include "../../Util/linearAlgebra.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/EvalPoint.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Materials/Material.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/linearAlgebra.hpp"
 
-#include "../../IntegrationRules/Legendre_1D.hpp"
-#include "../../IntegrationRules/Legendre_2D_Tri.hpp"
-#include "../../BasisFunctions/Line_P2.hpp"
-#include "../../BasisFunctions/Triangle_P2.hpp"
-#include "../../Util/readOperations.hpp"
+#include "IntegrationRules/Legendre_1D.hpp"
+#include "IntegrationRules/Legendre_2D_Tri.hpp"
+#include "BasisFunctions/Line_P2.hpp"
+#include "BasisFunctions/Triangle_P2.hpp"
+#include "Util/readOperations.hpp"
 
-#include "../../Core/Node.hpp"
+#include "Core/Node.hpp"
 
 using namespace broomstyx;
 

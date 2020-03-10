@@ -27,7 +27,7 @@
 #ifndef CONSTANTPERMEABILITY_HPP
 #define	CONSTANTPERMEABILITY_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 
 namespace broomstyx
 {

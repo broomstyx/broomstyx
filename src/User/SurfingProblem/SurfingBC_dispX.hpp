@@ -24,7 +24,7 @@
 #ifndef SURFINGBC_DISPX_HPP
 #define SURFINGBC_DISPX_HPP
 
-#include "../UserFunction.hpp"
+#include "User/UserFunction.hpp"
 
 namespace broomstyx
 {

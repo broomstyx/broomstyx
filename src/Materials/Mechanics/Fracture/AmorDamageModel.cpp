@@ -22,9 +22,9 @@
 */
 
 #include "AmorDamageModel.hpp"
-#include "../../../Core/ObjectFactory.hpp"
-#include "../../../Util/readOperations.hpp"
-#include "../../../Util/linearAlgebra.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/readOperations.hpp"
+#include "Util/linearAlgebra.hpp"
 
 using namespace broomstyx;
 

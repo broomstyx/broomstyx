@@ -26,7 +26,7 @@
 
 #include <tuple>
 #include <vector>
-#include "../Util/RealVector.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {

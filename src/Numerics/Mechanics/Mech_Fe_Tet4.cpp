@@ -25,13 +25,13 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/Cell.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../Util/linearAlgebra.hpp"
-#include "../../BasisFunctions/Triangle_P1.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/Cell.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/DomainManager.hpp"
+#include "Materials/Material.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "BasisFunctions/Triangle_P1.hpp"
 
 using namespace broomstyx;
 

@@ -25,10 +25,10 @@
 
 #ifdef HAVE_VIENNACL
 
-#include "../Core/ObjectFactory.hpp"
-#include "../Util/readOperations.hpp"
-#include "../Util/RealVector.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/readOperations.hpp"
+#include "Util/RealVector.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 
 #include "viennacl/scalar.hpp"
 #include "viennacl/vector.hpp"

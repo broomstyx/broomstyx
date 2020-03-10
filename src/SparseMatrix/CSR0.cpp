@@ -24,7 +24,7 @@
 #include "CSR0.hpp"
 #include <cmath>
 #include <cstdio>
-#include "../Core/ObjectFactory.hpp"
+#include "Core/ObjectFactory.hpp"
 
 using namespace broomstyx;
 

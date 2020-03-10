@@ -5,6 +5,9 @@ list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules")
 file (GLOB_RECURSE sourcefiles "${PROJECT_SOURCE_DIR}/src/*.cpp")
 add_executable (broomstyx ${sourcefiles})
 
+include_directories (${PROJECT_SOURCE_DIR})
+include_directories (${PROJECT_SOURCE_DIR}/src)
+
 # Check for Intel Math Kernel Library
 find_package (MKL)
 

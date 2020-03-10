@@ -25,8 +25,8 @@
 
 #include <stdexcept>
 #include "SolutionManager.hpp"
-#include "../User/UserFunction.hpp"
-#include "../Util/readOperations.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/readOperations.hpp"
 #include "AnalysisModel.hpp"
 
 using namespace broomstyx;

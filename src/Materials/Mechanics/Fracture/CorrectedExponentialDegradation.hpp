@@ -78,7 +78,7 @@
 #ifndef CORRECTEDEXPONENTIALDEGRADATION_HPP
 #define	CORRECTEDEXPONENTIALDEGRADATION_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 
 namespace broomstyx
 {

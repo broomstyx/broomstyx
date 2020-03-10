@@ -24,13 +24,13 @@
 #include "PhaseFieldFracture_FeFv_Tri3.hpp"
 #include <cmath>
 #include <string>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Core/DofManager.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../Util/linearAlgebra.hpp"
-#include "../../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Materials/Material.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

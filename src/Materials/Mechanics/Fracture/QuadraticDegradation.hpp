@@ -45,7 +45,7 @@
 #ifndef QUADRATICDEGRADATION_HPP
 #define	QUADRATICDEGRADATION_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 
 namespace broomstyx
 {

@@ -29,7 +29,7 @@
 #include <vector>
 #include <list>
 
-#include "../Util/RealVector.hpp"
+#include "Util/RealVector.hpp"
 
 #define UNASSIGNED -1
 

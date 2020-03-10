@@ -25,8 +25,8 @@
 #define MATERIAL_HPP
 
 #include <cstdio>
-#include "../Util/RealMatrix.hpp"
-#include "../Util/RealVector.hpp"
+#include "Util/RealMatrix.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {

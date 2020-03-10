@@ -22,7 +22,7 @@
 */
 
 #include "LinearSolver.hpp"
-#include "../Util/RealVector.hpp"
+#include "Util/RealVector.hpp"
 
 using namespace broomstyx;
 

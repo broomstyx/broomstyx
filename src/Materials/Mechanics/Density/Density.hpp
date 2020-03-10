@@ -34,7 +34,7 @@
 #ifndef DENSITY_HPP
 #define	DENSITY_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 
 namespace broomstyx
 {

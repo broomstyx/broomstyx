@@ -24,7 +24,7 @@
 #ifndef PATCHTEST_DISPY_HPP
 #define PATCHTEST_DISPY_HPP
 
-#include "../UserFunction.hpp"
+#include "User/UserFunction.hpp"
 
 namespace broomstyx
 {

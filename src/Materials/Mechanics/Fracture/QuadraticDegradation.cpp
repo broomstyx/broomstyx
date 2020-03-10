@@ -23,7 +23,7 @@
 
 #include "QuadraticDegradation.hpp"
 #include <cmath>
-#include "../../../Core/ObjectFactory.hpp"
+#include "Core/ObjectFactory.hpp"
 
 using namespace broomstyx;
 

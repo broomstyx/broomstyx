@@ -23,13 +23,13 @@
 
 #include "BoundaryReaction.hpp"
 #include <cstring>
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/Dof.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/Dof.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

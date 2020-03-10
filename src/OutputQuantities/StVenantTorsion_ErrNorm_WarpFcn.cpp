@@ -22,16 +22,16 @@
 */
 
 #include "StVenantTorsion_ErrNorm_WarpFcn.hpp"
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/Dof.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../User/UserFunction.hpp"
-#include "../Util/readOperations.hpp"
-#include "../IntegrationRules/Legendre_2D_Tri.hpp"
-#include "../BasisFunctions/Triangle_P2.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/Dof.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/NumericsManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/readOperations.hpp"
+#include "IntegrationRules/Legendre_2D_Tri.hpp"
+#include "BasisFunctions/Triangle_P2.hpp"
 
 using namespace broomstyx;
 

@@ -22,7 +22,7 @@
 */
 
 #include "Sneddon_tracY_vertPlane.hpp"
-#include "../../Core/ObjectFactory.hpp"
+#include "Core/ObjectFactory.hpp"
 #include "SneddonProblem.hpp"
 
 using namespace broomstyx;

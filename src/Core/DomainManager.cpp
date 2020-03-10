@@ -34,9 +34,9 @@
 #include "Node.hpp"
 #include "NumericsManager.hpp"
 #include "SolutionManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../Util/readOperations.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Numerics/Numerics.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

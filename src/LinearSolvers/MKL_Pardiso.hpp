@@ -24,7 +24,7 @@
 #ifndef MKL_PARDISO_HPP
 #define MKL_PARDISO_HPP
 
-#include "../../config.h"
+#include "config.h"
 
 #ifdef HAVE_MKL
 

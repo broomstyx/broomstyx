@@ -27,10 +27,10 @@
 #include <string>
 
 #include "ObjectFactory.hpp"
-#include "../Core/Diagnostics.hpp"
-#include "../OutputQuantities/OutputQuantity.hpp"
-#include "../OutputWriters/OutputWriter.hpp"
-#include "../Util/readOperations.hpp"
+#include "Diagnostics.hpp"
+#include "OutputQuantities/OutputQuantity.hpp"
+#include "OutputWriters/OutputWriter.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

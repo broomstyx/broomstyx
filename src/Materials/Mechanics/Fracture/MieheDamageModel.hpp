@@ -24,7 +24,7 @@
 #ifndef MIEHEDAMAGEMODEL_HPP
 #define MIEHEDAMAGEMODEL_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 #include <tuple>
 
 namespace broomstyx

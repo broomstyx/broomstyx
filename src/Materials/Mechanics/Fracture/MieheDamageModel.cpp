@@ -22,9 +22,9 @@
 */
 
 #include "MieheDamageModel.hpp"
-#include "../../../Core/ObjectFactory.hpp"
-#include "../../../Util/readOperations.hpp"
-#include "../../../Util/linearAlgebra.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/readOperations.hpp"
+#include "Util/linearAlgebra.hpp"
 #include <cmath>
 
 #define PI 3.14159265358979323846
