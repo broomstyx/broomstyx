@@ -91,6 +91,7 @@ namespace broomstyx
         void   removeAllDofConstraints();
         void   reportNumberOfActiveDofs();
         void   resetDofCurrentPrimaryValues();
+        void   resetSecondaryVariablesAtStage( int stage );
         void   setConstraintValueAt( Dof* targetDof, double val );
         void   setEquationNumberFor( Dof* targetDof, int eqNo );
         void   setStageFor( Dof* targetDof, int stgNum );

@@ -124,6 +124,8 @@ int AlternateMinimization::computeSolutionFor( int stage
             _fluxCount(i) = 0;
         }
         
+        analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
+
         // Calculate residual for each subsystem
         // Note: We calculate global right hand sides in each
         // iteration to accommodate numerics classes that implement special
@@ -524,6 +526,8 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
 #endif
                     lhs(rowNum) += localLhs(j);
                 }
+
+                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
             }
         }
     }
@@ -646,6 +650,8 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
 #endif
                             rhs(rowNum) += localRhs(j);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                     }
                 }
             }
@@ -697,6 +703,8 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
 #endif
                             rhs(rowNum) += localRhs(j);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                     }
                 }
             }

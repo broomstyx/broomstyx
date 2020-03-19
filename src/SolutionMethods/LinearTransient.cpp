@@ -183,13 +183,13 @@ void LinearTransient::assembleEquations( int stage
 
                 // Assembly to global coefficient matrix
                 if ( rowNum != UNASSIGNED && colNum != UNASSIGNED )
-                    _spMatrix->atomicAddToComponent(rowNum, colNum, coefVal(i)*time.increment);
+                    _spMatrix->atomicAddToComponent(rowNum, colNum, coefVal(i));
 
                 // Right hand side contribution arising from constraints
                 if ( colNum == UNASSIGNED && rowNum != UNASSIGNED )
                 {
                     double constraintVal = analysisModel().dofManager().giveValueOfConstraintAt(colDof[i], current_value);
-                    double fmatVal = coefVal(i)*constraintVal*time.increment;
+                    double fmatVal = coefVal(i)*constraintVal;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -211,13 +211,13 @@ void LinearTransient::assembleEquations( int stage
 
                 // Assembly to global coefficient matrix
                 if ( rowNum != UNASSIGNED && colNum != UNASSIGNED )
-                    _spMatrix->atomicAddToComponent(rowNum, colNum, coefVal(i));
+                    _spMatrix->atomicAddToComponent(rowNum, colNum, coefVal(i)/time.increment);
 
                 // Right hand side contribution arising from constraints
                 if ( colNum == UNASSIGNED && rowNum != UNASSIGNED )
                 {
                     double constraintVal = analysisModel().dofManager().giveValueOfConstraintAt(colDof[i], current_value);
-                    double fmatVal = coefVal(i)*constraintVal;
+                    double fmatVal = coefVal(i)*constraintVal/time.increment;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -241,7 +241,7 @@ void LinearTransient::assembleEquations( int stage
     #ifdef _OPENMP
     #pragma omp atomic
     #endif
-                    rhs(rowNum) += localRhs(i);
+                    rhs(rowNum) += localRhs(i)/time.increment;
             }
         }
     }
@@ -256,6 +256,37 @@ void LinearTransient::assembleEquations( int stage
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     diagnostics().addRhsAssemblyTime(tictoc.count());
+}
+// ----------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+void LinearTransient::assembleLeftHandSide( int stage, const TimeData& time )
+{
+    int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for ( int iCell = 0; iCell < nCells; iCell++ )
+    {
+        Cell* curCell = analysisModel().domainManager().giveDomainCell(iCell);
+        Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+
+        // Static LHS
+        std::vector<Dof*> rowDof;
+        RealVector localLhs, localLhsOld;
+        std::tie(rowDof, localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, UNASSIGNED, time);
+
+        for ( int i = 0; i < localLhs.dim(); i++ )
+            if ( rowDof[i] )
+                analysisModel().dofManager().addToSecondaryVariableAt( rowDof[i], localLhs(i));
+
+        // Transient LHS
+        std::tie(rowDof, localLhs) = numerics->giveTransientLeftHandSideAt(curCell, stage, UNASSIGNED, time, current_value);
+        std::tie(rowDof, localLhsOld) = numerics->giveTransientLeftHandSideAt(curCell, stage, UNASSIGNED, time, converged_value);
+        for ( int i = 0; i < localLhs.dim(); i++ )
+            if ( rowDof[i] )
+                analysisModel().dofManager().addToSecondaryVariableAt( rowDof[i], (localLhs(i) - localLhsOld(i))/time.increment);
+    }
 }
 // ----------------------------------------------------------------------------
 void LinearTransient::assembleRightHandSide( int stage
@@ -296,7 +327,7 @@ void LinearTransient::assembleRightHandSide( int stage
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                            rhs(rowNum) += localRhs(i)*time.increment;
+                            rhs(rowNum) += localRhs(i);
                         }
                     }
                 }
@@ -335,7 +366,7 @@ void LinearTransient::assembleRightHandSide( int stage
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                        rhs(rowNum) += localRhs(i)*time.increment;
+                        rhs(rowNum) += localRhs(i);
                     }
                 }
             }                

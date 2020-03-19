@@ -126,6 +126,8 @@ int AlternateNonlinearMinimization::computeSolutionFor
             _fluxCount(i) = 0;
         }
         
+        analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
+        
         // Calculate residual for each subsystem
         // Note: We calculate global external force vectors in each iteration 
         // to accommodate numerics classes that implement special methods for imposing constraints        

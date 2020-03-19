@@ -590,6 +590,12 @@ void DofManager::resetDofCurrentPrimaryValues()
     }
 }
 // ----------------------------------------------------------------------------
+void DofManager::resetSecondaryVariablesAtStage( int stage )
+{
+    for ( int i = 0; i < (int)_activeDof[stage].size(); i++ )
+        _activeDof[stage][i]->_secVar = 0.;
+}
+// ----------------------------------------------------------------------------
 void DofManager::setConstraintValueAt( Dof* targetDof, double val )
 {
     targetDof->_constraintValue = val;

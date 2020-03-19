@@ -44,6 +44,8 @@ namespace broomstyx
                               , const TimeData& time
                               , RealVector& rhs );
         
+        void assembleLeftHandSide( int stage, const TimeData& time );
+
         void assembleRightHandSide( int stage
                                   , const std::vector<BoundaryCondition>& bndCond
                                   , const std::vector<FieldCondition>& fldCond

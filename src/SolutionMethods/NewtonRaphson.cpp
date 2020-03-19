@@ -68,7 +68,7 @@ int NewtonRaphson::computeSolutionFor( int stage
 {
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
-    
+
     // Get all active DOFs at current stage
     std::vector<Dof*> dof = analysisModel().dofManager().giveActiveDofsAtStage(stage);
     
@@ -106,6 +106,8 @@ int NewtonRaphson::computeSolutionFor( int stage
         // Note: this is normally redudant, but we recalculate them in each
         // iteration to accommodate numerics classes that implement special
         // methods for imposing constraints
+
+        analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
         
         // Calculate residual for each subsystem
         rhs = assembleRightHandSide(stage, bndCond, fldCond, time);
@@ -380,6 +382,8 @@ RealVector NewtonRaphson::assembleLeftHandSide( int stage, const TimeData& time 
 #endif
                     lhs(rowNum) += localLhs(j);
                 }
+
+                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
             }
         }
     }
@@ -467,6 +471,8 @@ RealVector NewtonRaphson::assembleRightHandSide( int stage
 #endif
                             rhs(rowNum) += localRhs(j);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                     }
                 }
             }
@@ -512,6 +518,8 @@ RealVector NewtonRaphson::assembleRightHandSide( int stage
 #endif
                             rhs(rowNum) += localRhs(j);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                     }
                 }
             }

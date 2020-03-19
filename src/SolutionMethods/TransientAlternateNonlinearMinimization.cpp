@@ -261,17 +261,17 @@ void TransientAlternateNonlinearMinimization::readDataFromFile( FILE* fp )
         // Absolute tolerance for residuals
         _absTolRes(i) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", _name);
         
-        // Specify whether DOF group belongs to a non-transient equation
-        key = getStringInputFrom(fp, "Failed to read static/transient specification for DOF group from input file!", _name);
-        if ( key == "Static" )
-            _isTransient[i] = false;
-        else if ( key == "Transient" )
-            _isTransient[i] = true;
-        else
-        {
-            errmsg = "Unrecognized specification '" + key + "' encountered, must be either 'Static' or 'Transient'.\nSource: " + _name;
-            throw std::runtime_error(errmsg);
-        }
+        // // Specify whether DOF group belongs to a non-transient equation
+        // key = getStringInputFrom(fp, "Failed to read static/transient specification for DOF group from input file!", _name);
+        // if ( key == "Static" )
+        //     _isTransient[i] = false;
+        // else if ( key == "Transient" )
+        //     _isTransient[i] = true;
+        // else
+        // {
+        //     errmsg = "Unrecognized specification '" + key + "' encountered, must be either 'Static' or 'Transient'.\nSource: " + _name;
+        //     throw std::runtime_error(errmsg);
+        // }
     }
 
     // Read number of subsystems
@@ -415,16 +415,16 @@ RealVector TransientAlternateNonlinearMinimization::assembleLeftHandSide( int st
                     int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                     int idx = this->giveIndexForDofGroup(grp);
                     
-                    if ( _isTransient[idx] )
-                    {
-                        sumAbsFlux(idx) += std::fabs(localLhs(j)*time.increment);
-                        fluxCount(idx) += 1.;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-                        lhs(rowNum) += localLhs(j)*time.increment;
-                    }
-                    else
+//                     if ( _isTransient[idx] )
+//                     {
+//                         sumAbsFlux(idx) += std::fabs(localLhs(j)*time.increment);
+//                         fluxCount(idx) += 1.;
+// #ifdef _OPENMP
+// #pragma omp atomic
+// #endif
+//                         lhs(rowNum) += localLhs(j)*time.increment;
+//                     }
+//                     else
                     {
                         sumAbsFlux(idx) += std::fabs(localLhs(j));
                         fluxCount(idx) += 1.;
@@ -433,6 +433,8 @@ RealVector TransientAlternateNonlinearMinimization::assembleLeftHandSide( int st
 #endif
                         lhs(rowNum) += localLhs(j);
                     }
+
+                    analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
                 }
             }
         }
@@ -457,13 +459,15 @@ RealVector TransientAlternateNonlinearMinimization::assembleLeftHandSide( int st
                 {
                     int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                     int idx = this->giveIndexForDofGroup(grp);
-                    sumAbsFlux(idx) += std::fabs(localLhs(j));
+                    sumAbsFlux(idx) += std::fabs(localLhs(j)/time.increment);
                     fluxCount(idx) += 1.;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                    lhs(rowNum) += localLhs(j);
+                    lhs(rowNum) += localLhs(j)/time.increment;
                 }
+
+                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j)/time.increment);
             }
         }
     }
@@ -508,12 +512,12 @@ void TransientAlternateNonlinearMinimization::assembleJacobian( int stage
                     int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                     int grpIdx = this->giveIndexForDofGroup(grp);
                             
-                    if ( _isTransient[grpIdx] )
-                    {
-                        int idx = this->giveIndexForSubsystem(subsys);
-                        _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)*time.increment);
-                    }
-                    else
+                    // if ( _isTransient[grpIdx] )
+                    // {
+                    //     int idx = this->giveIndexForSubsystem(subsys);
+                    //     _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)*time.increment);
+                    // }
+                    // else
                     {
                         int idx = this->giveIndexForSubsystem(subsys);
                         _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j));
@@ -537,7 +541,7 @@ void TransientAlternateNonlinearMinimization::assembleJacobian( int stage
                 if ( rowNum != UNASSIGNED && rssNum == subsys && colNum != UNASSIGNED && cssNum == subsys )
                 {
                     int idx = this->giveIndexForSubsystem(subsys);
-                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j));
+                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)/time.increment);
                 }
             }
         }
@@ -592,16 +596,16 @@ RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int s
                             int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                             int idx = this->giveIndexForDofGroup(grp);
                             
-                            if ( _isTransient[idx] )
-                            {
-                                sumAbsFlux(idx) += std::fabs(localRhs(j)*time.increment);
-                                fluxCount(idx) += 1.;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-                                rhs(rowNum) += localRhs(j)*time.increment;
-                            }
-                            else
+//                             if ( _isTransient[idx] )
+//                             {
+//                                 sumAbsFlux(idx) += std::fabs(localRhs(j)*time.increment);
+//                                 fluxCount(idx) += 1.;
+// #ifdef _OPENMP
+// #pragma omp atomic
+// #endif
+//                                 rhs(rowNum) += localRhs(j)*time.increment;
+//                             }
+//                             else
                             {
                                 sumAbsFlux(idx) += std::fabs(localRhs(j));
                                 fluxCount(idx) += 1.;
@@ -610,6 +614,8 @@ RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int s
 #endif                                
                                 rhs(rowNum) += localRhs(j);
                             }
+
+                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                         }
                     }
                 }
@@ -652,16 +658,16 @@ RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int s
                             int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                             int idx = this->giveIndexForDofGroup(grp);
                             
-                            if ( _isTransient[idx] )
-                            {
-                                sumAbsFlux(idx) += std::fabs(localRhs(j)*time.increment);
-                                fluxCount(idx) += 1.;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-                                rhs(rowNum) += localRhs(j)*time.increment;
-                            }
-                            else
+//                             if ( _isTransient[idx] )
+//                             {
+//                                 sumAbsFlux(idx) += std::fabs(localRhs(j)*time.increment);
+//                                 fluxCount(idx) += 1.;
+// #ifdef _OPENMP
+// #pragma omp atomic
+// #endif
+//                                 rhs(rowNum) += localRhs(j)*time.increment;
+//                             }
+//                             else
                             {
                                 sumAbsFlux(idx) += std::fabs(localRhs(j));
                                 fluxCount(idx) += 1.;
@@ -670,6 +676,8 @@ RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int s
 #endif                                
                                 rhs(rowNum) += localRhs(j);
                             }
+
+                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                         }
                     }
                 }
