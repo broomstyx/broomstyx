@@ -214,15 +214,15 @@ void PhaseFieldFracture_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_bulkEgy = material[1]->givePotentialFrom(conState, cns->_materialStatus[1]);
     cns->_surfEgy = _Gc/2.0*(_l*cns->_gradPhi.dot(cns->_gradPhi) + cns->_phi*cns->_phi/_l);
     
-    RealVector fmatU;
-    fmatU = cns->_area*(trp(bmatU)*cns->_stress);
+    // RealVector fmatU;
+    // fmatU = cns->_area*(trp(bmatU)*cns->_stress);
     
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmatU(2));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmatU(3));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmatU(4));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmatU(5));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmatU(2));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmatU(3));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmatU(4));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmatU(5));
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_FeFv_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )

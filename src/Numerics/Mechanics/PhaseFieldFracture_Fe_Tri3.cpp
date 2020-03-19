@@ -135,27 +135,17 @@ void PhaseFieldFracture_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_bulkEgy = material[1]->givePotentialFrom(conState, cns->_materialStatus[1]);
     cns->_surfEgy = _Gc/2.0*(_lc*dphi.dot(dphi) + phiVec.dot(_massMatrix*phiVec)/_lc);
     
-    // Update secondary variable at DOFs   
-    RealVector fmatU = cns->_area*trp(bmatU)*cns->_stress;
-    
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmatU(2));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmatU(3));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmatU(4));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmatU(5));
-    
-    // Calculate g'(phi)*elasticEnergy
-    RealVector dgPhi_Psi0 = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "PhaseField");
+    // // Calculate g'(phi)*elasticEnergy
+    // RealVector dgPhi_Psi0 = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "PhaseField");
 
-    // Calculate FmatPhi
-    RealVector fmatPhi;
-    fmatPhi = cns->_area*(_Gc/_lc*cns->_phi + dgPhi_Psi0(0))*_basisFunctionValues
-            + cns->_area*_Gc*_lc*trp(cns->_dPsi)*dphi;
+    // // Calculate FmatPhi
+    // RealVector fmatPhi;
+    // fmatPhi = cns->_area*(_Gc/_lc*cns->_phi + dgPhi_Psi0(0))*_basisFunctionValues
+    //         + cns->_area*_Gc*_lc*trp(cns->_dPsi)*dphi;
             
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[6], fmatPhi(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[7], fmatPhi(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[8], fmatPhi(2));    
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[6], fmatPhi(0));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[7], fmatPhi(1));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[8], fmatPhi(2));    
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_Fe_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )

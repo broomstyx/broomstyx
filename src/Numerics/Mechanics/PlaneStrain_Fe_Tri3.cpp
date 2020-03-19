@@ -121,15 +121,15 @@ void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     // Get stress
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
     
-    // Update secondary variable at DOFs
-    RealVector fmat = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
+    // // Update secondary variable at DOFs
+    // RealVector fmat = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
     
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmat(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmat(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmat(2));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmat(3));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmat(4));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmat(5));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmat(0));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmat(1));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmat(2));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmat(3));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmat(4));
+    // analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmat(5));
 }
 // ----------------------------------------------------------------------------
 double PlaneStrain_Fe_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )

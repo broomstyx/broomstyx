@@ -122,12 +122,6 @@ void Mech_Fe_Tet4::finalizeDataAt( Cell* targetCell )
 
     // Get stress
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
-    
-    // Update secondary variable at DOFs
-    RealVector fmat = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
-    
-    for ( int i = 0; i < 12; i++ )
-        analysisModel().dofManager().addToSecondaryVariableAt(dof[i], fmat(i));
 }
 // ----------------------------------------------------------------------------
 double Mech_Fe_Tet4::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
