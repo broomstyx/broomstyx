@@ -161,8 +161,6 @@ void DofManager::finalizeDofPrimaryValues()
             }
             else
                 targetDof->_primVarConverged = targetDof->_primVarCurrent;
-            
-            targetDof->_secVar = 0.;
         }
     }
 
@@ -183,15 +181,12 @@ void DofManager::finalizeDofPrimaryValues()
             }
             else
                 targetDof->_primVarConverged = targetDof->_primVarCurrent;
-            
-            targetDof->_secVar = 0.;
         }        
     }
     
     for ( int i = 0; i < (int)_numericsDof.size(); i++ )
     {
         _numericsDof[i]->_primVarConverged = _numericsDof[i]->_primVarCurrent;
-        _numericsDof[i]->_secVar = 0.;
     }
 }
 // ----------------------------------------------------------------------------
