@@ -103,12 +103,11 @@ void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     RealVector uVec = this->giveLocalDisplacementsAt(dof, converged_value);
     
     // Construct displacement gradient
-    RealMatrix bmatGradU, uMat(3,2);
+    RealMatrix bmatGradU = this->giveGradBmatAt(targetCell);
+    RealMatrix uMat({{uVec(0), uVec(1)},
+                     {uVec(2), uVec(3)},
+                     {uVec(4), uVec(5)}});
     
-    uMat(0,0) = uVec(0); uMat(0,1) = uVec(1);
-    uMat(1,0) = uVec(2); uMat(1,1) = uVec(3);
-    uMat(2,0) = uVec(4); uMat(2,1) = uVec(5);
-    bmatGradU = this->giveGradBmatAt(targetCell);
     cns->_gradU = bmatGradU*uMat;
     
     // Construct strain
@@ -120,16 +119,6 @@ void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell )
 
     // Get stress
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
-    
-    // // Update secondary variable at DOFs
-    // RealVector fmat = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
-    
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmat(0));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmat(1));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmat(2));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmat(3));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmat(4));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmat(5));
 }
 // ----------------------------------------------------------------------------
 double PlaneStrain_Fe_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
@@ -537,8 +526,8 @@ void PlaneStrain_Fe_Tri3::setDofStagesAt( Cell* targetCell )
     {
         Dof *dof_x, *dof_y;
         
-        dof_x = analysisModel().domainManager().giveNodalDof(_nodalDof[0],node[i]);
-        dof_y = analysisModel().domainManager().giveNodalDof(_nodalDof[1],node[i]);
+        dof_x = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[i]);
+        dof_y = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[i]);
         
         analysisModel().dofManager().setStageFor(dof_x, _stage[0]);
         analysisModel().dofManager().setStageFor(dof_y, _stage[0]);
@@ -562,11 +551,10 @@ RealMatrix PlaneStrain_Fe_Tri3::giveBmatAt( Cell* targetCell )
     auto cns = this->getNumericsStatusAt(targetCell);
     RealMatrix dpsi = cns->_JmatInv*_basisFunctionDerivatives;
     
-    RealMatrix bmat(4,6);
-    bmat = {{dpsi(0,0), 0.,        dpsi(0,1), 0.,        dpsi(0,2), 0.},
-            {0.,        dpsi(1,0), 0.,        dpsi(1,1), 0.,        dpsi(1,2)},
-            {0.,        0.,        0.,        0.,        0.,        0.},
-            {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2)}};
+    RealMatrix bmat({{dpsi(0,0), 0.,        dpsi(0,1), 0.,        dpsi(0,2), 0.},
+                     {0.,        dpsi(1,0), 0.,        dpsi(1,1), 0.,        dpsi(1,2)},
+                     {0.,        0.,        0.,        0.,        0.,        0.},
+                     {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2)}});
 
     return bmat;
 }
