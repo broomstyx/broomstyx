@@ -509,8 +509,8 @@ void TransientAlternateNonlinearMinimization::assembleJacobian( int stage
 
                 if ( rowNum != UNASSIGNED && rssNum == subsys && colNum != UNASSIGNED && cssNum == subsys )
                 {
-                    int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                    int grpIdx = this->giveIndexForDofGroup(grp);
+                    // int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                    // int grpIdx = this->giveIndexForDofGroup(grp);
                             
                     // if ( _isTransient[grpIdx] )
                     // {
@@ -593,8 +593,8 @@ RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int s
 
                         if ( rowNum != UNASSIGNED && ssNum == subsys )
                         {
-                            int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            int idx = this->giveIndexForDofGroup(grp);
+                            // int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                            // int idx = this->giveIndexForDofGroup(grp);
                             
 //                             if ( _isTransient[idx] )
 //                             {
@@ -655,8 +655,8 @@ RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int s
 
                         if ( rowNum != UNASSIGNED && ssNum == subsys )
                         {
-                            int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            int idx = this->giveIndexForDofGroup(grp);
+                            // int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                            // int idx = this->giveIndexForDofGroup(grp);
                             
 //                             if ( _isTransient[idx] )
 //                             {
