@@ -24,8 +24,8 @@
 #ifndef USERFUNCTION_HPP
 #define USERFUNCTION_HPP
 
-#include "../Core/TimeData.hpp"
-#include "../Util/RealVector.hpp"
+#include "Core/TimeData.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {

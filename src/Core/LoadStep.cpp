@@ -39,10 +39,10 @@
 #include "NumericsManager.hpp"
 #include "OutputManager.hpp"
 #include "SolutionManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../SolutionMethods/SolutionMethod.hpp"
-#include "../Util/readOperations.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Numerics/Numerics.hpp"
+#include "SolutionMethods/SolutionMethod.hpp"
+#include "Util/readOperations.hpp"
 #include "ObjectFactory.hpp"
 
 using namespace broomstyx;
@@ -536,7 +536,7 @@ void LoadStep::findConstrainedDofs()
                         Numerics* domCellNumerics = analysisModel().domainManager().giveNumericsFor(curDomCell);
                         if ( domCellNumerics == targetNumerics )
                         {
-                            int targetDofNum = targetNumerics->giveIndexOfNodalDof(curBC.targetDof());
+                            int targetDofNum = analysisModel().dofManager().giveIndexForNodalDof(curBC.targetDof());
                             
                             for ( Node* curNode : node )
                             {
@@ -560,8 +560,7 @@ void LoadStep::findConstrainedDofs()
                 
                 if ( label == boundaryId )
                 {
-                    Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
-                    int targetDofNum = numerics->giveIndexOfCellDof(curBC.targetDof());
+                    int targetDofNum = analysisModel().dofManager().giveIndexForCellDof(curBC.targetDof());
                     
                     Dof* targetDof = analysisModel().domainManager().giveCellDof(targetDofNum, curCell);
                     analysisModel().dofManager().putDirichletConstraintOn(targetDof);

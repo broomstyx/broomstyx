@@ -25,10 +25,10 @@
 #include <stdexcept>
 #include <set>
 #include "AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Util/readOperations.hpp"
-#include "../Numerics/Numerics.hpp"
+#include "ObjectFactory.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Util/readOperations.hpp"
+#include "Numerics/Numerics.hpp"
 
 using namespace broomstyx;
 

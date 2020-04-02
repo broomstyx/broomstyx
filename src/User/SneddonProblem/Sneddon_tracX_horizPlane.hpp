@@ -24,7 +24,7 @@
 #ifndef SNEDDON_TRACX_HORIZPLANE_HPP
 #define SNEDDON_TRACX_HORIZPLANE_HPP
 
-#include "../UserFunction.hpp"
+#include "User/UserFunction.hpp"
 
 namespace broomstyx
 {

@@ -38,7 +38,7 @@
 #define	JINTEGRAL_ELASTIC_HPP
 
 #include "OutputQuantity.hpp"
-#include "../Util/RealVector.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {

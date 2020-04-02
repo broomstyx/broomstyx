@@ -21,34 +21,29 @@
   for the list of copyright holders.
 */
 
-#ifndef STVENANTTORSION_ERRNORM_WARPFCN_HPP
-#define STVENANTTORSION_ERRNORM_WARPFCN_HPP
+#ifndef CELLFIELDOUTPUT_HPP
+#define	CELLFIELDOUTPUT_HPP
 
 #include "OutputQuantity.hpp"
 
 namespace broomstyx
 {
-    class UserFunction;
+    class AnalysisModel;
     
-    class StVenantTorsion_ErrNorm_WarpFcn final : public OutputQuantity
+    class CellFieldOutput final : public OutputQuantity
     {
     public:
-        StVenantTorsion_ErrNorm_WarpFcn();
-        virtual ~StVenantTorsion_ErrNorm_WarpFcn();
+        CellFieldOutput();
+        virtual ~CellFieldOutput();
         
         double computeOutput() override;
         void   initialize() override;
-        void   readDataFrom( FILE* fp ) override;
-    
-    private:
-        int         _numericsTag;
-        std::string _domainTag;
-        int         _dofNum;
-        std::string _fcnName;
+        void   readDataFrom( FILE *fp ) override;
         
-        UserFunction* _analyticSoln;
-    };
+    private:
+        std::string _physTag;
+        int _cellField;
+    };    
 }
 
-#endif /* STVENANTTORSION_ERRNORM_WARPFCN_HPP */
-
+#endif	/* SOLUTIONATNODE_HPP */

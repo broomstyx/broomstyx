@@ -27,8 +27,8 @@
 #include <chrono>
 #include "AnalysisModel.hpp"
 #include "ObjectFactory.hpp"
-#include "../Materials/Material.hpp"
-#include "../Util/readOperations.hpp"
+#include "Materials/Material.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

@@ -21,64 +21,62 @@
   for the list of copyright holders.
 */
 
-#include "DomainIntegral.hpp"
+#include "CellFieldOutput.hpp"
 #include <cstring>
-#include <tuple>
+#include <stdexcept>
 #include "Core/AnalysisModel.hpp"
 #include "Core/ObjectFactory.hpp"
 #include "Core/DomainManager.hpp"
-#include "MeshReaders/MeshReader.hpp"
 #include "Numerics/Numerics.hpp"
-#include "Util/RealVector.hpp"
-#include "Util/linearAlgebra.hpp"
 #include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
-registerBroomstyxObject(OutputQuantity, DomainIntegral)
+registerBroomstyxObject(OutputQuantity, CellFieldOutput)
 
 // Constructor
-DomainIntegral::DomainIntegral()
+CellFieldOutput::CellFieldOutput()
 {
-    _name = "DomainIntegral";
+    _name = "CellFieldOutput";
 }
 
 // Destructor
-DomainIntegral::~DomainIntegral() {}
+CellFieldOutput::~CellFieldOutput() {}
 
 // Public methods
-double DomainIntegral::computeOutput()
+double CellFieldOutput::computeOutput()
 {
-    double result = 0.0;
-    
-    // Retrieve relevant numerics
+    double value = 0.;
+    // Find relevant cell
     int physNum = analysisModel().domainManager().givePhysicalEntityNumberFor(_physTag);
     Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(physNum);
     
-    // Cycle through all domain cells
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
+    int count = 0;
     for ( int i = 0; i < nCells; i++ )
     {
         Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
+
         if ( analysisModel().domainManager().giveLabelOf(curCell) == physNum )
         {
-            RealVector val, wt;
-            std::tie(val,wt) = numerics->giveCellFieldOutputAtEvaluationPointsOf(curCell, _cellFieldNum);
-            result += val.dot(wt);
+            ++count;
+            if ( count > 1 )
+                throw std::runtime_error("ERROR: More than one cell detected under specified physical tag!\nSource = " + _name);
+            
+            value = numerics->giveCellFieldValueAt(curCell, _cellField);
         }
     }
-    
-    return result;
+
+    return value;
 }
 
-void DomainIntegral::initialize() {}
+void CellFieldOutput::initialize() {}
 
-void DomainIntegral::readDataFrom( FILE* fp )
+void CellFieldOutput::readDataFrom( FILE *fp )
 {
-    // Read domain tag
-    _physTag = getStringInputFrom(fp, "Failed reading domain label from input file", _name);
-            
-    // Read cell field number
-    verifyKeyword(fp, "CellField", _name);
-    _cellFieldNum = getIntegerInputFrom(fp, "Failed reading cell field number from input file.", _name);
+    std::string key, errmsg;
+    
+    // Read physical tag of boundary
+    _physTag = getStringInputFrom(fp, "Failed to read cell label from input file!", _name);
+    _cellField = getIntegerInputFrom(fp, "Failed to read cell field number from input file!", _name);
 }

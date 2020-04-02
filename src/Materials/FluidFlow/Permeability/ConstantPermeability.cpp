@@ -1,8 +1,8 @@
 #include "ConstantPermeability.hpp"
 #include <string>
-#include "../../../Core/ObjectFactory.hpp"
-#include "../../../Util/linearAlgebra.hpp"
-#include "../../../Util/readOperations.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 

@@ -23,12 +23,12 @@
 
 #include "SolutionMethod.hpp"
 #include <chrono>
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/Diagnostics.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../Core/SolutionManager.hpp"
-#include "../Numerics/Numerics.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/Diagnostics.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/NumericsManager.hpp"
+#include "Core/SolutionManager.hpp"
+#include "Numerics/Numerics.hpp"
 
 using namespace broomstyx;
 

@@ -23,12 +23,12 @@
 
 #include "Biot_FeFv_Tri3.hpp"
 #include <cmath>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../Util/linearAlgebra.hpp"
-#include "../../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Materials/Material.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -210,16 +210,6 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     // Get constitutive force
     material[1]->updateStatusFrom(cns->_strain, cns->_materialStatus[1]);
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
-    
-    RealVector fmatU;
-    fmatU = cns->_area*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*cns->_head*bmatDiv);
-    
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmatU(2));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmatU(3));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmatU(4));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmatU(5));
 }
 // ----------------------------------------------------------------------------
 double Biot_FeFv_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
@@ -639,11 +629,7 @@ Biot_FeFv_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
                 // Construct global address vector
                 rowDof.assign(2, nullptr);
 
-                // Note that bndCond.targetDof() assumes 1-based notation but
-                // first element of nodalDof is stored at index 0!
-                // So you need to make adjustments
-                int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+                int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
                 rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
                 rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
             }
@@ -896,11 +882,11 @@ void Biot_FeFv_Tri3::imposeConstraintAt( Cell*                    targetCell
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
         for ( int j = 0; j < (int)node.size(); j++)
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
             analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);
@@ -910,9 +896,9 @@ void Biot_FeFv_Tri3::imposeConstraintAt( Cell*                    targetCell
     // Constraints pertaining to cell DOFS
     if ( bndCond.conditionType() == "CellConstraint" )
     {
-        int targetDofNum = _cellDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForCellDof(bndCond.targetDof());
         std::vector<RealVector> coor = this->giveEvaluationPointsFor(targetCell);
-        Dof* targetDof = analysisModel().domainManager().giveCellDof(targetDofNum, targetCell);
+        Dof* targetDof = analysisModel().domainManager().giveCellDof(dofNum, targetCell);
         
         double bcVal = bndCond.valueAt(coor[0],time);
         analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);

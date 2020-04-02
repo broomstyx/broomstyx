@@ -26,10 +26,10 @@
 
 #include <cstdio>
 #include <vector>
-#include "../Core/BoundaryCondition.hpp"
-#include "../Core/FieldCondition.hpp"
-#include "../Core/TimeData.hpp"
-#include "../Util/RealVector.hpp"
+#include "Core/BoundaryCondition.hpp"
+#include "Core/FieldCondition.hpp"
+#include "Core/TimeData.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {  

@@ -24,7 +24,7 @@
 #ifndef BOURDINDAMAGEMODEL_HPP
 #define BOURDINDAMAGEMODEL_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 
 namespace broomstyx
 {

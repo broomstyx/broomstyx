@@ -25,21 +25,21 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/EvalPoint.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../User/UserFunction.hpp"
-#include "../../Util/linearAlgebra.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/EvalPoint.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Materials/Material.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/linearAlgebra.hpp"
 
-#include "../../IntegrationRules/Legendre_1D.hpp"
-#include "../../IntegrationRules/Legendre_2D_Tri.hpp"
-#include "../../BasisFunctions/Line_P2.hpp"
-#include "../../BasisFunctions/Triangle_P2.hpp"
-#include "../../Util/readOperations.hpp"
+#include "IntegrationRules/Legendre_1D.hpp"
+#include "IntegrationRules/Legendre_2D_Tri.hpp"
+#include "BasisFunctions/Line_P2.hpp"
+#include "BasisFunctions/Triangle_P2.hpp"
+#include "Util/readOperations.hpp"
 
-#include "../../Core/Node.hpp"
+#include "Core/Node.hpp"
 
 using namespace broomstyx;
 
@@ -455,10 +455,7 @@ StVenantTorsion_Fe_Tri6::giveStaticRightHandSideAt( Cell*                    tar
             rhs += G*b*psi*(x*dxde + y*dyde)*gpWt(i);
         }
         
-        // Note that bndCond.targetDof() assumes 1-based notation but first
-        // element of nodalDof is stored at index 0.
-        int dofNum = _nodalDof[ bndCond.targetDof() - 1 ];
-        
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());        
         
         rowDof.assign(3, nullptr);
         rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);

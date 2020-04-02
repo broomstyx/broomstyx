@@ -25,7 +25,7 @@
 #define	LINEARTRANSIENTBE_HPP
 
 #include "LinearStatic.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {
@@ -44,6 +44,8 @@ namespace broomstyx
                               , const TimeData& time
                               , RealVector& rhs );
         
+        void assembleLeftHandSide( int stage, const TimeData& time );
+
         void assembleRightHandSide( int stage
                                   , const std::vector<BoundaryCondition>& bndCond
                                   , const std::vector<FieldCondition>& fldCond

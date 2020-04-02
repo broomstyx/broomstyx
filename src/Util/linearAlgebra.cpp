@@ -24,7 +24,7 @@
 #include "linearAlgebra.hpp"
 #include <cstdio>
 #include <stdexcept>
-#include <vector>
+
 #include <config.h>
 
 #ifdef HAVE_MKL

@@ -33,9 +33,9 @@
 #include "LoadStep.hpp"
 #include "Node.hpp"
 #include "OutputManager.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../User/UserFunction.hpp"
-#include "../Util/readOperations.hpp"
+#include "Numerics/Numerics.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -67,11 +67,10 @@ SolutionManager::~SolutionManager()
 // ----------------------------------------------------------------------------
 void SolutionManager::commenceSolution()
 {
-    std::chrono::time_point<std::chrono::system_clock> outertic, outertoc, tic, toc;
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
     
     // Set stages for nodal and elemental degrees of freedom
-    outertic = std::chrono::high_resolution_clock::now();
     tic = std::chrono::high_resolution_clock::now();
     int nDomCells = analysisModel().domainManager().giveNumberOfDomainCells();
     for ( int i = 0; i < nDomCells; i++ )
@@ -108,10 +107,6 @@ void SolutionManager::commenceSolution()
         _curLoadStep = _loadStep[i];
         _curLoadStep->solveYourself();
     }
-
-    outertoc = std::chrono::high_resolution_clock::now();
-    tictoc = outertoc - outertic;
-    std::printf("SolnManager time = %f\n\n", tictoc.count());
 }
 // ----------------------------------------------------------------------------
 LoadStep* SolutionManager::giveCurrentLoadStep()

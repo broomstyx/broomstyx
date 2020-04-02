@@ -24,9 +24,10 @@
 #include "BoundaryCondition.hpp"
 #include <stdexcept>
 #include "SolutionManager.hpp"
-#include "../User/UserFunction.hpp"
-#include "../Util/readOperations.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/readOperations.hpp"
 #include "AnalysisModel.hpp"
+#include "DofManager.hpp"
 
 using namespace broomstyx;
 
@@ -61,11 +62,11 @@ void BoundaryCondition::readDataFrom( FILE* fp )
     // Condition type
     _cndType = getStringInputFrom(fp, "Failed to read boundary condition type from input file!", src);
     
-    // Target DOF number (1-based input expected from the user)
-    _dofTag = broomstyx::getIntegerInputFrom(fp, "Failed to read DOF number for boundary condition from input file!", src);
+    // Target DOF name
+    _dofTag = getStringInputFrom(fp, "Failed to read DOF name from input file!", src);
     
     // Specification Type
-    _specType = broomstyx::getStringInputFrom(fp, "Failed to read specification type for boundary condition from input file!", src);
+    _specType = getStringInputFrom(fp, "Failed to read specification type for boundary condition from input file!", src);
     
     if ( _specType == "None" )
     {
@@ -93,7 +94,7 @@ void BoundaryCondition::readDataFrom( FILE* fp )
         throw std::runtime_error("Invalid specification type '" + _specType + "' for boundary condition encountered in input file!");
 }
 // ----------------------------------------------------------------------------
-int BoundaryCondition::targetDof() const
+std::string BoundaryCondition::targetDof() const
 {
     return _dofTag;
 }

@@ -23,13 +23,13 @@
 
 #include "BoundaryReaction.hpp"
 #include <cstring>
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/Dof.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/Dof.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -84,5 +84,6 @@ void BoundaryReaction::readDataFrom( FILE *fp )
     
     // Read nodal DOF associated with reaction
     verifyKeyword(fp, "NodalDof", _name);
-    _dofNum = getIntegerInputFrom(fp, "Failed to read DOF number from input file!", _name);
+    std::string name = getStringInputFrom(fp, "Failed to read DOF name from input file!", _name);
+    _dofNum = analysisModel().dofManager().giveIndexForNodalDof(name);
 }

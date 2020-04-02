@@ -24,8 +24,8 @@
 #ifndef SNEDDONPROBLEM_HPP
 #define SNEDDONPROBLEM_HPP
 
-#include "../../Core/TimeData.hpp"
-#include "../../Util/RealVector.hpp"
+#include "Core/TimeData.hpp"
+#include "Util/RealVector.hpp"
 #include <cmath>
 
 using namespace broomstyx;

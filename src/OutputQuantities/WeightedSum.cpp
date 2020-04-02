@@ -23,9 +23,9 @@
 
 #include "WeightedSum.hpp"
 #include <string>
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/OutputManager.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/OutputManager.hpp"
 #include "OutputQuantity.hpp"
 
 using namespace broomstyx;

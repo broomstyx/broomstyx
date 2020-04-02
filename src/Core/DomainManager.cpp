@@ -34,9 +34,9 @@
 #include "Node.hpp"
 #include "NumericsManager.hpp"
 #include "SolutionManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../Util/readOperations.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Numerics/Numerics.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -237,10 +237,7 @@ RealVector DomainManager::giveCoordinatesOf( Node* node )
 // ----------------------------------------------------------------------------
 Dof* DomainManager::giveNodalDof( int dofNum, Node* node )
 {
-    if ( dofNum < 1 || dofNum > (int)node->_dof.size() )
-        throw std::runtime_error("\nInvalid DOF number '" + std::to_string(dofNum) + "' provided in request for nodal DOF!\nSource: DomainManager");
-    
-    return node->_dof[ dofNum - 1 ];
+    return node->_dof[ dofNum ];
 }
 // ----------------------------------------------------------------------------
 double DomainManager::giveFieldValueAt( Node* node, int fieldNum )
@@ -609,7 +606,7 @@ Cell* DomainManager::giveBoundaryCell( int cellNum )
 // ----------------------------------------------------------------------------
 Dof* DomainManager::giveCellDof( int dofNum, Cell *targetCell )
 {
-    return targetCell->_dof[ dofNum - 1 ];
+    return targetCell->_dof[ dofNum ];
 }
 // ----------------------------------------------------------------------------
 Cell* DomainManager::giveDomainCell( int cellNum )

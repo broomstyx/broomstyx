@@ -25,13 +25,13 @@
 #include <cmath>
 #include <string>
 #include <vector>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/Cell.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../Util/linearAlgebra.hpp"
-#include "../../BasisFunctions/Triangle_P1.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/Cell.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/DomainManager.hpp"
+#include "Materials/Material.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "BasisFunctions/Triangle_P1.hpp"
 
 using namespace broomstyx;
 
@@ -122,13 +122,6 @@ void Mech_Fe_Tet4::finalizeDataAt( Cell* targetCell )
 
     // Get stress
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
-    
-    // Update secondary variable at DOFs
-    RealVector fmat = _wt*cns->_Jdet*trp(bmat)*cns->_stress;
-    
-#pragma GCC unroll 4
-    for ( int i = 0; i < 12; i++ )
-        analysisModel().dofManager().addToSecondaryVariableAt(dof[i], fmat(i));
 }
 // ----------------------------------------------------------------------------
 double Mech_Fe_Tet4::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
@@ -406,7 +399,7 @@ Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
             // ----------------------------------------------------------------
             
             if ( (int)node.size() != 3 )
-                throw std::runtime_error("Error: Traction boundary condition for '"+ _name + "' requires 3-node boundary elements!");
+                throw std::runtime_error("Error: Traction boundary condition for '" + _name + "' requires 3-node boundary elements!");
             
             RealVector coor0, coor1, coor2, dr0, dr1, dr2;
             coor0 = analysisModel().domainManager().giveCoordinatesOf(node[0]);
@@ -437,11 +430,7 @@ Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
             // Construct global address vector
             rowDof.assign(3, nullptr);
 
-            // Note that bndCond.targetDof() assumes 1-based notation but
-            // first element of nodalDof is stored at index 0!
-            // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
             rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
             rowDof[2] = analysisModel().domainManager().giveNodalDof(dofNum, node[2]);
@@ -469,11 +458,7 @@ Mech_Fe_Tet4::giveStaticRightHandSideAt( Cell*                    targetCell
             // Construct global address vector
             rowDof.assign(1, nullptr);
 
-            // Note that bndCond.targetDof() assumes 1-based notation but
-            // first element of nodalDof is stored at index 0!
-            // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
         }
     }
@@ -552,11 +537,11 @@ void Mech_Fe_Tet4::imposeConstraintAt( Cell*                    targetCell
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
         
         for ( int j = 0; j < (int)node.size(); j++)
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
             analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);
@@ -633,8 +618,6 @@ RealMatrix Mech_Fe_Tet4::giveBmatAt( Cell* targetCell )
     RealMatrix dpsi = cns->_JmatInv*_basisFunctionDerivatives;
     
     RealMatrix bmat(6,12);
-
-#pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
         bmat(0,3*i)   = dpsi(0,i);
@@ -664,7 +647,6 @@ RealMatrix Mech_Fe_Tet4::giveJacobianMatrixAt( Cell* targetCell, const RealVecto
     
     RealMatrix coorMat(4,3);
     
-#pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
         RealVector nodeCoor = analysisModel().domainManager().giveCoordinatesOf(node[i]);
@@ -679,7 +661,6 @@ RealMatrix Mech_Fe_Tet4::giveJacobianMatrixAt( Cell* targetCell, const RealVecto
 RealVector Mech_Fe_Tet4::giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType)
 {    
     RealVector u(12);
-#pragma GCC unroll 4
     for ( int i = 0; i < 12; i++ )
         u(i) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], valType);
     return u;
@@ -689,7 +670,6 @@ std::vector<Dof*> Mech_Fe_Tet4::giveNodalDofsAt( Cell* targetCell )
 {
     std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
     std::vector<Dof*> dof(12, nullptr);
-#pragma GCC unroll 4
     for ( int i = 0; i < 4; i++ )
     {
         dof[3*i]   = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[i]);

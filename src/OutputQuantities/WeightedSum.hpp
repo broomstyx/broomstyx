@@ -26,7 +26,7 @@
 
 #include <vector>
 #include "OutputQuantity.hpp"
-#include "../Util/RealVector.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {

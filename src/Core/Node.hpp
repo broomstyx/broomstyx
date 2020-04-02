@@ -26,7 +26,7 @@
 
 #include <set>
 #include <vector>
-#include "../Util/RealVector.hpp"
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {

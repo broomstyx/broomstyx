@@ -27,9 +27,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
-#include "EvalPoint.hpp"
-#include "../Util/RealVector.hpp"
-
+#include "Util/RealVector.hpp"
 
 namespace broomstyx
 {    

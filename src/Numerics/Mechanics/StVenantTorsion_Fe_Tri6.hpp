@@ -24,11 +24,11 @@
 #ifndef STVENANTTORSION_FE_TRI6_HPP
 #define STVENANTTORSION_FE_TRI6_HPP
 
-#include "../Numerics.hpp"
-#include "../../BasisFunctions/Line_P2.hpp"
-#include "../../BasisFunctions/Triangle_P2.hpp"
-#include "../../IntegrationRules/Legendre_1D.hpp"
-#include "../../IntegrationRules/Legendre_2D_Tri.hpp"
+#include "Numerics/Numerics.hpp"
+#include "BasisFunctions/Line_P2.hpp"
+#include "BasisFunctions/Triangle_P2.hpp"
+#include "IntegrationRules/Legendre_1D.hpp"
+#include "IntegrationRules/Legendre_2D_Tri.hpp"
 
 namespace broomstyx
 {

@@ -24,7 +24,7 @@
 #ifndef AMORDAMAGEMODEL_HPP
 #define AMORDAMAGEMODEL_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 
 namespace broomstyx
 {

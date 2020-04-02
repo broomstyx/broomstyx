@@ -25,6 +25,7 @@
 #define	REALMATRIX_HPP
 
 #include <config.h>
+
 #include <cstdio>
 #include <stdexcept>
 #include <initializer_list>

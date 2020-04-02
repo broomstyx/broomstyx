@@ -24,7 +24,7 @@
 #ifndef WARPINGFUNCTION_ELLIPSE_HPP
 #define WARPINGFUNCTION_ELLIPSE_HPP
 
-#include "../UserFunction.hpp"
+#include "User/UserFunction.hpp"
 
 namespace broomstyx
 {

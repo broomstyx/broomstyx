@@ -26,12 +26,12 @@
 #include <string>
 #include <vector>
 
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../Util/linearAlgebra.hpp"
-#include "../../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Materials/Material.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -134,28 +134,6 @@ void PhaseFieldFracture_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_stress = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "Mechanics");
     cns->_bulkEgy = material[1]->givePotentialFrom(conState, cns->_materialStatus[1]);
     cns->_surfEgy = _Gc/2.0*(_lc*dphi.dot(dphi) + phiVec.dot(_massMatrix*phiVec)/_lc);
-    
-    // Update secondary variable at DOFs   
-    RealVector fmatU = cns->_area*trp(bmatU)*cns->_stress;
-    
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmatU(2));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmatU(3));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmatU(4));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmatU(5));
-    
-    // Calculate g'(phi)*elasticEnergy
-    RealVector dgPhi_Psi0 = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "PhaseField");
-
-    // Calculate FmatPhi
-    RealVector fmatPhi;
-    fmatPhi = cns->_area*(_Gc/_lc*cns->_phi + dgPhi_Psi0(0))*_basisFunctionValues
-            + cns->_area*_Gc*_lc*trp(cns->_dPsi)*dphi;
-            
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[6], fmatPhi(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[7], fmatPhi(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[8], fmatPhi(2));    
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_Fe_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
@@ -213,6 +191,8 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
     RealVector fieldVal(1), weight(1);
     
     auto cns = this->getNumericsStatusAt(targetCell);
+    std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
+
     weight(0) = cns->_area;
     
     if ( fieldTag == "unassigned" )
@@ -225,13 +205,13 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
         fieldVal(0) = cns->_stress(2);
     else if ( fieldTag == "s_xy" )
         fieldVal(0) = cns->_stress(3);
-    else if ( fieldTag == "ux_x" )
+    else if ( fieldTag == "ux_x" || fieldTag == "e_xx" )
         fieldVal(0) = cns->_gradU(0,0);
     else if ( fieldTag == "uy_x" )
         fieldVal(0) = cns->_gradU(0,1);
     else if ( fieldTag == "ux_y" )
         fieldVal(0) = cns->_gradU(1,0);
-    else if ( fieldTag == "uy_y" )
+    else if ( fieldTag == "uy_y" || fieldTag == "e_yy" )
         fieldVal(0) = cns->_gradU(1,1);
     else if ( fieldTag == "g_xy" )
         fieldVal(0) = cns->_strain(3);
@@ -241,6 +221,8 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
         fieldVal(0) = cns->_surfEgy;
     else if ( fieldTag == "ene_b" )
         fieldVal(0) = cns->_bulkEgy;
+    else if ( fieldTag == "eigVec1_1" || fieldTag == "eigVec1_2" || fieldTag == "eigVec2_1" || fieldTag == "eigVec2_2" )
+        fieldVal(0) = material[1]->giveMaterialVariable(fieldTag, cns->_materialStatus[1]);
     else
         throw std::runtime_error("Invalid tag '" + fieldTag + "' supplied in field output request made to numerics '" + _name + "'!");
     
@@ -484,11 +466,7 @@ PhaseFieldFracture_Fe_Tri3::giveStaticRightHandSideAt( Cell*                    
             // Construct global address vector
             rowDof.assign(2, nullptr);
 
-            // Note that bndCond.targetDof() assumes 1-based notation but
-            // first element of nodalDof is stored at index 0!
-            // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
             rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
         }
@@ -515,11 +493,7 @@ PhaseFieldFracture_Fe_Tri3::giveStaticRightHandSideAt( Cell*                    
             // Construct global address vector
             rowDof.assign(1, nullptr);
 
-            // Note that bndCond.targetDof() assumes 1-based notation but
-            // first element of nodalDof is stored at index 0!
-            // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
         }
     }
@@ -589,11 +563,11 @@ void PhaseFieldFracture_Fe_Tri3::imposeConstraintAt( Cell*                    ta
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
         for ( int j = 0; j < (int)node.size(); j++)
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
             analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);

@@ -29,20 +29,20 @@
 #include <tuple>
 #include <omp.h>
 
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/Diagnostics.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/LoadStep.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Core/SolutionManager.hpp"
-#include "../LinearSolvers/LinearSolver.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
-#include "../Util/linearAlgebra.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/Diagnostics.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/LoadStep.hpp"
+#include "Core/NumericsManager.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Core/SolutionManager.hpp"
+#include "LinearSolvers/LinearSolver.hpp"
+#include "Numerics/Numerics.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 #define REPORT_SUBSYSTEM_STATUS false
 
@@ -126,6 +126,8 @@ int AlternateNonlinearMinimization::computeSolutionFor
             _fluxCount(i) = 0;
         }
         
+        analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
+        
         // Calculate residual for each subsystem
         // Note: We calculate global external force vectors in each iteration 
         // to accommodate numerics classes that implement special methods for imposing constraints        
@@ -134,6 +136,20 @@ int AlternateNonlinearMinimization::computeSolutionFor
             rhs[i] = assembleRightHandSide(stage, _subsysNum[i], bndCond, fldCond, time);
             lhs[i] = assembleLeftHandSide(stage, _subsysNum[i], time);
             resid[i] = rhs[i] - lhs[i];
+        }
+
+        // Store residuals in DOFs
+        std::vector<Dof*> activeDof = analysisModel().dofManager().giveActiveDofsAtStage(stage);
+
+#pragma omp parallel for
+        for ( int i = 0; i < (int)activeDof.size(); i++ )
+        {
+            int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(activeDof[i]);
+            int eqNum = analysisModel().dofManager().giveEquationNumberAt(activeDof[i]);
+
+            for ( int j = 0; j < _nSubsystems; j++ )
+                if ( ssNum == _subsysNum[j] )
+                    analysisModel().dofManager().updateResidualAt(activeDof[i], -resid[j](eqNum));
         }
         
         if ( iterCount == 0 )

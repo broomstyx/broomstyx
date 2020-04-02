@@ -25,18 +25,18 @@
 #include <cmath>
 #include <stdexcept>
 #include <string>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/EvalPoint.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../User/UserFunction.hpp"
-#include "../../Util/linearAlgebra.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/EvalPoint.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Materials/Material.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/linearAlgebra.hpp"
 
-#include "../../IntegrationRules/Legendre_1D.hpp"
-#include "../../IntegrationRules/Legendre_2D_Tri.hpp"
-#include "../../BasisFunctions/Line_P2.hpp"
-#include "../../BasisFunctions/Triangle_P2.hpp"
+#include "IntegrationRules/Legendre_1D.hpp"
+#include "IntegrationRules/Legendre_2D_Tri.hpp"
+#include "BasisFunctions/Line_P2.hpp"
+#include "BasisFunctions/Triangle_P2.hpp"
 
 using namespace broomstyx;
 
@@ -140,8 +140,6 @@ void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
     // Retrieve material set for element
     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
     
-    RealVector fmat(12);
-    
     // Cell numerics status
     auto cns = this->getNumericsStatusAt(targetCell);
     
@@ -152,7 +150,6 @@ void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
         
         // Shape functions derivatives
         RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
-        double J = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
         
         std::vector<RealVector> dpsiNat = _basisFunction->giveBasisFunctionDerivativesAt(cns->_gp[i].coordinates);
         RealMatrix dpsiNatMat(2,6);
@@ -172,15 +169,7 @@ void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
         
         // Stress
         gpns->_stress = material[1]->giveForceFrom(gpns->_strain, gpns->_materialStatus[1]);
-        
-        // Add Gauss point contribution to force vector
-        fmat += trp(bmat)*gpns->_stress*(J*cns->_gp[i].weight);
     }
-    
-    // Update secondary variable at DOFs
-#pragma GCC ivdep
-    for ( int i = 0; i < 12; i++ )
-        analysisModel().dofManager().addToSecondaryVariableAt(dof[i], fmat(i));
 }
 // ---------------------------------------------------------------------------
 RealVector PlaneStrain_Fe_Tri6::giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum )
@@ -531,9 +520,7 @@ PlaneStrain_Fe_Tri6::giveStaticRightHandSideAt( Cell* targetCell
                 rhs = rhs + psi*(bcVal*Je*gpWt(i));
             }
 
-            // Note that bndCond.targetDof() assumes 1-based notation but first
-            // element of nodalDof is stored at index 0.
-            int dofNum = _nodalDof[ bndCond.targetDof() - 1 ];
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
             rowDof.assign(3, nullptr);
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
@@ -566,7 +553,7 @@ PlaneStrain_Fe_Tri6::giveStaticRightHandSideAt( Cell* targetCell
             // Note that bndCond.targetDof() assumes 1-based notation but
             // first element of nodalDof is stored at index 0!
             // So you need to make adjustments
-            int dofNum = _nodalDof[bndCond.targetDof() - 1];
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
         }
@@ -653,11 +640,11 @@ void PlaneStrain_Fe_Tri6::imposeConstraintAt( Cell* targetCell
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
         
         for ( int j = 0; j < (int)node.size(); j++)
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
             analysisModel().dofManager().setConstraintValueAt(targetDof, bcVal);

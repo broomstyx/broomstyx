@@ -27,18 +27,18 @@
 #include <stdexcept>
 #include <tuple>
 
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/Diagnostics.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../Core/SolutionManager.hpp"
-#include "../LinearSolvers/LinearSolver.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../Util/linearAlgebra.hpp"
-#include "../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/Diagnostics.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/NumericsManager.hpp"
+#include "Core/SolutionManager.hpp"
+#include "LinearSolvers/LinearSolver.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Numerics/Numerics.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -66,6 +66,9 @@ int LinearStatic::computeSolutionFor( int stage
 {
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
+
+    // Clear values of secondary variables at DOFs
+    analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
 
     // Impose constraints on nodal DOFs
     std::printf("    %-40s", "Imposing constraints ...");
@@ -125,6 +128,13 @@ int LinearStatic::computeSolutionFor( int stage
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     std::printf("done (time = %f sec.)\n", tictoc.count());
+    diagnostics().addUpdateTime(tictoc.count());
+
+    // Assemble left hand side to get correct values of secondary variables
+    tic = std::chrono::high_resolution_clock::now();
+    this->assembleLeftHandSide(stage, time);
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
     diagnostics().addUpdateTime(tictoc.count());
 
     return 0;
@@ -288,6 +298,28 @@ void LinearStatic::assembleEquations( int stage
     diagnostics().addRhsAssemblyTime(tictoc.count());
 }
 // ---------------------------------------------------------------------------
+void LinearStatic::assembleLeftHandSide( int stage, const TimeData& time )
+{
+    int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
+
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for ( int iCell = 0; iCell < nCells; iCell++ )
+    {
+        Cell* curCell = analysisModel().domainManager().giveDomainCell(iCell);
+        Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+
+        std::vector<Dof*> rowDof;
+        RealVector localLhs;
+        std::tie(rowDof, localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, UNASSIGNED, time);
+
+        for ( int i = 0; i < localLhs.dim(); i++ )
+            if ( rowDof[i] )
+                analysisModel().dofManager().addToSecondaryVariableAt( rowDof[i], localLhs(i));
+    }
+}
+// ---------------------------------------------------------------------------
 void LinearStatic::assembleRightHandSide( int stage
                                         , const std::vector<BoundaryCondition>& bndCond
                                         , const std::vector<FieldCondition>& fldCond
@@ -328,6 +360,8 @@ void LinearStatic::assembleRightHandSide( int stage
 #endif
                             rhs(rowNum) += localRhs(i);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt( rowDof[i], localRhs(i));
                     }
                 }
             }
@@ -369,6 +403,8 @@ void LinearStatic::assembleRightHandSide( int stage
 #endif
                             rhs(rowNum) += localRhs(i);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt( rowDof[i], localRhs(i));
                     }
                 }
             }                

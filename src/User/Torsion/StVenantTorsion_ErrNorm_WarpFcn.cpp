@@ -22,16 +22,16 @@
 */
 
 #include "StVenantTorsion_ErrNorm_WarpFcn.hpp"
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/Dof.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../User/UserFunction.hpp"
-#include "../Util/readOperations.hpp"
-#include "../IntegrationRules/Legendre_2D_Tri.hpp"
-#include "../BasisFunctions/Triangle_P2.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/Dof.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/NumericsManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "User/UserFunction.hpp"
+#include "Util/readOperations.hpp"
+#include "IntegrationRules/Legendre_2D_Tri.hpp"
+#include "BasisFunctions/Triangle_P2.hpp"
 
 using namespace broomstyx;
 
@@ -124,7 +124,8 @@ void StVenantTorsion_ErrNorm_WarpFcn::readDataFrom( FILE* fp )
     _domainTag = getStringInputFrom(fp, "Failed to read physical label for domain from input file!", _name);
     
     verifyKeyword(fp, "NodalDof", _name);
-    _dofNum = getIntegerInputFrom(fp, "Failed to read nodal DOF number from input file!", _name);
+    std::string name = getStringInputFrom(fp, "Failed to read DOF name from input file!", _name);
+    _dofNum = analysisModel().dofManager().giveIndexForNodalDof(name);
     _fcnName = getStringInputFrom(fp, "Failed to read user function name for analytical solution from input file!", _name);
     
     _analyticSoln = objectFactory().instantiateUserFunction(_fcnName);

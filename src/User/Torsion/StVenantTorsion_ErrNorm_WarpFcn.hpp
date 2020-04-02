@@ -21,38 +21,34 @@
   for the list of copyright holders.
 */
 
-#ifndef OUTPUTQUANTITY_HPP
-#define	OUTPUTQUANTITY_HPP
+#ifndef STVENANTTORSION_ERRNORM_WARPFCN_HPP
+#define STVENANTTORSION_ERRNORM_WARPFCN_HPP
 
-#include <cstdio>
-#include <string>
-#include "Util/readOperations.hpp"
+#include "OutputQuantities/OutputQuantity.hpp"
 
 namespace broomstyx
 {
-    class AnalysisModel;
-
-    class OutputQuantity
+    class UserFunction;
+    
+    class StVenantTorsion_ErrNorm_WarpFcn final : public OutputQuantity
     {
     public:
-        OutputQuantity() {}
-        virtual ~OutputQuantity() {}
+        StVenantTorsion_ErrNorm_WarpFcn();
+        virtual ~StVenantTorsion_ErrNorm_WarpFcn();
         
-        // Disable copy constructor and assignment operator
-        OutputQuantity( const OutputQuantity& ) = delete;
-        OutputQuantity& operator=( const OutputQuantity& ) = delete;
-
-        std::string giveLabel() { return _outputLabel; }
-        void setOutputLabelTo( std::string label ) { _outputLabel = label; }
+        double computeOutput() override;
+        void   initialize() override;
+        void   readDataFrom( FILE* fp ) override;
+    
+    private:
+        int         _numericsTag;
+        std::string _domainTag;
+        int         _dofNum;
+        std::string _fcnName;
         
-        virtual double computeOutput() = 0;
-        virtual void   initialize() = 0;
-        virtual void   readDataFrom( FILE* fp ) = 0;
-        
-    protected:
-        std::string _name;
-        std::string _outputLabel;
+        UserFunction* _analyticSoln;
     };
 }
 
-#endif	/* OUTPUTQUANTITY_HPP */
+#endif /* STVENANTTORSION_ERRNORM_WARPFCN_HPP */
+

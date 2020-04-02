@@ -28,20 +28,20 @@
 #include <stdexcept>
 #include <tuple>
 
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/ObjectFactory.hpp"
-#include "../Core/DofManager.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Core/LoadStep.hpp"
-#include "../Core/NumericsManager.hpp"
-#include "../Core/SolutionManager.hpp"
-#include "../LinearSolvers/LinearSolver.hpp"
-#include "../MeshReaders/MeshReader.hpp"
-#include "../Numerics/Numerics.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
-#include "../Util/linearAlgebra.hpp"
-#include "../Util/readOperations.hpp"
-#include "../Util/reductions.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Core/LoadStep.hpp"
+#include "Core/NumericsManager.hpp"
+#include "Core/SolutionManager.hpp"
+#include "LinearSolvers/LinearSolver.hpp"
+#include "MeshReaders/MeshReader.hpp"
+#include "Numerics/Numerics.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
+#include "Util/reductions.hpp"
 
 using namespace broomstyx;
 
@@ -265,13 +265,15 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
                 {
                     int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                     int dgIdx = this->giveIndexForDofGroup(dgNum);
-                    sumAbsFlux(dgIdx) += std::fabs(localLhs(j)*time.increment);
+                    sumAbsFlux(dgIdx) += std::fabs(localLhs(j));
                     fluxCount(dgIdx) += 1.;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                    lhs(rowNum) += localLhs(j)*time.increment;
+                    lhs(rowNum) += localLhs(j);
                 }
+
+                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
             }
         }
         
@@ -281,7 +283,7 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
         RealVector tLhsOld, tLhsNew;
         std::tie(rowDof,tLhsNew) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, current_value);
         std::tie(rowDof,tLhsOld) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, converged_value);
-        localLhs = tLhsNew - tLhsOld;
+        localLhs = (tLhsNew - tLhsOld);
 
         // Assembly
         for ( int j = 0; j < (int)rowDof.size(); j++)
@@ -295,13 +297,15 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
                 {
                     int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                     int dgIdx = this->giveIndexForDofGroup(dgNum);
-                    sumAbsFlux(dgIdx) += std::fabs(localLhs(j));
+                    sumAbsFlux(dgIdx) += std::fabs(localLhs(j)/time.increment);
                     fluxCount(dgIdx) += 1.;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                    lhs(rowNum) += localLhs(j);
+                    lhs(rowNum) += localLhs(j)/time.increment;
                 }
+
+                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j)/time.increment);
             }
         }
     }
@@ -345,7 +349,7 @@ void TransientAlternateMinimization::assembleJacobian( int stage
                 if ( rowNum != UNASSIGNED && rssNum == subsys && colNum != UNASSIGNED && cssNum == subsys )
                 {
                     int idx = this->giveIndexForSubsystem(subsys);
-                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)*time.increment);
+                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j));
                 }
             }
         }
@@ -365,7 +369,7 @@ void TransientAlternateMinimization::assembleJacobian( int stage
                 if ( rowNum != UNASSIGNED && rssNum == subsys && colNum != UNASSIGNED && cssNum == subsys )
                 {
                     int idx = this->giveIndexForSubsystem(subsys);
-                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j));
+                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)/time.increment);
                 }
             }
         }
@@ -419,13 +423,15 @@ RealVector TransientAlternateMinimization::assembleRightHandSide( int stage
                         {
                             int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                             int dgIdx = this->giveIndexForDofGroup(dgNum);
-                            sumAbsFlux(dgIdx) += std::fabs(localRhs(j)*time.increment);
+                            sumAbsFlux(dgIdx) += std::fabs(localRhs(j));
                             fluxCount(dgIdx) += 1.;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                            rhs(rowNum) += localRhs(j)*time.increment;
+                            rhs(rowNum) += localRhs(j);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                     }
                 }
             }
@@ -466,13 +472,15 @@ RealVector TransientAlternateMinimization::assembleRightHandSide( int stage
                         {
                             int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                             int dgIdx = this->giveIndexForDofGroup(dgNum);
-                            sumAbsFlux(dgIdx) += std::fabs(localRhs(j)*time.increment);
+                            sumAbsFlux(dgIdx) += std::fabs(localRhs(j));
                             fluxCount(dgIdx) += 1.;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                            rhs(rowNum) += localRhs(j)*time.increment;
+                            rhs(rowNum) += localRhs(j);
                         }
+
+                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                     }
                 }
             }

@@ -28,7 +28,7 @@
 #include <map>
 #include <tuple>
 #include <vector>
-#include "../SparseMatrix/SparseMatrix.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {
@@ -84,7 +84,6 @@ namespace broomstyx
 
          ***************************************************/
         
-//        RealMatrix _ctrlParam;
         int _maxIter;
         int _substepCount;
         

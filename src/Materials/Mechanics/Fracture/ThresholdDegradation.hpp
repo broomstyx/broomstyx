@@ -24,7 +24,7 @@
 #ifndef THRESHOLDDEGRADATION_HPP
 #define THRESHOLDDEGRADATION_HPP
 
-#include "../../Material.hpp"
+#include "Materials/Material.hpp"
 
 namespace broomstyx
 {

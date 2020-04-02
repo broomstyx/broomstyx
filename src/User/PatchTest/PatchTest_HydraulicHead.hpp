@@ -24,7 +24,7 @@
 #ifndef PATCHTEST_HYDRAULICHEAD_HPP
 #define PATCHTEST_HYDRAULICHEAD_HPP
 
-#include "../UserFunction.hpp"
+#include "User/UserFunction.hpp"
 
 namespace broomstyx
 {

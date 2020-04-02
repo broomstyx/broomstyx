@@ -58,7 +58,7 @@
 #ifndef DARCYFLOW_2D_1PHASE_FV_TRI_HPP
 #define	DARCYFLOW_2D_1PHASE_FV_TRI_HPP
 
-#include "../Numerics.hpp"
+#include "Numerics/Numerics.hpp"
 
 namespace broomstyx
 {

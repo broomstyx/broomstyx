@@ -25,7 +25,7 @@
 #define	LINEARSTATIC_HPP
 
 #include "SolutionMethod.hpp"
-#include "../SparseMatrix/SparseMatrix.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {
@@ -55,6 +55,8 @@ namespace broomstyx
                                       , const std::vector<FieldCondition>& fldCond
                                       , const TimeData& time
                                       , RealVector& rhs );
+
+        void assembleLeftHandSide( int stage, const TimeData& time );
         
         virtual void assembleRightHandSide( int stage
                                           , const std::vector<BoundaryCondition>& bndCond

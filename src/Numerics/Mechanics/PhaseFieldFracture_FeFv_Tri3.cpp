@@ -24,13 +24,13 @@
 #include "PhaseFieldFracture_FeFv_Tri3.hpp"
 #include <cmath>
 #include <string>
-#include "../../Core/AnalysisModel.hpp"
-#include "../../Core/ObjectFactory.hpp"
-#include "../../Core/DofManager.hpp"
-#include "../../Core/DomainManager.hpp"
-#include "../../Materials/Material.hpp"
-#include "../../Util/linearAlgebra.hpp"
-#include "../../Util/readOperations.hpp"
+#include "Core/AnalysisModel.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Core/DofManager.hpp"
+#include "Core/DomainManager.hpp"
+#include "Materials/Material.hpp"
+#include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -213,16 +213,6 @@ void PhaseFieldFracture_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_stress = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "Mechanics");
     cns->_bulkEgy = material[1]->givePotentialFrom(conState, cns->_materialStatus[1]);
     cns->_surfEgy = _Gc/2.0*(_l*cns->_gradPhi.dot(cns->_gradPhi) + cns->_phi*cns->_phi/_l);
-    
-    RealVector fmatU;
-    fmatU = cns->_area*(trp(bmatU)*cns->_stress);
-    
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmatU(2));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmatU(3));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmatU(4));
-    analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmatU(5));
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_FeFv_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
@@ -644,11 +634,7 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticRightHandSideAt
                 // Construct global address vector
                 rowDof.assign(2, nullptr);
 
-                // Note that bndCond.targetDof() assumes 1-based notation but
-                // first element of nodalDof is stored at index 0!
-                // So you need to make adjustments
-                int dofNum = _nodalDof[bndCond.targetDof() - 1];
-
+                int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
                 rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
                 rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
             }
@@ -747,14 +733,14 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticRightHandSideAt
                 if ( name == "Acceleration_X" )
                 {
                     rowDof[0] = dof[0];
-                    rowDof[1] = dof[3];
-                    rowDof[2] = dof[6];
+                    rowDof[1] = dof[2];
+                    rowDof[2] = dof[4];
                 }
                 else
                 {
                     rowDof[0] = dof[1];
-                    rowDof[1] = dof[4];
-                    rowDof[2] = dof[7];
+                    rowDof[1] = dof[3];
+                    rowDof[2] = dof[5];
                 }
             }
         }
@@ -773,12 +759,11 @@ void PhaseFieldFracture_FeFv_Tri3::imposeConstraintAt
     {
         // Retrieve nodes of boundary element
         std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-        
-        int targetDofNum = _nodalDof[bndCond.targetDof() - 1];
+        int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
 
         for ( int j = 0; j < (int)node.size(); j++ )
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(targetDofNum, node[j]);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof(dofNum, node[j]);
             
             RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[j]);
             double bcVal = bndCond.valueAt(coor, time);
@@ -792,8 +777,8 @@ void PhaseFieldFracture_FeFv_Tri3::imposeConstraintAt
     {
         auto cns = this->getNumericsStatusAt(targetCell);
         
-        int targetDofNum = _cellDof[bndCond.targetDof() - 1];
-        Dof* targetDof = analysisModel().domainManager().giveCellDof(targetDofNum, targetCell);
+        int dofNum = analysisModel().dofManager().giveIndexForCellDof(bndCond.targetDof());
+        Dof* targetDof = analysisModel().domainManager().giveCellDof(dofNum, targetCell);
         
         std::vector<RealVector> ep = this->giveEvaluationPointsFor(targetCell);
         double bcVal = bndCond.valueAt(ep[0], time);
@@ -963,13 +948,13 @@ void PhaseFieldFracture_FeFv_Tri3::printPostIterationMessage( int stage )
 // ----------------------------------------------------------------------------
 void PhaseFieldFracture_FeFv_Tri3::readAdditionalDataFrom( FILE* fp )
 {
-    std::string key, src = "PhsFieldBrittleFracture_HybFeFv_Tri3 (Numerics)";
+    std::string key;
     
-    verifyKeyword(fp, key = "CharacteristicLength", src);
-    _l = getRealInputFrom(fp, "Failed to read characteristic length from input file!", src);
+    verifyKeyword(fp, key = "CharacteristicLength", _name);
+    _l = getRealInputFrom(fp, "Failed to read characteristic length from input file!", _name);
     
-    verifyKeyword(fp, key = "CriticalEnergyReleaseRate", src);
-    _Gc = getRealInputFrom(fp, "Failed to read critical energy release rate from input file!", src);
+    verifyKeyword(fp, key = "CriticalEnergyReleaseRate", _name);
+    _Gc = getRealInputFrom(fp, "Failed to read critical energy release rate from input file!", _name);
 }
 // ----------------------------------------------------------------------------
 void PhaseFieldFracture_FeFv_Tri3::removeConstraintsOn( Cell* targetCell )
@@ -1051,12 +1036,6 @@ std::vector<std::vector<Node*> > PhaseFieldFracture_FeFv_Tri3::giveFaceNodesOf( 
     
     return face;
 }
-// // ----------------------------------------------------------------------------
-// RealMatrix PhaseFieldFracture_FeFv_Tri3::giveGradBmatAt( Cell* targetCell )
-// {
-//     auto cns = this->getNumericsStatusAt(targetCell);
-//     return cns->_JmatInv*_basisFunctionDerivatives;
-// }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_FeFv_Tri3::giveDistanceToMidpointOf( std::vector<Node*>& face
                                                                , RealVector&         coor )

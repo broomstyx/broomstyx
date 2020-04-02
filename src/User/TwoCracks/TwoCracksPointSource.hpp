@@ -1,7 +1,7 @@
 #ifndef TWOCRACKSPOINTSOURCE_HPP
 #define TWOCRACKSPOINTSOURCE_HPP
 
-#include "../UserFunction.hpp"
+#include "User/UserFunction.hpp"
 
 namespace broomstyx
 {

@@ -23,8 +23,8 @@
 
 #include "CorrectedExponentialDegradation.hpp"
 #include <cmath>
-#include "../../../Core/ObjectFactory.hpp"
-#include "../../../Util/readOperations.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
