@@ -24,27 +24,14 @@
 #include "linearAlgebra.hpp"
 #include <cstdio>
 #include <stdexcept>
-
-#include <config.h>
+#include "config.h"
 
 #ifdef HAVE_MKL
     #include "mkl_cblas.h"
     #include "mkl_lapacke.h"
-#elif HAVE_LAPACKE
-    #include "cblas.h"
-    #include "lapacke.h"
 #else
     #include "cblas.h"
-
-    typedef int lapack_int;
-
-extern "C" {
-    // LU decomoposition of a general matrix
-    void dgetrf_(int* M, int *N, double* A, int* lda, int* IPIV, int* INFO);
-    //// generate inverse of a matrix given its LU decomposition
-    void dgetri_(int* N, double* A, int* lda, int* IPIV, double* WORK, int*    lwork, int* INFO);
-}
-
+    #include "lapacke.h"
 #endif
 
 namespace broomstyx
@@ -948,12 +935,8 @@ namespace broomstyx
         ipiv = new lapack_int[nrows]();
         double *locA = A.ptr();
 
-#if HAVE_LAPACKE || HAVE_MKL
+        //dgetrf(&nrows, &nrows, locA, &nrows, ipiv, &info);
         info = LAPACKE_dgetrf(LAPACK_COL_MAJOR, nrows, nrows, locA, nrows, ipiv);
-#else
-        dgetrf_(&nrows, &nrows, locA, &nrows, ipiv, &info);
-#endif
-
         if ( info < 0 )
         {
             delete[] ipiv;
@@ -965,14 +948,8 @@ namespace broomstyx
             throw std::runtime_error("Cannot invert singular matrix!");
         }
 
-#if HAVE_LAPACKE || HAVE_MKL
+        //dgetri(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
         info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
-#else
-        int lwork = ncols * nrows ;
-        std::vector< double > workVec ( lwork, 0.0 );
-        double * work = workVec.data();
-        dgetri_(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
-#endif
 
         delete[] ipiv;
 
@@ -1000,11 +977,8 @@ namespace broomstyx
         ipiv = new lapack_int[nrows]();
         double *locA = A.ptr();
 
-#if HAVE_LAPACKE || HAVE_MKL
+        //dgetrf(&nrows, &nrows, locA, &nrows, ipiv, &info);
         info = LAPACKE_dgetrf(LAPACK_COL_MAJOR, nrows, nrows, locA, nrows, ipiv);
-#else
-        dgetrf_(&nrows, &nrows, locA, &nrows, ipiv, &info);
-#endif
         if ( info < 0 )
         {
             delete[] ipiv;
@@ -1016,14 +990,8 @@ namespace broomstyx
             throw std::runtime_error("Cannot invert singular matrix!");
         }
 
-#if HAVE_LAPACKE || HAVE_MKL
+        //dgetri(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
         info = LAPACKE_dgetri(LAPACK_COL_MAJOR, nrows, locA, nrows, ipiv);
-#else
-        int lwork = ncols * nrows ;
-        std::vector< double > workVec ( lwork, 0.0 );
-        double * work = workVec.data();
-        dgetri_(&nrows, locA, &nrows, ipiv, work, &lwork, &info);
-#endif
 
         delete[] ipiv;
 
