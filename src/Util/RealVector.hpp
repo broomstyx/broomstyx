@@ -24,7 +24,8 @@
 #ifndef REALVECTOR_HPP
 #define	REALVECTOR_HPP
 
-#include "config.h"
+#include <config.h>
+
 #include <cstdio>
 #include <stdexcept>
 #include <initializer_list>

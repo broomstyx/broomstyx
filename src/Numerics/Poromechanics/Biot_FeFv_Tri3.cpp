@@ -210,16 +210,6 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     // Get constitutive force
     material[1]->updateStatusFrom(cns->_strain, cns->_materialStatus[1]);
     cns->_stress = material[1]->giveForceFrom(cns->_strain, cns->_materialStatus[1]);
-    
-    // RealVector fmatU;
-    // fmatU = cns->_area*(trp(bmatU)*cns->_stress - _alpha*_rhoF*_gAccel*cns->_head*bmatDiv);
-    
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[0], fmatU(0));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[1], fmatU(1));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[2], fmatU(2));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[3], fmatU(3));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[4], fmatU(4));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[5], fmatU(5));
 }
 // ----------------------------------------------------------------------------
 double Biot_FeFv_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )

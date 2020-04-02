@@ -140,8 +140,6 @@ void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
     // Retrieve material set for element
     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
     
-    // RealVector fmat(12);
-    
     // Cell numerics status
     auto cns = this->getNumericsStatusAt(targetCell);
     
@@ -152,7 +150,6 @@ void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
         
         // Shape functions derivatives
         RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
-        double J = Jmat(0,0)*Jmat(1,1) - Jmat(1,0)*Jmat(0,1);
         
         std::vector<RealVector> dpsiNat = _basisFunction->giveBasisFunctionDerivativesAt(cns->_gp[i].coordinates);
         RealMatrix dpsiNatMat(2,6);
@@ -172,15 +169,7 @@ void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
         
         // Stress
         gpns->_stress = material[1]->giveForceFrom(gpns->_strain, gpns->_materialStatus[1]);
-        
-        // Add Gauss point contribution to force vector
-        // fmat += trp(bmat)*gpns->_stress*(J*cns->_gp[i].weight);
     }
-    
-//     // Update secondary variable at DOFs
-// #pragma GCC ivdep
-//     for ( int i = 0; i < 12; i++ )
-//         analysisModel().dofManager().addToSecondaryVariableAt(dof[i], fmat(i));
 }
 // ---------------------------------------------------------------------------
 RealVector PlaneStrain_Fe_Tri6::giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum )

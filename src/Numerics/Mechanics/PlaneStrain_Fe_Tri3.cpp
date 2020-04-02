@@ -90,7 +90,7 @@ void PlaneStrain_Fe_Tri3::deleteNumericsAt(Cell* targetCell)
     
     delete cns;
 }
-
+// ----------------------------------------------------------------------------
 void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell )
 {
     // Retrieve numerics status at cell

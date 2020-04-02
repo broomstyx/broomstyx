@@ -134,18 +134,6 @@ void PhaseFieldFracture_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_stress = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "Mechanics");
     cns->_bulkEgy = material[1]->givePotentialFrom(conState, cns->_materialStatus[1]);
     cns->_surfEgy = _Gc/2.0*(_lc*dphi.dot(dphi) + phiVec.dot(_massMatrix*phiVec)/_lc);
-    
-    // // Calculate g'(phi)*elasticEnergy
-    // RealVector dgPhi_Psi0 = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "PhaseField");
-
-    // // Calculate FmatPhi
-    // RealVector fmatPhi;
-    // fmatPhi = cns->_area*(_Gc/_lc*cns->_phi + dgPhi_Psi0(0))*_basisFunctionValues
-    //         + cns->_area*_Gc*_lc*trp(cns->_dPsi)*dphi;
-            
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[6], fmatPhi(0));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[7], fmatPhi(1));
-    // analysisModel().dofManager().addToSecondaryVariableAt(dof[8], fmatPhi(2));    
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_Fe_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
