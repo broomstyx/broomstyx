@@ -44,6 +44,7 @@ if( dune-common_FOUND )
   	file (GLOB_RECURSE sourcefiles "${PROJECT_SOURCE_DIR}/src/*.cpp")
 
 	add_executable("broomstyx" ${sourcefiles})
+	include_directories (${PROJECT_SOURCE_DIR}/src)
 	target_link_dune_default_libraries("broomstyx")
 
   	# finalize the dune project, e.g. generating config.h etc.
