@@ -24,6 +24,8 @@
 #ifndef DOMAINMANAGER_HPP
 #define	DOMAINMANAGER_HPP
 
+#include <config.h>
+
 #include <cstdio>
 #include <map>
 #include <set>
@@ -31,6 +33,10 @@
 #include <list>
 
 #include "Util/RealVector.hpp"
+
+#ifdef USING_DUNE_GRID_BACKEND
+    using GridType = Dune::GridSelector::GridType;
+#endif
 
 namespace broomstyx
 {
@@ -43,6 +49,10 @@ namespace broomstyx
     class DomainManager final
     {
         friend class AnalysisModel;
+
+#ifdef USING_DUNE_GRID_BACKEND
+        friend class DuneGrid_GmshReader;
+#endif
         
     public:
         // Disable copy constructor and assignment operator
@@ -151,7 +161,13 @@ namespace broomstyx
         std::vector<Cell*> _face;
         
         std::vector<std::vector<Cell*> > _partition;
-        
+
+#ifdef USING_DUNE_GRID_BACKEND
+        std::unique_ptr<GridType> _grid;
+        std::vector<int> _physicalEntityOfDomainCell;
+        std::vector<int> _physicalEntityOfBoundaryCell;
+#endif
+
         DomainManager();
         virtual ~DomainManager();
     };

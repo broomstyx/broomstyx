@@ -5,9 +5,12 @@
             "includePath": [
                 "${workspaceFolder}/build-cmake",
                 "${workspaceFolder}/**",
-                "/opt/intel/mkl/include",
-                "${workspaceFolder}/../dune-common",
-                "${workspaceFolder}/../dune-istl"
+                "${workspaceFolder}/../dune-common/",
+                "${workspaceFolder}/../dune-geometry/",
+                "${workspaceFolder}/../dune-grid/",
+                "${workspaceFolder}/../dune-alugrid/",
+                "${workspaceFolder}/../dune-istl/",
+                "/opt/intel/mkl/include"
             ],
             "defines": [],
             "compilerPath": "/usr/bin/gcc",

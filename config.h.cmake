@@ -41,7 +41,10 @@
 #define BROOMSTYX_VERSION_REVISION @BROOMSTYX_VERSION_REVISION@
 
 /* Intel (R) Math Kernel Library */
-#cmakedefine HAVE_MKL 1
+#cmakedefine HAVE_MKL
+
+/* Use Dune-Grid backend */
+#cmakedefine USING_DUNE_GRID_BACKEND
 
 /* end broomstyx
    Everything below here will be overwritten

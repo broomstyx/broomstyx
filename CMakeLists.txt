@@ -5,7 +5,7 @@ list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules")
 # Check for Intel Math Kernel Library
 find_package (MKL)
 
-if( NOT (dune-common_DIR OR dune-common_ROOT OR "${CMAKE_PREFIX_PATH}" MATCHES ".*dune-common.*") )
+if (NOT (dune-common_DIR OR dune-common_ROOT OR "${CMAKE_PREFIX_PATH}" MATCHES ".*dune-common.*") )
     string(REPLACE ${CMAKE_PROJECT_NAME} dune-common dune-common_DIR ${PROJECT_BINARY_DIR})
 endif()
 
@@ -32,7 +32,7 @@ if( dune-common_FOUND )
 	if( GSL_FOUND )
     	dune_register_package_flags(INCLUDE_DIRS ${GSL_INCLUDE_DIRS} LIBRARIES ${GSL_LIBRARIES})
 	endif()
-
+	
 	# start a dune project with information from dune.module
 	dune_project()
 
@@ -46,6 +46,16 @@ if( dune-common_FOUND )
 	add_executable("broomstyx" ${sourcefiles})
 	include_directories (${PROJECT_SOURCE_DIR}/src)
 	target_link_dune_default_libraries("broomstyx")
+	
+	# Option to use Dune-Grid as backend
+    option (USING_DUNE_GRID_BACKEND "Using Dune-Grid as backend" OFF)
+    if ( USE_DUNE_GRID AND GRIDDIM AND WORLDDIM AND GRIDTYPE )
+        set (USING_DUNE_GRID_BACKEND ON)
+        set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -DGRIDDIM=${GRIDDIM} -DWORLDDIM=${WORLDDIM} -D${GRIDTYPE}")
+        message(STATUS "Adding compile definitions for dune-grid backend")
+    else()
+        set (USING_DUNE_GRID_BACKEND OFF)
+    endif()
 
   	# finalize the dune project, e.g. generating config.h etc.
 	finalize_dune_project(GENERATE_CONFIG_H_CMAKE)
@@ -78,11 +88,6 @@ else()
 	# to the source code
 	configure_file (
 		"${PROJECT_SOURCE_DIR}/config.h.in"
-		"${PROJECT_SOURCE_DIR}/config.h"
-	)
-
-	configure_file (
-		"${PROJECT_SOURCE_DIR}/config.h.in"
 		"${PROJECT_BINARY_DIR}/config.h"
 	)
 
@@ -90,7 +95,7 @@ else()
 	set (CMAKE_VERBOSE_MAKEFILE OFF)
 
 	# Set compiler and linker flags
-	if ( ENABLE_OPENMP )
+	if ( ENABLE_OPENMP)
 	    set ( OPENMP_CXX_FLAGS "-fopenmp" )
 	    message(STATUS "Compilation with OpenMP is enabled")
 	else()

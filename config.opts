@@ -1,0 +1,19 @@
+MAKE_FLAGS=-j7 \
+USE_CMAKE=yes \
+CMAKE_FLAGS="\
+  -DENABLE_OPENMP=ON \
+  -DUSE_DUNE_GRID=ON \
+  -DDUNE_GRID_GRIDTYPE_SELECTOR=ON \
+  -DGRIDDIM=2 \
+  -DWORLDDIM=2 \
+  -DGRIDTYPE=ALUGRID_CONFORM \
+  "
+CONFIGURE_FLAGS="\
+  --cache-file=../cache.config \
+  --disable-documentation \
+  --disable-shared \
+  --enable-parallel \
+  --disable-expressiontemplates \
+  --enable-experimental-grid-extensions \
+  --enable-fieldvector-size-is-method \
+  "
