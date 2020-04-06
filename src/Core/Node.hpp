@@ -24,9 +24,11 @@
 #ifndef NODE_HPP
 #define	NODE_HPP
 
+#include <config.h>
+
 #include <set>
 #include <vector>
-#include "Util/RealVector.hpp"
+#include <Util/RealVector.hpp>
 
 namespace broomstyx
 {
@@ -39,14 +41,12 @@ namespace broomstyx
         friend class DofManager;
 
     public:
-        Node();
-        virtual ~Node();
+        Node() : _isActive(true) {}
+        virtual ~Node() {}
         
         // Disable copy constructor and assignment operator
         Node( const Node& ) = delete;
         Node& operator=( const Node& ) = delete;
-        
-        int id();
         
     private:
         int _id;
@@ -60,7 +60,6 @@ namespace broomstyx
         std::vector<Dof*> _dof;
 
         bool _isActive;
-
     };
 }
 

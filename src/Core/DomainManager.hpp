@@ -100,25 +100,25 @@ namespace broomstyx
         void   findBoundaryAssociations();
         void   findDomainCellNeighbors();
         void   findDomainCellsAssociatedWith( Cell* targetCell );
-        void   findNeighborsOf( Cell *targetCell );
+        void   findNeighborsOf( Cell* targetCell );
         void   formDomainPartitions();
         Cell*  giveBoundaryCell( int cellNum );
-        Dof*   giveCellDof( int dofNum, Cell *targetCell );
+        Dof*   giveCellDof( int dofNum, Cell* targetCell );
         Cell*  giveDomainCell( int cellNum );
         std::vector<Cell*> 
-               giveDomainCellsAssociatedWith( Cell *targetCell );
+               giveDomainCellsAssociatedWith( Cell* targetCell );
         Cell*  giveDomainCellInPartition( int partNum, int cellNum );
         int    giveElementTypeOf( Cell* targetCell );
-        int    giveIdOf( Cell *targetCell );
-        int    giveLabelOf( Cell *targetCell );
+        int    giveIdOf( Cell* targetCell );
+        int    giveLabelOf( Cell* targetCell );
         
-        std::vector<Cell*> giveNeighborsOf( Cell *targetCell );    
-        std::vector<Node*> giveNodesOf( Cell *targetCell );
+        std::vector<Cell*> giveNeighborsOf( Cell* targetCell );    
+        std::vector<Node*> giveNodesOf( Cell* targetCell );
         
         int   giveNumberOfBoundaryCells();
         int   giveNumberOfDomainCells();
         int   giveNumberOfDomainCellsInPartition( int partNum );
-        int   giveNumberOfNodesOf( Cell *targetCell );
+        int   giveNumberOfNodesOf( Cell* targetCell );
         int   giveNumberOfPartitions();
         Numerics* giveNumericsFor( Cell* targetCell );
         void  initializeMaterialsAtCells();
@@ -132,10 +132,13 @@ namespace broomstyx
         void  reportDetailedStatus();
         void  reportStatus();
         void  setElementTypeOf( Cell* targetCell, int elemType );
-        void  setHaloOf( Cell *targetCell, std::vector<int>& halo );
-        void  setNeighborsOf( Cell *targetCell, std::vector<Cell*>& neighbors);
-        void  setNodesOf( Cell *targetCell, std::vector<int>& cellNodes );
-        void  setPartitionOf( Cell *targetCell, int partition );
+        void  setHaloOf( Cell* targetCell, std::vector<int>& halo );
+        void  setNeighborsOf( Cell* targetCell, std::vector<Cell*>& neighbors);
+        void  setNodesOf( Cell* targetCell, std::vector<int>& cellNodes );
+        void  setPartitionOf( Cell* targetCell, int partition );
+
+        // Methods helpful in debugging
+        void printInfoFor( Cell* targetCell );
 
     private:
         std::vector<PhysicalEntity> _physEnt;

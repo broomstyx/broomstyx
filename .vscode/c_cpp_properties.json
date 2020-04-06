@@ -4,7 +4,7 @@
             "name": "Linux",
             "includePath": [
                 "${workspaceFolder}/build-cmake",
-                "${workspaceFolder}/**",
+                "${workspaceFolder}/src",
                 "${workspaceFolder}/../dune-common/",
                 "${workspaceFolder}/../dune-geometry/",
                 "${workspaceFolder}/../dune-grid/",

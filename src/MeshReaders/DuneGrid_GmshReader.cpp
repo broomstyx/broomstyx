@@ -83,9 +83,6 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
     // Note -- type alias definition for 'GridType' is given in DomainManager.hpp
     
     Dune::GridFactory<GridType> factory;
-    std::vector<int> boundarySegmentToPhysicalEntity;
-    std::vector<int> elementToPhysicalEntity;
-
     Dune::GmshReader<GridType>::read(
         factory, 
         filename, 
@@ -93,6 +90,18 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
         analysisModel().domainManager()._physicalEntityOfDomainCell);
         
     analysisModel().domainManager()._grid = factory.createGrid();
+
+    // --- CODE TESTING ---
+    auto gridView = analysisModel().domainManager()._grid->leafGridView();
+    
+
+    std::printf("\nBoundary tags = %d\n", (int)analysisModel().domainManager()._physicalEntityOfBoundaryCell.size());
+    for ( int i = 0; i < analysisModel().domainManager()._physicalEntityOfBoundaryCell.size(); i++ )
+        std::printf("%d\n", analysisModel().domainManager()._physicalEntityOfBoundaryCell[i]);
+
+    std::printf("\nDomain tags = %d\n", (int)analysisModel().domainManager()._physicalEntityOfDomainCell.size());
+    for ( int i = 0; i < analysisModel().domainManager()._physicalEntityOfDomainCell.size(); i++ )
+        std::printf("%d\n", analysisModel().domainManager()._physicalEntityOfDomainCell[i]);
 
     std::printf("\n\nGRID HAS BEEN CREATED!\n\n");
     std::fflush(stdout);

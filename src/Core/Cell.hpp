@@ -24,10 +24,12 @@
 #ifndef CELL_HPP
 #define CELL_HPP
 
+#include <config.h>
+
 #include <cstdio>
 #include <cstdlib>
 #include <vector>
-#include "Util/RealVector.hpp"
+#include <Util/RealVector.hpp>
 
 namespace broomstyx
 {    
@@ -41,8 +43,13 @@ namespace broomstyx
         friend class DofManager;
 
     public:
-        Cell();
-        virtual ~Cell();
+        Cell()
+            : numericsStatus(nullptr)
+            , _partition(-1)
+            , _isPartOfDomain(false)
+        {}
+
+        virtual ~Cell() {}
         
         // Disable copy constructor and assignment operator
         Cell( const Cell& ) = delete;
@@ -51,9 +58,6 @@ namespace broomstyx
         RealVector cellData;
         NumericsStatus* numericsStatus;
         
-        int  id();
-        void showInfo();
-
     private:
         int _elType;
         int _label;

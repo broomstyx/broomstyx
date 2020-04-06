@@ -34,9 +34,9 @@
 #include "Node.hpp"
 #include "NumericsManager.hpp"
 #include "SolutionManager.hpp"
-#include "MeshReaders/MeshReader.hpp"
-#include "Numerics/Numerics.hpp"
-#include "Util/readOperations.hpp"
+#include <MeshReaders/MeshReader.hpp>
+#include <Numerics/Numerics.hpp>
+#include <Util/readOperations.hpp>
 
 using namespace broomstyx;
 
@@ -896,4 +896,35 @@ void DomainManager::setNodesOf( Cell *targetCell, std::vector<int>& cellNodes )
 void DomainManager::setPartitionOf( Cell* targetCell, int partition )
 {
     targetCell->_partition = partition;
+}
+
+// Methods helpful in debugging
+// ----------------------------------------------------------------------------
+void DomainManager::printInfoFor( Cell* targetCell )
+{
+    int cellId = targetCell->_id;
+    int cellLabel = targetCell->_label;
+
+    std::printf("\n  Cell ID = %d, label = %d, dim = %d\n", targetCell->_id, targetCell->_label, targetCell->_dim);
+    std::printf("  Cell nodes: ");
+    
+    for ( int i = 0; i < (int)targetCell->_node.size(); ++i )
+        std::printf("%d ", targetCell->_node[i]->_id);
+    
+    std::printf("\n  Neighbors: ");
+    for ( int i = 0; i < (int)targetCell->_neighbor.size(); ++i )
+        if ( targetCell->_neighbor[i] )
+            std::printf("%d ", targetCell->_neighbor[i]->_id);
+        else
+            std::printf("null ");
+    std::printf("\n");
+    
+    if ( !targetCell->_isPartOfDomain )
+    {
+        std::printf("  Number of associated domain cells = %d\n", (int)targetCell->_assocDomCell.size());
+        std::printf("  Associated domain cell = ");
+        for ( auto it = targetCell->_assocDomCell.begin(); it != targetCell->_assocDomCell.end(); ++it )
+            std::printf("%d ", (*it)->_id);
+        std::printf("\n");
+    }
 }
