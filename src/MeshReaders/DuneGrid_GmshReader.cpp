@@ -21,6 +21,7 @@
   for the list of copyright holders.
 */
 #include <config.h>
+#include <cstdio>
 
 #ifdef USING_DUNE_GRID_BACKEND
 
@@ -29,6 +30,8 @@
 #include <Core/AnalysisModel.hpp>
 #include <Core/DomainManager.hpp>
 #include <Core/ObjectFactory.hpp>
+#include <Util/readOperations.hpp>
+
 #include <dune/grid/common/gridfactory.hh>
 #include <dune/grid/io/file/gmshreader.hh>
 
@@ -47,7 +50,37 @@ DuneGrid_GmshReader::~DuneGrid_GmshReader() {}
 // -------------------------------------------------------------------------------
 void DuneGrid_GmshReader::readMeshFile( std::string filename )
 {
-    // Note: type alias definition for 'GridType' is given in DomainManager.hpp
+    // First pass: read physical entity names from mesh file
+    FILE* fp = std::fopen(filename.c_str(), "r");
+    if ( !fp )
+        throw std::runtime_error("\nSpecified mesh file '" + filename + "' not found!");
+    
+    std::string str, errmsg, src = "GmshReader (MeshReader)";
+    
+    // Mesh format
+    verifyDeclaration(fp, "$MeshFormat", src);
+    double meshFormat = getRealInputFrom(fp, "Failed to read mesh format from mesh file!", src);
+    int isBinary = getIntegerInputFrom(fp, "Failed to read ASCII/Binary flag from mesh file!", src);
+    int sizeOfDouble = getIntegerInputFrom(fp, "Failed to read size of double from mesh file!", src);
+    verifyDeclaration(fp, "$EndMeshFormat", src);
+    
+    // Physical names
+    verifyDeclaration(fp, "$PhysicalNames", src);
+    int nPhysEnt = getIntegerInputFrom(fp, "Failed to read number of physical entities from mesh file!", src);
+    
+    for ( int i = 0; i < nPhysEnt; i++)
+    {
+        int dimension = getIntegerInputFrom(fp, "Failed to read physical dimension from mesh file!", src);
+        int entityNumber = getIntegerInputFrom(fp, "Failed to read physical entity number from mesh file!", src);
+        std::string name = getStringInputFrom(fp, "Failed to read physical name from mesh file!", src);
+        
+        analysisModel().domainManager().createPhysicalEntity(dimension, entityNumber, name);
+    }
+    verifyDeclaration(fp, "$EndPhysicalNames", src);
+    fclose(fp);
+
+    // Second pass: Read mesh
+    // Note -- type alias definition for 'GridType' is given in DomainManager.hpp
     
     Dune::GridFactory<GridType> factory;
     std::vector<int> boundarySegmentToPhysicalEntity;
@@ -60,6 +93,10 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
         analysisModel().domainManager()._physicalEntityOfDomainCell);
         
     analysisModel().domainManager()._grid = factory.createGrid();
+
+    std::printf("\n\nGRID HAS BEEN CREATED!\n\n");
+    std::fflush(stdout);
+    throw std::runtime_error("BREAKPOINT!\n");
 }
 // -------------------------------------------------------------------------------
 std::vector<int> DuneGrid_GmshReader::giveFaceNodeNumbersForElementType( int elType, int face )

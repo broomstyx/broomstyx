@@ -20,17 +20,23 @@
   module for the precise wording of the license and the AUTHORS file
   for the list of copyright holders.
 */
+#include <config.h>
 
 #include <algorithm>
 #include <chrono>
-#include "Core/AnalysisModel.hpp"
-#include "Core/Diagnostics.hpp"
-#include "Core/ObjectFactory.hpp"
+#include <Core/AnalysisModel.hpp>
+#include <Core/Diagnostics.hpp>
+#include <Core/ObjectFactory.hpp>
+#include <dune/common/parallel/mpihelper.hh>
 
 using namespace broomstyx;
 
 int main( int argc, char **argv )
 {
+#ifdef USING_DUNE_GRID_BACKEND
+    Dune::MPIHelper::instance(argc, argv);
+#endif
+
     if ( argc != 2 )
     {
         std::printf("\n\tError in program call: insufficient input!");
