@@ -32,10 +32,10 @@
 #include <vector>
 #include <list>
 
-#include "Util/RealVector.hpp"
+#include <Util/RealVector.hpp>
 
 #ifdef USING_DUNE_GRID_BACKEND
-    using GridType = Dune::GridSelector::GridType;
+#include "DuneExtensions.hpp"
 #endif
 
 namespace broomstyx
@@ -86,6 +86,9 @@ namespace broomstyx
         Node*  giveNode( int nodeNum );
         int    giveNumberOfNodes();
         void   makeNewNodeAt( RealVector& location );
+#ifdef USING_DUNE_GRID_BACKEND
+        void   makeNewNodeAt( VertexSeedType seed );
+#endif
         void   performNodalPostProcessing();
         void   readNumberOfFieldsPerNodeFrom( FILE* fp );
         void   setFieldValueAt( Node* targetNode, int fieldNum, double val );
@@ -167,6 +170,8 @@ namespace broomstyx
 
 #ifdef USING_DUNE_GRID_BACKEND
         std::unique_ptr<GridType> _grid;
+        std::unique_ptr<LeafGridView> _gridView;
+
         std::vector<int> _physicalEntityOfDomainCell;
         std::vector<int> _physicalEntityOfBoundaryCell;
 #endif

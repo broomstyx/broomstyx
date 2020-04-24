@@ -29,12 +29,12 @@
 
 #include <Core/AnalysisModel.hpp>
 #include <Core/DomainManager.hpp>
+#include <Core/DuneExtensions.hpp>
 #include <Core/ObjectFactory.hpp>
 #include <Util/readOperations.hpp>
 
 #include <dune/grid/common/gridfactory.hh>
 #include <dune/grid/io/file/gmshreader.hh>
-
 
 using namespace broomstyx;
 
@@ -51,6 +51,7 @@ DuneGrid_GmshReader::~DuneGrid_GmshReader() {}
 void DuneGrid_GmshReader::readMeshFile( std::string filename )
 {
     // First pass: read physical entity names from mesh file
+
     FILE* fp = std::fopen(filename.c_str(), "r");
     if ( !fp )
         throw std::runtime_error("\nSpecified mesh file '" + filename + "' not found!");
@@ -80,16 +81,21 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
     fclose(fp);
 
     // Second pass: Read mesh
-    // Note -- type alias definition for 'GridType' is given in DomainManager.hpp
     
+    std::vector<int> physEntDomain;
+    std::vector<int> physEntBoundary;
+
     Dune::GridFactory<GridType> factory;
-    Dune::GmshReader<GridType>::read(
-        factory, 
-        filename, 
-        analysisModel().domainManager()._physicalEntityOfBoundaryCell,
-        analysisModel().domainManager()._physicalEntityOfDomainCell);
-        
+    Dune::GmshReader<GridType>::read(factory, filename, physEntBoundary, physEntDomain);
     analysisModel().domainManager()._grid = factory.createGrid();
+    *(analysisModel().domainManager()._gridView) = analysisModel().domainManager()._grid->leafGridView();
+
+    // // Make broomstyx node objects
+    // for ( auto& vertex : vertices(analysisModel().domainManager()._gridView) )
+    // {
+    //     VertexSeedType seed = vertex.seed();
+    //     analysisModel().domainManager().makeNewNodeAt(seed);
+    // }
 
     // --- CODE TESTING ---
     auto gridView = analysisModel().domainManager()._grid->leafGridView();
@@ -102,6 +108,14 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
     std::printf("\nDomain tags = %d\n", (int)analysisModel().domainManager()._physicalEntityOfDomainCell.size());
     for ( int i = 0; i < analysisModel().domainManager()._physicalEntityOfDomainCell.size(); i++ )
         std::printf("%d\n", analysisModel().domainManager()._physicalEntityOfDomainCell[i]);
+
+    // Get seeds
+    int count = 0;
+    for ( auto element : elements(gridView) )
+    {
+        DomainSeedType seed = element.seed();
+        printf("Cell %d has %d vertices\n", count++, analysisModel().domainManager()._grid->entity(seed).subEntities(GRIDDIM));
+    }
 
     std::printf("\n\nGRID HAS BEEN CREATED!\n\n");
     std::fflush(stdout);

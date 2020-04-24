@@ -30,6 +30,10 @@
 #include <vector>
 #include <Util/RealVector.hpp>
 
+#ifdef USING_DUNE_GRID_BACKEND
+#include "DuneExtensions.hpp"
+#endif
+
 namespace broomstyx
 {
     class Dof;
@@ -50,6 +54,10 @@ namespace broomstyx
         
     private:
         int _id;
+
+#ifdef USING_DUNE_GRID_BACKEND
+        VertexSeedType _vertexSeed;
+#endif
 
         RealVector _coordinates;
 

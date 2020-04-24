@@ -274,7 +274,8 @@ void DomainManager::makeNewNodeAt( RealVector& location )
         
     Node* newNode = new Node();
     
-    if ( location.dim() == 2 ) {
+    if ( location.dim() == 2 )
+    {
         newNode->_coordinates.init(3);
         newNode->_coordinates(0) = location(0);
         newNode->_coordinates(1) = location(1);
@@ -295,6 +296,31 @@ void DomainManager::makeNewNodeAt( RealVector& location )
     // Append node to list of nodes
     _nodeList.push_back(newNode);
 }
+// ----------------------------------------------------------------------------
+#ifdef USING_DUNE_GRID_BACKEND
+void DomainManager::makeNewNodeAt( VertexSeedType seed )
+{
+    std::string errmsg, src = "DomainManager";
+    if ( _fieldsPerNode == -1 )
+    {
+        errmsg = "Cannot create new node due to undefined number of fields" + std::string(" per node!\nSource: ") + src;
+        throw std::runtime_error(errmsg);
+    }
+    
+    Node* newNode = new Node();
+    newNode->_vertexSeed = seed;
+
+    // Instantiate degrees of freedom for new node
+    analysisModel().dofManager().createNodalDofsAt(newNode);
+    
+    // Initialize nodal fields
+    if ( _fieldsPerNode > 0)
+        newNode->_fieldVal.init( _fieldsPerNode );
+    
+    // Append node to list of nodes
+    _nodeList.push_back(newNode);
+}
+#endif
 // ----------------------------------------------------------------------------
 void DomainManager::performNodalPostProcessing()
 {

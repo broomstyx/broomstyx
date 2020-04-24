@@ -31,6 +31,10 @@
 #include <vector>
 #include <Util/RealVector.hpp>
 
+#ifdef USING_DUNE_GRID_BACKEND
+#include "DuneExtensions.hpp"
+#endif
+
 namespace broomstyx
 {    
     class Dof;
@@ -67,15 +71,21 @@ namespace broomstyx
 
         bool _isPartOfDomain;
         std::vector<Node*> _node;
-
         std::vector<Dof*> _dof;
+
+#ifdef USING_DUNE_GRID_BACKEND
+        DomainSeedType _domainSeed;
+        BoundarySeedType _boundarySeed;
+#endif
+
         std::vector<Cell*> _neighbor;
         std::vector<Cell*> _face;
         std::vector<int> _faceOrient;
-        
+
         // Used by boundary cells
         std::vector<Cell*> _assocDomCell;
         std::vector<int> _halo;
+
     };
 }
 
