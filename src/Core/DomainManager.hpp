@@ -35,7 +35,11 @@
 #include <Util/RealVector.hpp>
 
 #ifdef USING_DUNE_GRID_BACKEND
-#include "DuneExtensions.hpp"
+    typedef typename Dune::GridSelector::GridType GridType;
+    typedef typename GridType::LeafGridView LeafGridView;
+    typedef typename GridType::template Codim<0>::EntitySeed DomainSeedType;
+    typedef typename GridType::template Codim<1>::EntitySeed BoundarySeedType;
+    typedef typename GridType::template Codim<GridType::dimension>::EntitySeed VertexSeedType;
 #endif
 
 namespace broomstyx
@@ -87,7 +91,7 @@ namespace broomstyx
         int    giveNumberOfNodes();
         void   makeNewNodeAt( RealVector& location );
 #ifdef USING_DUNE_GRID_BACKEND
-        void   makeNewNodeAt( VertexSeedType seed );
+        void   makeNewNodeFrom( VertexSeedType seed );
 #endif
         void   performNodalPostProcessing();
         void   readNumberOfFieldsPerNodeFrom( FILE* fp );
@@ -126,6 +130,10 @@ namespace broomstyx
         Numerics* giveNumericsFor( Cell* targetCell );
         void  initializeMaterialsAtCells();
         void  initializeNumericsAtCells();
+#ifdef USING_DUNE_GRID_BACKEND
+        Cell* makeNewBoundaryCellFrom( DomainSeedType seed, int CellLabel );
+        Cell* makeNewDomainCellFrom( DomainSeedType seed, int CellLabel );
+#endif
         Cell* makeNewCellWithLabel( int cellLabel );
         void  makeNewFaceBetween( Cell* posCell, Cell* negCell, int posFaceNum );
         void  mustConstructFaces();
@@ -138,6 +146,9 @@ namespace broomstyx
         void  setHaloOf( Cell* targetCell, std::vector<int>& halo );
         void  setNeighborsOf( Cell* targetCell, std::vector<Cell*>& neighbors);
         void  setNodesOf( Cell* targetCell, std::vector<int>& cellNodes );
+#ifdef USING_DUNE_GRID_BACKEND
+        void  setNodesOf( Cell* targetCell, std::vector<VertexSeedType>& vertices );
+#endif
         void  setPartitionOf( Cell* targetCell, int partition );
 
         // Methods helpful in debugging
@@ -171,9 +182,6 @@ namespace broomstyx
 #ifdef USING_DUNE_GRID_BACKEND
         std::unique_ptr<GridType> _grid;
         std::unique_ptr<LeafGridView> _gridView;
-
-        std::vector<int> _physicalEntityOfDomainCell;
-        std::vector<int> _physicalEntityOfBoundaryCell;
 #endif
 
         DomainManager();

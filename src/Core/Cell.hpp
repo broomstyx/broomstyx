@@ -32,7 +32,8 @@
 #include <Util/RealVector.hpp>
 
 #ifdef USING_DUNE_GRID_BACKEND
-#include "DuneExtensions.hpp"
+    typedef typename Dune::GridSelector::GridType GridType;
+    typedef typename GridType::template Codim<0>::EntitySeed DomainSeedType;
 #endif
 
 namespace broomstyx
@@ -75,7 +76,6 @@ namespace broomstyx
 
 #ifdef USING_DUNE_GRID_BACKEND
         DomainSeedType _domainSeed;
-        BoundarySeedType _boundarySeed;
 #endif
 
         std::vector<Cell*> _neighbor;
@@ -85,7 +85,6 @@ namespace broomstyx
         // Used by boundary cells
         std::vector<Cell*> _assocDomCell;
         std::vector<int> _halo;
-
     };
 }
 

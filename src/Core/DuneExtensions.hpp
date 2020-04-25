@@ -37,9 +37,9 @@
 #include <config.h>
 
 #ifdef USING_DUNE_GRID_BACKEND
-    using GridType = Dune::GridSelector::GridType;
-    using LeafGridView = GridType::LeafGridView;
-    using DomainSeedType = GridType::Codim<0>::EntitySeed;
-    using BoundarySeedType = GridType::Codim<1>::EntitySeed;
-    using VertexSeedType = GridType::Codim<GRIDDIM>::EntitySeed;
+    using GridType = typename Dune::GridSelector::GridType;
+    using LeafGridView = typename GridType::LeafGridView;
+    using DomainSeedType = typename GridType::template Codim<0>::EntitySeed;
+    using BoundarySeedType = typename GridType::template Codim<1>::EntitySeed;
+    using VertexSeedType = typename GridType::template Codim<GridType::dimension>::EntitySeed;
 #endif

@@ -24,17 +24,19 @@
 #define	DUNEGRID_GMSHREADER_HPP
 
 #include "MeshReader.hpp"
-#include <config.h>
 
 #ifdef USING_DUNE_GRID_BACKEND
-
 #include <cstdio>
 #include <string>
 #include <vector>
 
+typedef typename Dune::GridSelector::GridType GridType;
+typedef typename GridType::template Codim<0>::EntitySeed DomainSeedType;
+
 namespace broomstyx
 {    
     class AnalysisModel;
+    class Cell;
 
     class DuneGrid_GmshReader : public MeshReader
     {
@@ -49,6 +51,10 @@ namespace broomstyx
         void readMeshFile( std::string filename );
         std::vector<int> giveFaceNodeNumbersForElementType( int elType, int face );
         int  giveNumberOfFacesForElementType( int elType );
+
+    private:
+        int giveElementTypeFor( int nVertices );
+        int numberOfNodesForElementType( int elType );
     };
 }
 

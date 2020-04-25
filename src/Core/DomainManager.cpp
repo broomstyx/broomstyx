@@ -136,7 +136,7 @@ std::string DomainManager::givePhysicalEntityNameFor( int physEntNum )
     
     if ( !success )
         throw std::runtime_error("Failed to find name corresponding to physical entity number '"
-                + std::to_string(physEntNum) + "'!\nSource: MeshReader");
+                + std::to_string(physEntNum) + "'!\nSource: DomainManager");
     
     return physEntName;
 }
@@ -157,7 +157,7 @@ int DomainManager::givePhysicalEntityNumberFor( std::string name )
     }
     
     if ( !success )
-        throw std::runtime_error("Failed to find physical entity number corresponding to '" + name + "'!\nSource: MeshReader");
+        throw std::runtime_error("Failed to find physical entity number corresponding to '" + name + "'!\nSource: DomainManager");
     
     return physEntNumber;
 }
@@ -298,7 +298,7 @@ void DomainManager::makeNewNodeAt( RealVector& location )
 }
 // ----------------------------------------------------------------------------
 #ifdef USING_DUNE_GRID_BACKEND
-void DomainManager::makeNewNodeAt( VertexSeedType seed )
+void DomainManager::makeNewNodeFrom( VertexSeedType seed )
 {
     std::string errmsg, src = "DomainManager";
     if ( _fieldsPerNode == -1 )
@@ -754,6 +754,64 @@ void DomainManager::initializeNumericsAtCells()
     std::printf("done (time = %f sec.)\n", tictoc.count());
 }
 // ----------------------------------------------------------------------------
+#ifdef USING_DUNE_GRID_BACKEND
+Cell* DomainManager::makeNewBoundaryCellFrom( DomainSeedType seed, int cellLabel )
+{
+    // Instantiate new cells
+    Cell* newCell = new Cell();
+    newCell->_domainSeed = seed;
+    newCell->_label = cellLabel;
+
+    // Retrieve numerics type based on cell label
+    Numerics* numerics = this->giveNumericsForDomain(cellLabel);
+    
+    // Add new cell object to relevant list
+    if ( numerics )
+    {
+        newCell->_isPartOfDomain = true;
+        _domCellList.push_back(newCell);
+        analysisModel().dofManager().createCellDofsAt(newCell);
+        if ( _fieldsPerCell > 0 )
+            newCell->cellData.init(_fieldsPerCell);
+    }
+    else
+    {
+        newCell->_isPartOfDomain = false;
+        _bndCellList.push_back(newCell);
+    }
+
+    return newCell;
+}
+// ----------------------------------------------------------------------------
+Cell* DomainManager::makeNewDomainCellFrom( DomainSeedType seed, int cellLabel )
+{
+    // Instantiate new cells
+    Cell* newCell = new Cell();
+    newCell->_domainSeed = seed;
+    newCell->_label = cellLabel;
+
+    // Retrieve numerics type based on cell label
+    Numerics* numerics = this->giveNumericsForDomain(cellLabel);
+    
+    // Add new cell object to relevant list
+    if ( numerics )
+    {
+        newCell->_isPartOfDomain = true;
+        _domCellList.push_back(newCell);
+        analysisModel().dofManager().createCellDofsAt(newCell);
+        if ( _fieldsPerCell > 0 )
+            newCell->cellData.init(_fieldsPerCell);
+    }
+    else
+    {
+        newCell->_isPartOfDomain = false;
+        _bndCellList.push_back(newCell);
+    }
+
+    return newCell;
+}
+#endif
+// ----------------------------------------------------------------------------
 Cell* DomainManager::makeNewCellWithLabel( int cellLabel )
 {
     // Instantiate new cells
@@ -918,6 +976,41 @@ void DomainManager::setNodesOf( Cell *targetCell, std::vector<int>& cellNodes )
     
     targetCell->_node = node;
 }
+// ----------------------------------------------------------------------------
+#ifdef USING_DUNE_GRID_BACKEND
+void DomainManager::setNodesOf( Cell* targetCell, std::vector<VertexSeedType>& vertices )
+{
+    // Important: this method must not be called from within a loop that is
+    // parallelized using OpenMP
+
+    std::vector<Node*> node(vertices.size(), nullptr);
+
+    for ( int i = 0; i < (int)_node.size(); i++ )
+    {
+        VertexSeedType nodeSeed = _node[i]->_vertexSeed;
+        int found = 0;
+        for ( int j = 0; j < (int)vertices.size(); j++ )
+        if ( nodeSeed == vertices[j] )
+        {
+            node[j] = _node[i];
+            ++found;
+        }
+        
+        if ( found == (int)vertices.size() )
+            break;
+    }
+
+    for ( int i = 0; i < (int)node.size(); i++ ) 
+    {
+        if ( targetCell->_isPartOfDomain )
+            node[i]->_attachedDomCell.insert(targetCell);
+        else
+            node[i]->_attachedBndCell.insert(targetCell);
+    }
+    
+    targetCell->_node = node;
+}
+#endif
 // ----------------------------------------------------------------------------
 void DomainManager::setPartitionOf( Cell* targetCell, int partition )
 {

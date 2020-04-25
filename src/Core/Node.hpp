@@ -31,7 +31,8 @@
 #include <Util/RealVector.hpp>
 
 #ifdef USING_DUNE_GRID_BACKEND
-#include "DuneExtensions.hpp"
+    typedef typename Dune::GridSelector::GridType GridType;
+    typedef typename GridType::template Codim<GridType::dimension>::EntitySeed VertexSeedType;
 #endif
 
 namespace broomstyx

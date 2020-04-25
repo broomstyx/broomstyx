@@ -28,8 +28,8 @@
 #include "DuneGrid_GmshReader.hpp"
 
 #include <Core/AnalysisModel.hpp>
+#include <Core/Cell.hpp>
 #include <Core/DomainManager.hpp>
-#include <Core/DuneExtensions.hpp>
 #include <Core/ObjectFactory.hpp>
 #include <Util/readOperations.hpp>
 
@@ -90,31 +90,60 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
     analysisModel().domainManager()._grid = factory.createGrid();
     *(analysisModel().domainManager()._gridView) = analysisModel().domainManager()._grid->leafGridView();
 
-    // // Make broomstyx node objects
-    // for ( auto& vertex : vertices(analysisModel().domainManager()._gridView) )
-    // {
-    //     VertexSeedType seed = vertex.seed();
-    //     analysisModel().domainManager().makeNewNodeAt(seed);
-    // }
-
-    // --- CODE TESTING ---
-    auto gridView = analysisModel().domainManager()._grid->leafGridView();
-    
-
-    std::printf("\nBoundary tags = %d\n", (int)analysisModel().domainManager()._physicalEntityOfBoundaryCell.size());
-    for ( int i = 0; i < analysisModel().domainManager()._physicalEntityOfBoundaryCell.size(); i++ )
-        std::printf("%d\n", analysisModel().domainManager()._physicalEntityOfBoundaryCell[i]);
-
-    std::printf("\nDomain tags = %d\n", (int)analysisModel().domainManager()._physicalEntityOfDomainCell.size());
-    for ( int i = 0; i < analysisModel().domainManager()._physicalEntityOfDomainCell.size(); i++ )
-        std::printf("%d\n", analysisModel().domainManager()._physicalEntityOfDomainCell[i]);
-
-    // Get seeds
-    int count = 0;
-    for ( auto element : elements(gridView) )
+    // Make broomstyx node objects
+    for ( auto& vertex : vertices(*(analysisModel().domainManager()._gridView)) )
     {
+        VertexSeedType seed = vertex.seed();
+        analysisModel().domainManager().makeNewNodeFrom(seed);
+    }
+    analysisModel().domainManager().countNodes();
+
+    // Make broomstyx domain cell objects
+    for ( auto& element : elements(*(analysisModel().domainManager()._gridView)) )
+    {
+        int idx = factory.insertionIndex(element);
+        if ( idx >= physEntDomain.size() )
+            throw std::runtime_error("ERROR: Encountered domain cell without an assigned physical number!");
+
         DomainSeedType seed = element.seed();
-        printf("Cell %d has %d vertices\n", count++, analysisModel().domainManager()._grid->entity(seed).subEntities(GRIDDIM));
+        int cellLabel = physEntDomain[idx];
+        Cell* curDomainCell = analysisModel().domainManager().makeNewDomainCellFrom(seed, cellLabel);
+        
+        // Get vertices of domain cell
+        int nDomCellVtx = element.subEntities(GridType::dimension);
+
+        int elemType = this->giveElementTypeFor(nDomCellVtx);
+        analysisModel().domainManager().setElementTypeOf(curDomainCell, elemType);
+        
+        std::vector<VertexSeedType> domCellVertexSeeds;
+        for ( int i = 0; i < nDomCellVtx; i++ )
+            domCellVertexSeeds.push_back((element.subEntity<GridType::dimension>(i)).seed());
+
+        analysisModel().domainManager().setNodesOf(curDomainCell, domCellVertexSeeds);
+
+        // Make broomstyx boundary cell objects if domain cell lies on the boundary
+        for ( auto& intersection : intersections(*(analysisModel().domainManager()._gridView), element) )
+        {
+            if ( factory.wasInserted(intersection) )
+            {
+                int idx = factory.insertionIndex(intersection);
+                cellLabel = physEntBoundary[idx];
+                Cell* curBoundaryCell = analysisModel().domainManager().makeNewBoundaryCellFrom(seed, cellLabel);
+
+                // Get vertices of boundary cell
+                int insIdx = intersection.indexInInside();
+                // auto facet = element.subEntity<1>(insIdx);
+                // int nBndCellVtx = facet.subEntities(GridType::dimension);
+
+                std::vector<int> faceNodeNumbers = this->giveFaceNodeNumbersForElementType(elemType, insIdx);
+                std::vector<VertexSeedType> bndCellVertexSeeds;
+
+                for ( int i = 0; i < (int)faceNodeNumbers.size(); i++ )
+                    bndCellVertexSeeds.push_back(domCellVertexSeeds[faceNodeNumbers[i]]);
+
+                analysisModel().domainManager().setNodesOf(curBoundaryCell, bndCellVertexSeeds);
+            }
+        }
     }
 
     std::printf("\n\nGRID HAS BEEN CREATED!\n\n");
@@ -124,12 +153,292 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
 // -------------------------------------------------------------------------------
 std::vector<int> DuneGrid_GmshReader::giveFaceNodeNumbersForElementType( int elType, int face )
 {
-    throw std::runtime_error("ERROR: Call to unimplemented method detected!\nSource: DuneGrid_GmshReader\n\n");
+    // Uses Dune system of numbering
+
+    std::vector<int> faceNodeNum;
+    
+    switch ( elType )
+    {
+        case 2: // 3-node triangle
+            switch ( face )
+            {
+                case 0:
+                    faceNodeNum = {0, 1};
+                    break;
+                case 1:
+                    faceNodeNum = {2, 0};
+                    break;
+                case 2:
+                    faceNodeNum = {1, 2};
+                    break;
+                default:
+                    std::printf("\nERROR: Unrecognized face number '%d' for element type '%d'!", face, elType );
+                    std::printf("\nSource: DuneGrid_GmshReader\n");
+                    throw std::runtime_error("\n");
+            }
+            break;
+        case 3: // 4-node quad
+            switch ( face )
+            {
+                case 0:
+                    faceNodeNum = {2, 0};
+                    break;
+                case 1:
+                    faceNodeNum = {1, 3};
+                    break;
+                case 2:
+                    faceNodeNum = {0, 1};
+                    break;
+                case 3:
+                    faceNodeNum = {3, 2};
+                    break;
+                default:
+                    std::printf("\nERROR: Unrecognized face number '%d' for element type '%d'!", face, elType );
+                    std::printf("\nSource: DuneGrid_GmshReader\n");
+                    throw std::runtime_error("\n");
+            }
+            break;
+        case 4: // 4-node tetrahedron
+            switch ( face )
+            {
+                case 0:
+                    faceNodeNum = {0, 2, 1};
+                    break;
+                case 1:
+                    faceNodeNum = {0, 1, 3};
+                    break;
+                case 2:
+                    faceNodeNum = {0, 3, 2};
+                    break;
+                case 3:
+                    faceNodeNum = {1, 2, 3};
+                    break;
+                default:
+                    std::printf("\nERROR: Unrecognized face number '%d' for element type '%d'!", face, elType );
+                    std::printf("\nSource: DuneGrid_GmshReader\n");
+                    throw std::runtime_error("\n");
+            }
+            break;
+        case 5: // 8-node hexahedron
+            switch ( face )
+            {
+                case 0:
+                    faceNodeNum = {0, 4, 6, 2};
+                    break;
+                case 1:
+                    faceNodeNum = {1, 3, 7, 5};
+                    break;
+                case 2:
+                    faceNodeNum = {0, 1, 5, 4};
+                    break;
+                case 3:
+                    faceNodeNum = {2, 6, 7, 3};
+                    break;
+                case 4:
+                    faceNodeNum = {0, 2, 3, 1};
+                    break;
+                case 5:
+                    faceNodeNum = {4, 5, 6, 7};
+                    break;
+                default:
+                    std::printf("\nERROR: Unrecognized face number '%d' for element type '%d'!", face, elType );
+                    std::printf("\nSource: DuneGrid_GmshReader\n");
+                    throw std::runtime_error("\n");
+            }
+            break;
+        default:
+            std::printf("\nERROR: Cannot generate faces for unrecognized element type '%d'!", elType);
+            std::printf("\nSource: DuneGrid_GmshReader\n");
+            throw std::runtime_error("\n");
+    }
+    
+    return faceNodeNum;
 }
 // -------------------------------------------------------------------------------
 int DuneGrid_GmshReader::giveNumberOfFacesForElementType( int elType )
 {
-    throw std::runtime_error("ERROR: Call to unimplemented method detected!\nSource: DuneGrid_GmshReader\n\n");
+    int nFaces;
+    
+    switch ( elType)
+    {
+        case 2: // 3-node triangle
+        case 9: // 6-node triangle
+            nFaces = 3;
+            break;
+        case 3: // 4-node quad
+        case 4: // 4-node tetrahedron
+            nFaces = 4;
+            break;
+        default:
+            std::printf("\nERROR: Cannot give number of faces for element type '%d'!", elType);
+            std::printf("\nSource: GmshReader\n");
+            throw std::runtime_error("\n");
+            
+    }
+    
+    return nFaces;
+}
+
+// Private methods
+// ---------------------------------------------------------------------------------------------
+int DuneGrid_GmshReader::giveElementTypeFor( int nVertices )
+{
+    // Give gmsh element type for cell based on number of vertices
+    
+    int elType;
+
+    if ( GridType::dimension == 2 )
+    {
+        switch (nVertices)
+        {
+            case 3:
+                elType = 2;
+                break;
+            case 4:
+                elType = 3;
+                break;
+            default:
+                std::printf("\nERROR: %d-dimensional element with %d vertices is not recognized!", GridType::dimension, elType);
+                std::printf("\nSource: DuneGrid_GmshReader\n");
+                throw std::runtime_error("\n");
+        }
+    }
+    else if ( GridType::dimension == 3 )
+    {
+        switch (nVertices)
+        {
+            case 4:
+                elType = 4;
+                break;
+            case 8:
+                elType = 5;
+                break;
+            default:
+                std::printf("\nERROR: %d-dimensional element with %d vertices is not recognized!", GridType::dimension, elType);
+                std::printf("\nSource: DuneGrid_GmshReader\n");
+                throw std::runtime_error("\n");
+        }
+    }
+    else
+    {
+        std::printf("\nERROR: Grid with dimension = %d cannot be handled!", GridType::dimension);
+        std::printf("\nSource: DuneGrid_GmshReader\n");
+        throw std::runtime_error("\n");
+    }
+}
+// ---------------------------------------------------------------------------------------------
+int DuneGrid_GmshReader::numberOfNodesForElementType( int elType ) 
+{
+    int nNodes;
+
+    switch (elType)
+    {
+        case 1: // 2-node line
+            nNodes = 2;
+            break;
+        case 2: // 3-node triangle
+            nNodes = 3;
+            break;
+        case 3: // 4-node quadrangle
+            nNodes = 4;
+            break;
+        case 4: // 4-node tetrahedron
+            nNodes = 4;
+            break;
+        case 5: // 8-node hexahedron
+            nNodes = 8;
+            break;
+        case 6: // 6-node prism
+            nNodes = 6;
+            break;
+        case 7: // 5-node pyramid
+            nNodes = 5;
+            break;
+        case 8: // 3-node (2nd order) line
+            nNodes = 3;
+            break;
+        case 9: // 6-node (2nd order) triangle
+            nNodes = 6;
+            break;
+        case 10: // 9-node (2nd order) quadrangle
+            nNodes = 9;
+            break;
+        case 11: // 10-node (2nd order) tetrahedron
+            nNodes = 10;
+            break;
+        case 12: // 27-node (2nd order) hexahedron
+            nNodes = 27;
+            break;
+        case 13: // 18-node (2nd order) prism
+            nNodes = 18;
+            break;
+        case 14: // 14-node (2nd order) pyramid
+            nNodes = 14;
+            break;
+        case 15: // 1-node point
+            nNodes = 1;
+            break;
+        case 16: // 8-node (2nd order) quadrangle
+            nNodes = 8;
+            break;
+        case 17: // 20-node (2nd order) hexahedron
+            nNodes = 20;
+            break;
+        case 18: // 15-node (2nd order) prism
+            nNodes = 15;
+            break;
+        case 19: // 13-node (2nd order) pyramid
+            nNodes = 13;
+            break;
+        case 20: // 9-node (3rd order incomplete) triangle
+            nNodes = 9;
+            break;
+        case 21: // 10-node (3rd order) triangle
+            nNodes = 10;
+            break;
+        case 22: // 12-node (4th order incomplete) triangle
+            nNodes = 12;
+            break;
+        case 23: // 15-node (4th order) triangle
+            nNodes = 15;
+            break;
+        case 24: // 15-node (5th order incomplete) triangle
+            nNodes = 15;
+            break;
+        case 25: // 21-node (5th order) triangle
+            nNodes = 21;
+            break;
+        case 26: // 4-node (3rd order) line
+            nNodes = 4;
+            break;
+        case 27: // 5-node (4th order) line
+            nNodes = 5;
+            break;
+        case 28: // 6-node (5th order) line
+            nNodes = 6;
+            break;
+        case 29: // 20-node (3rd order) tetrahedron
+            nNodes = 20;
+            break;
+        case 30: // 35-node (4th order) tetrahedron
+            nNodes = 35;
+            break;
+        case 31: // 56-node (5th order) tetrahedron
+            nNodes = 56;
+            break;
+        case 92: // 64-node (3rd order) hexahedron 
+            nNodes = 64;
+            break;
+        case 93: // 125-node (4th order) hexahedron
+            nNodes = 125;
+            break;
+        default:
+            std::printf("\nERROR: Unrecognized element type '%d'!", elType);
+            std::printf("\nSource: GmshReader\n");
+            throw std::runtime_error("\n");
+    }
+    
+    return nNodes;
 }
 
 #endif /* USING_DUNE_GRID_BACKEND */
