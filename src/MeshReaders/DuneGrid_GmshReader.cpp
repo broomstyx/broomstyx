@@ -21,6 +21,8 @@
   for the list of copyright holders.
 */
 #include <config.h>
+
+#include <chrono>
 #include <cstdio>
 
 #ifdef USING_DUNE_GRID_BACKEND
@@ -50,6 +52,13 @@ DuneGrid_GmshReader::~DuneGrid_GmshReader() {}
 // -------------------------------------------------------------------------------
 void DuneGrid_GmshReader::readMeshFile( std::string filename )
 {
+    std::printf("  %-40s", "Reading mesh file ...\n");
+    std::fflush(stdout);
+
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     // First pass: read physical entity names from mesh file
 
     FILE* fp = std::fopen(filename.c_str(), "r");
@@ -88,7 +97,7 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
     Dune::GridFactory<GridType> factory;
     Dune::GmshReader<GridType>::read(factory, filename, physEntBoundary, physEntDomain);
     analysisModel().domainManager()._grid = factory.createGrid();
-    *(analysisModel().domainManager()._gridView) = analysisModel().domainManager()._grid->leafGridView();
+    analysisModel().domainManager()._gridView = std::unique_ptr<LeafGridView>(new LeafGridView(analysisModel().domainManager()._grid->leafGridView()));
 
     // Make broomstyx node objects
     for ( auto& vertex : vertices(*(analysisModel().domainManager()._gridView)) )
@@ -102,6 +111,7 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
     for ( auto& element : elements(*(analysisModel().domainManager()._gridView)) )
     {
         int idx = factory.insertionIndex(element);
+
         if ( idx >= physEntDomain.size() )
             throw std::runtime_error("ERROR: Encountered domain cell without an assigned physical number!");
 
@@ -114,6 +124,9 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
 
         int elemType = this->giveElementTypeFor(nDomCellVtx);
         analysisModel().domainManager().setElementTypeOf(curDomainCell, elemType);
+
+        // Partition-related tags are not read from the .msh file
+        analysisModel().domainManager().setPartitionOf(curDomainCell, 0);
         
         std::vector<VertexSeedType> domCellVertexSeeds;
         for ( int i = 0; i < nDomCellVtx; i++ )
@@ -126,14 +139,14 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
         {
             if ( factory.wasInserted(intersection) )
             {
-                int idx = factory.insertionIndex(intersection);
+                idx = factory.insertionIndex(intersection);
                 cellLabel = physEntBoundary[idx];
                 Cell* curBoundaryCell = analysisModel().domainManager().makeNewBoundaryCellFrom(seed, cellLabel);
 
                 // Get vertices of boundary cell
                 int insIdx = intersection.indexInInside();
-                // auto facet = element.subEntity<1>(insIdx);
-                // int nBndCellVtx = facet.subEntities(GridType::dimension);
+                auto facet = element.subEntity<1>(insIdx);
+                int nBndCellVtx = facet.subEntities(GridType::dimension);
 
                 std::vector<int> faceNodeNumbers = this->giveFaceNodeNumbersForElementType(elemType, insIdx);
                 std::vector<VertexSeedType> bndCellVertexSeeds;
@@ -146,9 +159,15 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
         }
     }
 
-    std::printf("\n\nGRID HAS BEEN CREATED!\n\n");
-    std::fflush(stdout);
-    throw std::runtime_error("BREAKPOINT!\n");
+    analysisModel().domainManager().countBoundaryCells();
+    analysisModel().domainManager().countDomainCells();
+    analysisModel().domainManager().formDomainPartitions();
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    std::printf("Done creating cell and node objects (time = %f sec.)\n\n", tictoc.count());
+    analysisModel().domainManager().reportStatus();
+    std::printf("\n");
 }
 // -------------------------------------------------------------------------------
 std::vector<int> DuneGrid_GmshReader::giveFaceNodeNumbersForElementType( int elType, int face )
@@ -325,6 +344,8 @@ int DuneGrid_GmshReader::giveElementTypeFor( int nVertices )
         std::printf("\nSource: DuneGrid_GmshReader\n");
         throw std::runtime_error("\n");
     }
+
+    return elType;
 }
 // ---------------------------------------------------------------------------------------------
 int DuneGrid_GmshReader::numberOfNodesForElementType( int elType ) 

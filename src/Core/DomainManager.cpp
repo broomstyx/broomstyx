@@ -757,35 +757,20 @@ void DomainManager::initializeNumericsAtCells()
 #ifdef USING_DUNE_GRID_BACKEND
 Cell* DomainManager::makeNewBoundaryCellFrom( DomainSeedType seed, int cellLabel )
 {
-    // Instantiate new cells
+    // Instantiate new cell
     Cell* newCell = new Cell();
     newCell->_domainSeed = seed;
     newCell->_label = cellLabel;
 
-    // Retrieve numerics type based on cell label
-    Numerics* numerics = this->giveNumericsForDomain(cellLabel);
+    newCell->_isPartOfDomain = false;
+    _bndCellList.push_back(newCell);
     
-    // Add new cell object to relevant list
-    if ( numerics )
-    {
-        newCell->_isPartOfDomain = true;
-        _domCellList.push_back(newCell);
-        analysisModel().dofManager().createCellDofsAt(newCell);
-        if ( _fieldsPerCell > 0 )
-            newCell->cellData.init(_fieldsPerCell);
-    }
-    else
-    {
-        newCell->_isPartOfDomain = false;
-        _bndCellList.push_back(newCell);
-    }
-
     return newCell;
 }
 // ----------------------------------------------------------------------------
 Cell* DomainManager::makeNewDomainCellFrom( DomainSeedType seed, int cellLabel )
 {
-    // Instantiate new cells
+    // Instantiate new cell
     Cell* newCell = new Cell();
     newCell->_domainSeed = seed;
     newCell->_label = cellLabel;
@@ -794,19 +779,11 @@ Cell* DomainManager::makeNewDomainCellFrom( DomainSeedType seed, int cellLabel )
     Numerics* numerics = this->giveNumericsForDomain(cellLabel);
     
     // Add new cell object to relevant list
-    if ( numerics )
-    {
-        newCell->_isPartOfDomain = true;
-        _domCellList.push_back(newCell);
-        analysisModel().dofManager().createCellDofsAt(newCell);
-        if ( _fieldsPerCell > 0 )
-            newCell->cellData.init(_fieldsPerCell);
-    }
-    else
-    {
-        newCell->_isPartOfDomain = false;
-        _bndCellList.push_back(newCell);
-    }
+    newCell->_isPartOfDomain = true;
+    _domCellList.push_back(newCell);
+    analysisModel().dofManager().createCellDofsAt(newCell);
+    if ( _fieldsPerCell > 0 )
+        newCell->cellData.init(_fieldsPerCell);
 
     return newCell;
 }
