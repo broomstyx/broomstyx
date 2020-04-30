@@ -100,14 +100,17 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
     analysisModel().domainManager()._gridView = std::unique_ptr<LeafGridView>(new LeafGridView(analysisModel().domainManager()._grid->leafGridView()));
 
     // Make broomstyx node objects
+    int count = 0;
     for ( auto& vertex : vertices(*(analysisModel().domainManager()._gridView)) )
     {
+        // std::printf("\nNode # %d\n", ++count);
         VertexSeedType seed = vertex.seed();
         analysisModel().domainManager().makeNewNodeFrom(seed);
     }
     analysisModel().domainManager().countNodes();
 
     // Make broomstyx domain cell objects
+    count = 0;
     for ( auto& element : elements(*(analysisModel().domainManager()._gridView)) )
     {
         int idx = factory.insertionIndex(element);
@@ -128,9 +131,17 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
         // Partition-related tags are not read from the .msh file
         analysisModel().domainManager().setPartitionOf(curDomainCell, 0);
         
+        // Note: Dune-alugrid stores clockwise ordering of simplex vertices
+        // which must be reversed to conform with conventions used in broomstyx
         std::vector<VertexSeedType> domCellVertexSeeds;
+        // std::printf("\nCell # %d -- Vertices:\n", ++count);
         for ( int i = 0; i < nDomCellVtx; i++ )
-            domCellVertexSeeds.push_back((element.subEntity<GridType::dimension>(i)).seed());
+        {
+            domCellVertexSeeds.push_back((element.subEntity<GridType::dimension>(nDomCellVtx - 1 - i)).seed());
+            auto coor = (element.subEntity<GridType::dimension>(nDomCellVtx - 1 - i).geometry()).corner(0);
+            // std::printf("(%f, %f) ", coor[0], coor[1]);
+        }
+        // std::printf("\n");
 
         analysisModel().domainManager().setNodesOf(curDomainCell, domCellVertexSeeds);
 
@@ -153,6 +164,14 @@ void DuneGrid_GmshReader::readMeshFile( std::string filename )
 
                 for ( int i = 0; i < (int)faceNodeNumbers.size(); i++ )
                     bndCellVertexSeeds.push_back(domCellVertexSeeds[faceNodeNumbers[i]]);
+
+                // std::printf("\nBoundary cell -- index in element = %d. Vertices are\n", insIdx);
+                // for ( int i = 0; i < (int)faceNodeNumbers.size(); i++ )
+                // {
+                //     auto bcoor = analysisModel().domainManager()._grid->entity(domCellVertexSeeds[i]).geometry().corner(0);
+                //     std::printf("(%f, %f) ", bcoor[0], bcoor[1]);
+                // }
+                // std::printf("\n");
 
                 analysisModel().domainManager().setNodesOf(curBoundaryCell, bndCellVertexSeeds);
             }
@@ -181,14 +200,15 @@ std::vector<int> DuneGrid_GmshReader::giveFaceNodeNumbersForElementType( int elT
         case 2: // 3-node triangle
             switch ( face )
             {
+                // Note: Face index set hack for alugrid 2d simplex
                 case 0:
-                    faceNodeNum = {0, 1};
+                    faceNodeNum = {1, 2};
                     break;
                 case 1:
                     faceNodeNum = {2, 0};
                     break;
                 case 2:
-                    faceNodeNum = {1, 2};
+                    faceNodeNum = {0, 1};
                     break;
                 default:
                     std::printf("\nERROR: Unrecognized face number '%d' for element type '%d'!", face, elType );

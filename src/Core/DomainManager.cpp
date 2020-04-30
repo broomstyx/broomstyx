@@ -309,6 +309,26 @@ void DomainManager::makeNewNodeFrom( VertexSeedType seed )
     
     Node* newNode = new Node();
     newNode->_vertexSeed = seed;
+    
+    // Transfer vertex coordinates to node
+    auto vertexCoor = _grid->entity(newNode->_vertexSeed).geometry().corner(0);
+    RealVector location;
+    if ( vertexCoor.dim() == 2 )
+    {
+        location = {vertexCoor[0], vertexCoor[1], 0.};
+    }
+    else if ( vertexCoor.dim() == 3 )
+    {
+        location = {vertexCoor[0], vertexCoor[1], vertexCoor[2]};
+    }
+    else
+    {
+        errmsg = "ERROR: Coordinate of dune-grid vertex entity has dimension = " + std::to_string(vertexCoor.dim())
+               + ". (Allowable = 2 or 3)\nSource: " + src;
+        throw std::runtime_error(errmsg);
+    }
+    // location.print("Nodal coordinate = ", 3);
+    newNode->_coordinates = location;    
 
     // Instantiate degrees of freedom for new node
     analysisModel().dofManager().createNodalDofsAt(newNode);
