@@ -124,7 +124,9 @@ namespace broomstyx
         std::vector<Dof*> _numericsDof;
 
         std::map< int, int > _nActiveDof;
+        std::map< int, int > _nInactiveDof;
         std::map< int, std::vector<Dof*> > _activeDof;
+        std::map< int, std::vector<Dof*> > _inactiveDof;
         std::vector<MultiFreedomConstraint> _multiFreedomConstraint;
         
         DofManager();
