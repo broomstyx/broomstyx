@@ -737,12 +737,14 @@ void DofManager::imposeNodalDofSlaveConstraint( MultiFreedomConstraint& mfc )
 // ----------------------------------------------------------------------------
 void DofManager::readNodalDofSlaveConstraintDataFrom( FILE* fp, MultiFreedomConstraint& mfc )
 {
-    std::string src = "DofManager";
+    std::string src = "DofManager", name;
     
     verifyKeyword(fp, "Master", src);
     mfc.masterTag = getStringInputFrom(fp, "Failed to read master node tag from input file!", src);
-    mfc.masterDofNum = getIntegerInputFrom(fp, "Failed to read master DOF number from input file!", src);
+    name = getStringInputFrom(fp, "Failed to read master DOF name from input file!", src);
+    mfc.masterDofNum = this->giveIndexForNodalDof(name);
     verifyKeyword(fp, "Slave", src);
     mfc.slaveTag = getStringInputFrom(fp, "Failed to read slave node tag from input file!", src);
-    mfc.slaveDofNum = getIntegerInputFrom(fp, "Failed to read slave DOF number from input file!", src);
+    name = getStringInputFrom(fp, "Failed to read slave DOF name from input file!", src);
+    mfc.slaveDofNum = this->giveIndexForNodalDof(name);
 }
