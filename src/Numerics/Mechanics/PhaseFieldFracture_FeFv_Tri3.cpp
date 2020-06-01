@@ -639,6 +639,32 @@ PhaseFieldFracture_FeFv_Tri3::giveStaticRightHandSideAt
                 rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
             }
         }
+        else if ( bndCond.conditionType() == "ConcentratedForce" ) // Boundary conditions for 1-node point
+        {
+            // Retrieve nodes of boundary element
+            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+            
+            // ----------------------------------------------------------------
+            // Note: Boundary element must be a 1-node point
+            // ----------------------------------------------------------------
+            
+            if ( (int)node.size() != 1 )
+                throw std::runtime_error("Error: Concentrated force boundary condition for '" + _name + "' requires 1-node boundary elements!");
+            
+            // Determine proper value of boundary condition
+            RealVector coor = analysisModel().domainManager().giveCoordinatesOf(node[0]);
+            double bcVal = bndCond.valueAt(coor, time);
+
+            // Construct local RHS vector (only for relevant DOFs)
+            rhs.init(1);
+            rhs(0) = bcVal;
+
+            // Construct global address vector
+            rowDof.assign(1, nullptr);
+
+            int dofNum = analysisModel().dofManager().giveIndexForNodalDof(bndCond.targetDof());
+            rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
+        }
         else if ( bndCond.conditionType() == "PhaseField" )
         {
             std::vector<Cell*> domCell = analysisModel().domainManager().giveDomainCellsAssociatedWith(targetCell);
