@@ -30,9 +30,11 @@ ConvergenceChecker::ConvergenceChecker() {}
 
 ConvergenceChecker::~ConvergenceChecker() {}
 
-void ConvergenceChecker::initialize( int nDofGroups )
+void ConvergenceChecker::initialize( int nDofGroups, int nThreads )
 {
     _nDofGroups = nDofGroups;
+    _nThreads = nThreads;
+    
     _relTolCor.init(_nDofGroups);
     _relTolRes.init(_nDofGroups);
     _absTolCor.init(_nDofGroups);

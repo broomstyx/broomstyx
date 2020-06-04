@@ -38,18 +38,19 @@ namespace broomstyx
         ConvergenceChecker();
         virtual ~ConvergenceChecker();
 
-        void initialize( int nDofGroups );
+        void initialize( int nDofGroups, int nThreads );
         void readDataFromFile( FILE* fp );
         void reportConvergenceStatus();
 
         virtual bool checkSolutionConvergence() = 0;
         virtual void computeResidalNorms( const std::vector<RealVector>& resid, const std::vector<Dof*>& dof ) = 0;
-        virtual void processResidualContribution( std::vector<Dof*> dof, RealVector contrib ) = 0;
+        virtual void processResidualContribution( std::vector<int> dofGrp, RealVector contrib, int threadNum ) = 0;
         
     protected:
         std::string _name;
         
         int _nDofGroups;
+        int _nThreads;
         std::vector<int> _dofGrpNum;
         RealVector _dofGrpCount;
         

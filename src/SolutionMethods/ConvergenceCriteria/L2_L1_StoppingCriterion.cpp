@@ -21,7 +21,7 @@
   for the list of copyright holders.
 */
 
-#include "L2_L1_Norms.hpp"
+#include "L2_L1_StoppingCriterion.hpp"
 
 using namespace broomstyx;
 

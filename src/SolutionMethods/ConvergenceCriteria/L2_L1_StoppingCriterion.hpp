@@ -21,23 +21,27 @@
   for the list of copyright holders.
 */
 
-#ifndef L2_L1_NORMS_HPP
-#define	L2_L1_NORMS_HPP
+#ifndef L2_L1_STOPPINGCRITERION_HPP
+#define	L2_L1_STOPPINGCRITERION_HPP
 
 #include "ConvergenceChecker.hpp"
+#include "Util/RealMatrix.hpp"
 
 namespace broomstyx
 {
-    class L2_L1_Norms : public ConvergenceChecker
+    class L2_L1_StoppingCriterion : public ConvergenceChecker
     {
     public:
-        L2_L1_Norms();
-        virtual ~L2_L1_Norms();
+        L2_L1_StoppingCriterion();
+        virtual ~L2_L1_StoppingCriterion();
 
         bool checkSolutionConvergence();
         void computeResidalNorms( const std::vector<RealVector>& resid, const std::vector<Dof*>& dof );
-        void processResidualContribution( std::vector<Dof*> dof, RealVector contrib );
+        void processResidualContribution( std::vector<int> dofGrp, RealVector contrib, int threadNum );
+
+    private:
+        RealMatrix _residNormPerProcess;
     };
 }
 
-#endif	/* L2_L1_NORMS_HPP */
+#endif	/* L2_L1_STOPPINGCRITERION_HPP */
