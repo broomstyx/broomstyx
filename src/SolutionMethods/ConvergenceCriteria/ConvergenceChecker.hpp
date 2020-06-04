@@ -35,34 +35,21 @@ namespace broomstyx
     class ConvergenceChecker
     {
     public:
-        ConvergenceChecker();
-        virtual ~ConvergenceChecker();
+        ConvergenceChecker() {}
+        virtual ~ConvergenceChecker() {}
 
-        void initialize( int nDofGroups, int nThreads );
-        void readDataFromFile( FILE* fp );
-        void reportConvergenceStatus();
-
-        virtual bool checkSolutionConvergence() = 0;
-        virtual void computeResidalNorms( const std::vector<RealVector>& resid, const std::vector<Dof*>& dof ) = 0;
-        virtual void processResidualContribution( std::vector<int> dofGrp, RealVector contrib, int threadNum ) = 0;
+        virtual bool checkConvergenceOf( const std::vector<RealVector>& resid
+                                       , const std::vector<int>& subsysNumbers
+                                       , const std::vector<Dof*>& dof ) = 0;
+        virtual void initialize( int nDofGroups ) = 0;
+        virtual void processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum ) = 0;
+        virtual void readDataFromFile( FILE* fp ) = 0;
+        virtual void reportConvergenceStatus() = 0;
+        virtual void resetResidualCriteria() = 0;
         
     protected:
         std::string _name;
-        
         int _nDofGroups;
-        int _nThreads;
-        std::vector<int> _dofGrpNum;
-        RealVector _dofGrpCount;
-        
-        RealVector _relTolCor;
-        RealVector _relTolRes;
-        RealVector _absTolCor;
-        RealVector _absTolRes;
-
-        RealVector _normCor;
-        RealVector _normRes;
-        RealVector _critCor;
-        RealVector _critRes;
     };
 }
 

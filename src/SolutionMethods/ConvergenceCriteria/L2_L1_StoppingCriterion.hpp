@@ -35,12 +35,56 @@ namespace broomstyx
         L2_L1_StoppingCriterion();
         virtual ~L2_L1_StoppingCriterion();
 
-        bool checkSolutionConvergence();
-        void computeResidalNorms( const std::vector<RealVector>& resid, const std::vector<Dof*>& dof );
-        void processResidualContribution( std::vector<int> dofGrp, RealVector contrib, int threadNum );
+        bool checkConvergenceOf( const std::vector<RealVector>& resid
+                               , const std::vector<int>& subsysNumbers
+                               , const std::vector<Dof*>& dof );
+        void initialize( int nDofGroups );
+        void processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum );
+        void readDataFromFile( FILE* fp );
+        void reportConvergenceStatus();
+        void resetResidualCriteria();
 
     private:
-        RealMatrix _residNormPerProcess;
+        int _nThreads;
+        std::vector<int> _dofGrpNum;
+        RealVector _dofGrpCount;
+        
+        RealVector _relTolCor;
+        RealVector _relTolRes;
+        RealVector _absTolCor;
+        RealVector _absTolRes;
+
+        RealVector _corrNorm;
+        RealVector _corrCrit;
+        RealVector _residNorm;
+        RealVector _residCrit;
+        
+        RealMatrix _contribCountPerThread;
+        RealMatrix _corrCritPerThread;
+        RealMatrix _corrNormPerThread;
+        RealMatrix _dofGrpCountPerThread;
+        RealMatrix _residCritPerThread;
+        RealMatrix _residNormPerThread;
+        
+        int giveIndexForDofGroup( int dofGroupNum )
+        {
+            int idx = -1;
+            for ( int i = 0; i < _nDofGroups; i++ )
+                if ( dofGroupNum == _dofGrpNum[i] )
+                    idx = i;
+            
+            return idx;
+        }
+
+        int giveIndexForSubsystem( int subsysNum, const std::vector<int>& subsysNumVector )
+        {
+            int idx = -1;
+            for ( int i = 0; i < (int)subsysNumVector.size(); i++ )
+                if ( subsysNum == subsysNumVector[i] )
+                    idx = i;
+            
+            return idx;
+        }
     };
 }
 
