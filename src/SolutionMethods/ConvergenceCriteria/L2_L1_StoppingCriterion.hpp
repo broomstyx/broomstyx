@@ -40,20 +40,13 @@ namespace broomstyx
                                , const std::vector<Dof*>& dof );
         void initialize( int nDofGroups );
         void processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum );
-        void readDataFromFile( FILE* fp );
         void reportConvergenceStatus();
         void resetResidualCriteria();
 
     private:
         int _nThreads;
-        std::vector<int> _dofGrpNum;
         RealVector _dofGrpCount;
         
-        RealVector _relTolCor;
-        RealVector _relTolRes;
-        RealVector _absTolCor;
-        RealVector _absTolRes;
-
         RealVector _corrNorm;
         RealVector _corrCrit;
         RealVector _residNorm;

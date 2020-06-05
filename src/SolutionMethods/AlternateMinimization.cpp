@@ -117,14 +117,15 @@ int AlternateMinimization::computeSolutionFor( int stage
         tictoc = innertoc - innertic;
         diagnostics().addPostprocessingTime(tictoc.count());
         
-        // Reinitialize data for calculation of residual convergence
-        for ( int i = 0; i < _nDofGroups; i++ )
-        {
-            _sumAbsFlux(i) = 0;
-            _fluxCount(i) = 0;
-        }
+        // // Reinitialize data for calculation of residual convergence
+        // for ( int i = 0; i < _nDofGroups; i++ )
+        // {
+        //     _sumAbsFlux(i) = 0;
+        //     _fluxCount(i) = 0;
+        // }
         
         analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
+        _stoppingCriterion.resetResidualCriteria();
 
         // Calculate residual for each subsystem
         // Note: We calculate global right hand sides in each
@@ -154,8 +155,11 @@ int AlternateMinimization::computeSolutionFor( int stage
 //            if ( _enableLineSearch )
 //                this->performLineSearchAt(stage, dof, rhs, initResid, time, dU, resid);
 
-            std::tie(converged,normDat) = this->computeConvergenceNormsFrom(resid, dof);
-            this->reportConvergenceStatus(normDat);
+            converged = _stoppingCriterion.checkConvergenceOf(resid, _subsysNum, dof);
+            // std::tie(converged,normDat) = this->computeConvergenceNormsFrom(resid, dof);
+            // this->reportConvergenceStatus(normDat);
+            normDat = _stoppingCriterion.giveConvergenceData();
+            _stoppingCriterion.reportConvergenceStatus();
         }
         
         // Additional convergence checks from numerics
@@ -382,43 +386,49 @@ void AlternateMinimization::initializeSolvers()
 // ---------------------------------------------------------------------------
 void AlternateMinimization::readDataFromFile( FILE* fp )
 {    
-    std::string key;
-    
     // Read number of DOF groups
     verifyKeyword(fp, "DofGroups", _name);
     _nDofGroups = getIntegerInputFrom(fp, "Failed to read number of DOF groups from input file!", _name);
-    _dofGrpNum.assign(_nDofGroups, 0);
+
+    // Initialize stopping criterion and read tolerance criteria
+    _stoppingCriterion.initialize(_nDofGroups);
+    _stoppingCriterion.readDataFromFile(fp);
+
+    // Retrieve DOF group numbers
+    _dofGrpNum = _stoppingCriterion.giveDofGroupNumbers();
+
+//     _dofGrpNum.assign(_nDofGroups, 0);
     
-    // Initialize solution control vectors
-    _relTolCor.init(_nDofGroups);
-    _relTolRes.init(_nDofGroups);
-    _absTolCor.init(_nDofGroups);
-    _absTolRes.init(_nDofGroups);
-    _sumAbsFlux.init(_nDofGroups);
-    _fluxCount.init(_nDofGroups);
-//    
-//    _ctrlParam.init(_nDofGroups,6);
-//    
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        // Read DOF group number
-        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF group number from input file!", _name);
+//     // Initialize solution control vectors
+//     _relTolCor.init(_nDofGroups);
+//     _relTolRes.init(_nDofGroups);
+//     _absTolCor.init(_nDofGroups);
+//     _absTolRes.init(_nDofGroups);
+//     _sumAbsFlux.init(_nDofGroups);
+//     _fluxCount.init(_nDofGroups);
+// //    
+// //    _ctrlParam.init(_nDofGroups,6);
+// //    
+//     for ( int i = 0; i < _nDofGroups; i++ )
+//     {
+//         // Read DOF group number
+//         _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF group number from input file!", _name);
 
-        // Read DOF group convergence parameters
-        verifyKeyword(fp, key = "Parameters", _name);
+//         // Read DOF group convergence parameters
+//         verifyKeyword(fp, "Parameters", _name);
 
-        // Correction tolerance
-        _relTolCor(i) = getRealInputFrom(fp, "Failed to read correction tolerance from input file!", _name);
+//         // Correction tolerance
+//         _relTolCor(i) = getRealInputFrom(fp, "Failed to read correction tolerance from input file!", _name);
 
-        // Residual tolerance
-        _relTolRes(i) = getRealInputFrom(fp, "Failed to read residual tolerance from input file!", _name);
+//         // Residual tolerance
+//         _relTolRes(i) = getRealInputFrom(fp, "Failed to read residual tolerance from input file!", _name);
 
-        // Absolute tolerance for corrections
-        _absTolCor(i) = getRealInputFrom(fp, "Failed to read absolute correction tolerance from input file!", _name);
+//         // Absolute tolerance for corrections
+//         _absTolCor(i) = getRealInputFrom(fp, "Failed to read absolute correction tolerance from input file!", _name);
 
-        // Absolute tolerance for residuals
-        _absTolRes(i) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", _name);
-    }
+//         // Absolute tolerance for residuals
+//         _absTolRes(i) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", _name);
+//     }
 
     // Read number of subsystems
     verifyKeyword(fp, "Subsystems", _name);
@@ -448,7 +458,7 @@ void AlternateMinimization::readDataFromFile( FILE* fp )
             
         // Read linear solver to be used
         verifyKeyword(fp, "LinearSolver", _name);
-        key = getStringInputFrom(fp, "Failed to read linear solver from input file!", _name);
+        std::string key = getStringInputFrom(fp, "Failed to read linear solver from input file!", _name);
         _solver[i] = objectFactory().instantiateLinearSolver(key);
         _solver[i]->readDataFrom(fp);
         _symmetry[i] = _solver[i]->giveSymmetryOption();
@@ -463,7 +473,7 @@ void AlternateMinimization::readDataFromFile( FILE* fp )
     }
 
     // Maximum number of iterations
-    verifyKeyword(fp, key = "MaxIterations", _name);
+    verifyKeyword(fp, "MaxIterations", _name);
     _maxIter = getIntegerInputFrom(fp, "Failed to read maximum number of iterations from input file!", _name);
 }
 
@@ -485,55 +495,71 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
     // Assembly of global internal force vector for current subsystem
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     
-    // ...because OpenMP doesn't allow class members to be shared by parallel threads
-    RealVector sumAbsFlux = _sumAbsFlux;
-    RealVector fluxCount = _fluxCount;
+    // // ...because OpenMP doesn't allow class members to be shared by parallel threads
+    // RealVector sumAbsFlux = _sumAbsFlux;
+    // RealVector fluxCount = _fluxCount;
     
+// #ifdef _OPENMP
+// #pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
+// #endif
 #ifdef _OPENMP
-#pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
+#pragma omp parallel
 #endif
-    for ( int i = 0; i < nCells; i++ )
     {
-        Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
-        Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
-        
-        std::vector<Dof*> rowDof;
-        RealVector localLhs;
-        
-        // Calculate cell internal forces
-        std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, subsys, time);
-        
-        // Assembly
-        for ( int j = 0; j < (int)rowDof.size(); j++ )
+        int threadNum = 0;
+#ifdef _OPENMP
+        threadNum = omp_get_thread_num();
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+        for ( int i = 0; i < nCells; i++ )
         {
-            if ( rowDof[j] )
+            Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
+            Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+            
+            std::vector<Dof*> rowDof;
+            RealVector localLhs;
+            
+            // Calculate cell internal forces
+            std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, subsys, time);
+            std::vector<int> localDofGrp(localLhs.dim(), -1);
+            
+            // Assembly
+            for ( int j = 0; j < (int)rowDof.size(); j++ )
             {
-                int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
-
-                if ( rowNum != UNASSIGNED && ssNum == subsys )
+                if ( rowDof[j] )
                 {
-                    int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                    int dgIdx = this->giveIndexForDofGroup(dgNum);
-                    
-                    if ( std::fabs(localLhs(j)) > _absTolRes(dgIdx) )
+                    int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                    int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+
+                    if ( rowNum != UNASSIGNED && ssNum == subsys )
                     {
-                        sumAbsFlux(dgIdx) += std::fabs(localLhs(j));
-                        fluxCount(dgIdx) += 1.;
-                    }
+                        int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                        localDofGrp[j] = dgNum;
+                        int dgIdx = this->giveIndexForDofGroup(dgNum);
+                        
+                        // if ( std::fabs(localLhs(j)) > _absTolRes(dgIdx) )
+                        // {
+                        //     sumAbsFlux(dgIdx) += std::fabs(localLhs(j));
+                        //     fluxCount(dgIdx) += 1.;
+                        // }
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                    lhs(rowNum) += localLhs(j);
-                }
+                        lhs(rowNum) += localLhs(j);
+                    }
 
-                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
+                    analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
+                }
             }
+
+            _stoppingCriterion.processLocalResidualContribution(localLhs, localDofGrp, threadNum);
         }
     }
     
-    _sumAbsFlux = sumAbsFlux;
-    _fluxCount = fluxCount;
+    // _sumAbsFlux = sumAbsFlux;
+    // _fluxCount = fluxCount;
     
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
@@ -605,54 +631,70 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
     // Loop through all field conditions
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     
-    // ...because OpenMP doesn't allow class members to be shared by parallel threads
-    RealVector sumAbsFlux = _sumAbsFlux;
-    RealVector fluxCount = _fluxCount;
+    // // ...because OpenMP doesn't allow class members to be shared by parallel threads
+    // RealVector sumAbsFlux = _sumAbsFlux;
+    // RealVector fluxCount = _fluxCount;
     
+// #ifdef _OPENMP
+// #pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
+// #endif
 #ifdef _OPENMP
-#pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
+#pragma omp parallel
 #endif
-    for ( int i = 0; i < nCells; i++ )
     {
-        Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
-        int label = analysisModel().domainManager().giveLabelOf(curCell);
-            
-        for ( int ifc = 0; ifc < (int)fldCond.size(); ifc++ )
+        int threadNum = 0;
+#ifdef _OPENMP
+        threadNum = omp_get_thread_num();
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+        for ( int i = 0; i < nCells; i++ )
         {
-            int fcLabel = analysisModel().domainManager().givePhysicalEntityNumberFor(fldCond[ifc].domainLabel());
-            if ( label == fcLabel )
+            Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
+            int label = analysisModel().domainManager().giveLabelOf(curCell);
+                
+            for ( int ifc = 0; ifc < (int)fldCond.size(); ifc++ )
             {
-                RealVector localRhs;
-                std::vector<Dof*> rowDof;
-
-                Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
-                std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, fldCond[ifc], time);
-
-                for ( int j = 0; j < localRhs.dim(); j++)
+                int fcLabel = analysisModel().domainManager().givePhysicalEntityNumberFor(fldCond[ifc].domainLabel());
+                if ( label == fcLabel )
                 {
-                    if ( rowDof[j] )
-                    {
-                        int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                        int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+                    RealVector localRhs;
+                    std::vector<Dof*> rowDof;
 
-                        if ( rowNum != UNASSIGNED && ssNum == subsys )
+                    Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
+                    std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, fldCond[ifc], time);
+                    std::vector<int> localDofGrp(localRhs.dim(), -1);
+
+                    for ( int j = 0; j < localRhs.dim(); j++)
+                    {
+                        if ( rowDof[j] )
                         {
-                            int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            int dgIdx = this->giveIndexForDofGroup(dgNum);
-                            
-                            if ( std::fabs(localRhs(j)) > _absTolRes(dgIdx) )
+                            int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                            int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+
+                            if ( rowNum != UNASSIGNED && ssNum == subsys )
                             {
-                                sumAbsFlux(dgIdx) += std::fabs(localRhs(j));
-                                fluxCount(dgIdx) += 1.;
-                            }
+                                int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                                localDofGrp[j] = dgNum;
+                                int dgIdx = this->giveIndexForDofGroup(dgNum);
+                                
+                                // if ( std::fabs(localRhs(j)) > _absTolRes(dgIdx) )
+                                // {
+                                //     sumAbsFlux(dgIdx) += std::fabs(localRhs(j));
+                                //     fluxCount(dgIdx) += 1.;
+                                // }
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                            rhs(rowNum) += localRhs(j);
-                        }
+                                rhs(rowNum) += localRhs(j);
+                            }
 
-                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                        }
                     }
+
+                    _stoppingCriterion.processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
         }
@@ -665,54 +707,70 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
         Numerics* numerics = analysisModel().numericsManager().giveNumerics(bndCond[ibc].targetNumerics());
         
         int nBCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
+// #ifdef _OPENMP
+// #pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
+// #endif
 #ifdef _OPENMP
-#pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
+#pragma omp parallel
 #endif
-        for ( int i = 0; i < nBCells; i++ ) 
         {
-            Cell* curCell = analysisModel().domainManager().giveBoundaryCell(i);
-            int label = analysisModel().domainManager().giveLabelOf(curCell);
-
-            if ( label == boundaryId )
+            int threadNum = 0;
+#ifdef _OPENMP
+            threadNum = omp_get_thread_num();
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for ( int i = 0; i < nBCells; i++ ) 
             {
-                RealVector localRhs;
-                std::vector<Dof*> rowDof;
+                Cell* curCell = analysisModel().domainManager().giveBoundaryCell(i);
+                int label = analysisModel().domainManager().giveLabelOf(curCell);
 
-                // Specifics of BC imposition are handled by numerics
-                std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, bndCond[ibc], time);
-                
-                for ( int j = 0; j < localRhs.dim(); j++)
+                if ( label == boundaryId )
                 {
-                    if ( rowDof[j] )
-                    {
-                        int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                        int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+                    RealVector localRhs;
+                    std::vector<Dof*> rowDof;
 
-                        if ( rowNum != UNASSIGNED && ssNum == subsys )
+                    // Specifics of BC imposition are handled by numerics
+                    std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, bndCond[ibc], time);
+                    std::vector<int> localDofGrp(localRhs.dim(), -1);
+
+                    for ( int j = 0; j < localRhs.dim(); j++)
+                    {
+                        if ( rowDof[j] )
                         {
-                            int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            int dgIdx = this->giveIndexForDofGroup(dgNum);
-                            
-                            if ( std::fabs(localRhs(j)) > _absTolRes(dgIdx) )
+                            int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                            int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+
+                            if ( rowNum != UNASSIGNED && ssNum == subsys )
                             {
-                                sumAbsFlux(dgIdx) += std::fabs(localRhs(j));
-                                fluxCount(dgIdx) += 1.;
-                            }
+                                int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                                localDofGrp[j] = dgNum;
+                                int dgIdx = this->giveIndexForDofGroup(dgNum);
+                                
+                                // if ( std::fabs(localRhs(j)) > _absTolRes(dgIdx) )
+                                // {
+                                //     sumAbsFlux(dgIdx) += std::fabs(localRhs(j));
+                                //     fluxCount(dgIdx) += 1.;
+                                // }
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                            rhs(rowNum) += localRhs(j);
-                        }
+                                rhs(rowNum) += localRhs(j);
+                            }
 
-                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                        }
                     }
+
+                    _stoppingCriterion.processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
         }
     }
     
-    _sumAbsFlux = sumAbsFlux;
-    _fluxCount = fluxCount;
+    // _sumAbsFlux = sumAbsFlux;
+    // _fluxCount = fluxCount;
     
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
@@ -721,102 +779,102 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
     return rhs;
 }
 // ---------------------------------------------------------------------------
-std::tuple<bool,RealMatrix>
-AlternateMinimization::computeConvergenceNormsFrom( const std::vector<RealVector>& resid
-                                                  , const std::vector<Dof*>& dof )
-{
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
-    std::chrono::duration<double> tictoc;
-    tic = std::chrono::high_resolution_clock::now();
+// std::tuple<bool,RealMatrix>
+// AlternateMinimization::computeConvergenceNormsFrom( const std::vector<RealVector>& resid
+//                                                   , const std::vector<Dof*>& dof )
+// {
+//     std::chrono::time_point<std::chrono::system_clock> tic, toc;
+//     std::chrono::duration<double> tictoc;
+//     tic = std::chrono::high_resolution_clock::now();
 
-    /*********************************************** 
-     * Initialize matrix to store convergence data
-     *   col 0: norm
-     *   col 1: criterion
-     ***********************************************/
+//     /*********************************************** 
+//      * Initialize matrix to store convergence data
+//      *   col 0: norm
+//      *   col 1: criterion
+//      ***********************************************/
     
-    RealMatrix normDat(2*_nDofGroups, 2);
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-    for ( int i = 0; i < (int)dof.size(); i++ )
-    {
-        // Find group number of DOF
-        int grpNum = analysisModel().dofManager().giveGroupNumberFor(dof[i]);
-        int grpIdx = this->giveIndexForDofGroup(grpNum);
+//     RealMatrix normDat(2*_nDofGroups, 2);
+// #ifdef _OPENMP
+// #pragma omp parallel for
+// #endif
+//     for ( int i = 0; i < (int)dof.size(); i++ )
+//     {
+//         // Find group number of DOF
+//         int grpNum = analysisModel().dofManager().giveGroupNumberFor(dof[i]);
+//         int grpIdx = this->giveIndexForDofGroup(grpNum);
         
-        // Find subsystem of DOF
-        int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(dof[i]);
-        int ssIdx = this->giveIndexForSubsystem(ssNum);
+//         // Find subsystem of DOF
+//         int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(dof[i]);
+//         int ssIdx = this->giveIndexForSubsystem(ssNum);
         
-        if ( grpIdx >= 0 && ssIdx >= 0 )
-        {
-            // Find equation number of DOF
-            int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[i]);
+//         if ( grpIdx >= 0 && ssIdx >= 0 )
+//         {
+//             // Find equation number of DOF
+//             int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[i]);
 
-            // Contribution to L2-norm of corrections
-            double corrVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], correction);
+//             // Contribution to L2-norm of corrections
+//             double corrVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], correction);
             
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-            normDat(2*grpIdx,0) += corrVal*corrVal;
+// #ifdef _OPENMP
+// #pragma omp atomic
+// #endif
+//             normDat(2*grpIdx,0) += corrVal*corrVal;
 
-            // Contribution to L2-norm of incremental solution
-            double incVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], incremental_value);
+//             // Contribution to L2-norm of incremental solution
+//             double incVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], incremental_value);
 
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-            normDat(2*grpIdx,1) += incVal*incVal;
+// #ifdef _OPENMP
+// #pragma omp atomic
+// #endif
+//             normDat(2*grpIdx,1) += incVal*incVal;
 
-            // Contribution to L2-norm of residual
-            double rVal = resid[ssIdx](eqNo);
+//             // Contribution to L2-norm of residual
+//             double rVal = resid[ssIdx](eqNo);
 
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-            normDat(2*grpIdx+1,0) += rVal*rVal;
-        }
-    }
+// #ifdef _OPENMP
+// #pragma omp atomic
+// #endif
+//             normDat(2*grpIdx+1,0) += rVal*rVal;
+//         }
+//     }
     
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        // Normalize entries
-        normDat(2*i,0) = std::sqrt(normDat(2*i,0)/_dofGrpCount(i));
-        normDat(2*i+1,0) = std::sqrt(normDat(2*i+1,0)/_dofGrpCount(i));
-        normDat(2*i,1) = std::sqrt(normDat(2*i,1)/_dofGrpCount(i));
+//     for ( int i = 0; i < _nDofGroups; i++ )
+//     {
+//         // Normalize entries
+//         normDat(2*i,0) = std::sqrt(normDat(2*i,0)/_dofGrpCount(i));
+//         normDat(2*i+1,0) = std::sqrt(normDat(2*i+1,0)/_dofGrpCount(i));
+//         normDat(2*i,1) = std::sqrt(normDat(2*i,1)/_dofGrpCount(i));
         
-        // Calculate criteria using relative tolerances
-        normDat(2*i,1) *= _relTolCor(i);
-        normDat(2*i+1,1) = _relTolRes(i)*_sumAbsFlux(i)/_fluxCount(i);
+//         // Calculate criteria using relative tolerances
+//         normDat(2*i,1) *= _relTolCor(i);
+//         normDat(2*i+1,1) = _relTolRes(i)*_sumAbsFlux(i)/_fluxCount(i);
         
-        // Check against absolute tolerances
-        if ( normDat(2*i,1) < _absTolCor(i) )
-            normDat(2*i,1) = _absTolCor(i);
-        if ( normDat(2*i+1,1) < _absTolRes(i) )
-            normDat(2*i+1,1) = _absTolRes(i);
-    }
+//         // Check against absolute tolerances
+//         if ( normDat(2*i,1) < _absTolCor(i) )
+//             normDat(2*i,1) = _absTolCor(i);
+//         if ( normDat(2*i+1,1) < _absTolRes(i) )
+//             normDat(2*i+1,1) = _absTolRes(i);
+//     }
     
-    bool isConverged = true;
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-//        // Consider converged if either correction or residual is below absolute tolerance
-//        if ( normDat(2*i,0) > _ctrlParam(i,2) && normDat(2*i+1,0) > _ctrlParam(i,3) )
-//        {
-            if ( normDat(2*i,0) > normDat(2*i,1) )
-                isConverged = false;
-            if ( normDat(2*i+1,0) > normDat(2*i+1,1) )
-                isConverged = false;
-//        }
-    }
+//     bool isConverged = true;
+//     for ( int i = 0; i < _nDofGroups; i++ )
+//     {
+// //        // Consider converged if either correction or residual is below absolute tolerance
+// //        if ( normDat(2*i,0) > _ctrlParam(i,2) && normDat(2*i+1,0) > _ctrlParam(i,3) )
+// //        {
+//             if ( normDat(2*i,0) > normDat(2*i,1) )
+//                 isConverged = false;
+//             if ( normDat(2*i+1,0) > normDat(2*i+1,1) )
+//                 isConverged = false;
+// //        }
+//     }
     
-    toc = std::chrono::high_resolution_clock::now();
-    tictoc = toc - tic;
-    diagnostics().addConvergenceCheckTime(tictoc.count());
+//     toc = std::chrono::high_resolution_clock::now();
+//     tictoc = toc - tic;
+//     diagnostics().addConvergenceCheckTime(tictoc.count());
 
-    return std::make_tuple(isConverged,normDat);
-}
+//     return std::make_tuple(isConverged,normDat);
+// }
 // ---------------------------------------------------------------------------
 int AlternateMinimization::giveIndexForDofGroup( int dofGroupNum )
 {
@@ -837,25 +895,25 @@ int AlternateMinimization::giveIndexForSubsystem( int subsysNum )
     
     return idx;
 }
-// ---------------------------------------------------------------------------
-void AlternateMinimization::reportConvergenceStatus( const RealMatrix& normDat )
-{
-    // Report status
-    std::printf("\n\n    DOF Grp   L2-Norm         Criterion");
-    std::printf("\n   -------------------------------------------------------");
+// // ---------------------------------------------------------------------------
+// void AlternateMinimization::reportConvergenceStatus( const RealMatrix& normDat )
+// {
+//     // Report status
+//     std::printf("\n\n    DOF Grp   L2-Norm         Criterion");
+//     std::printf("\n   -------------------------------------------------------");
     
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        // Convergence of corrections
-        std::printf("\n     C  %-6d%e   %e ", _dofGrpNum[i], normDat(2*i, 0), normDat(2*i, 1));
+//     for ( int i = 0; i < _nDofGroups; i++ )
+//     {
+//         // Convergence of corrections
+//         std::printf("\n     C  %-6d%e   %e ", _dofGrpNum[i], normDat(2*i, 0), normDat(2*i, 1));
         
-        if ( normDat(2*i,0) <= normDat(2*i,1) )
-            std::printf(" << CONVERGED");
+//         if ( normDat(2*i,0) <= normDat(2*i,1) )
+//             std::printf(" << CONVERGED");
         
-        // Convergence of residuals
-        std::printf("\n     R  %-6d%e   %e ", _dofGrpNum[i], normDat(2*i+1, 0), normDat(2*i+1, 1));
+//         // Convergence of residuals
+//         std::printf("\n     R  %-6d%e   %e ", _dofGrpNum[i], normDat(2*i+1, 0), normDat(2*i+1, 1));
         
-        if ( normDat(2*i+1,0) <= normDat(2*i+1,1) )
-            std::printf(" << CONVERGED");
-    }
-}
+//         if ( normDat(2*i+1,0) <= normDat(2*i+1,1) )
+//             std::printf(" << CONVERGED");
+//     }
+// }

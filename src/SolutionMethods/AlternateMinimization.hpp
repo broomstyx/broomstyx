@@ -29,6 +29,7 @@
 #include <tuple>
 #include <vector>
 #include "SparseMatrix/SparseMatrix.hpp"
+#include "ConvergenceCriteria/L2_L1_StoppingCriterion.hpp"
 
 namespace broomstyx
 {
@@ -71,6 +72,8 @@ namespace broomstyx
         RealVector _absTolRes;
         RealVector _sumAbsFlux;
         RealVector _fluxCount;
+
+        L2_L1_StoppingCriterion _stoppingCriterion;
         
         /****************************************************
             Solution control parameters

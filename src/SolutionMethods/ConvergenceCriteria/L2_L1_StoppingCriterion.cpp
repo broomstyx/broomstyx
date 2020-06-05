@@ -28,7 +28,6 @@
 #include "Core/AnalysisModel.hpp"
 #include "Core/Diagnostics.hpp"
 #include "Core/DofManager.hpp"
-#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
@@ -180,30 +179,6 @@ void L2_L1_StoppingCriterion::processLocalResidualContribution( RealVector& cont
             _residCritPerThread( threadNum, dgIdx ) += std::fabs(contrib(i));
             _contribCountPerThread( threadNum, dgIdx) += 1.;
         }
-    }
-}
-// ----------------------------------------------------------------------------------------
-void L2_L1_StoppingCriterion::readDataFromFile( FILE* fp )
-{
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        // Read DOF group number
-        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF group number from input file!", _name);
-
-        // Read DOF group convergence parameters
-        verifyKeyword(fp, "Parameters", _name);
-
-        // Correction tolerance
-        _relTolCor(i) = getRealInputFrom(fp, "Failed to read correction tolerance from input file!", _name);
-
-        // Residual tolerance
-        _relTolRes(i) = getRealInputFrom(fp, "Failed to read residual tolerance from input file!", _name);
-
-        // Absolute tolerance for corrections
-        _absTolCor(i) = getRealInputFrom(fp, "Failed to read absolute correction tolerance from input file!", _name);
-
-        // Absolute tolerance for residuals
-        _absTolRes(i) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", _name);
     }
 }
 // ----------------------------------------------------------------------------------------
