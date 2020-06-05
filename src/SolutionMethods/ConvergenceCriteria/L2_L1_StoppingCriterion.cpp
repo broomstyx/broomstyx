@@ -112,7 +112,7 @@ bool L2_L1_StoppingCriterion::checkConvergenceOf( const std::vector<RealVector>&
             _corrNorm(j) += _corrNormPerThread(i,j);
             _corrCrit(j) += _corrCritPerThread(i,j);
             _residNorm(j) += _residNormPerThread(i,j);
-            _residCrit(j) += _residCritPerThread(i,j); // /_contribCountPerThread(i,j);
+            _residCrit(j) += _residCritPerThread(i,j);
             _dofGrpCount(j) += _dofGrpCountPerThread(i,j);
             _contribCount(j) += _contribCountPerThread(i,j);
         }
