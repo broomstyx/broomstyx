@@ -20,7 +20,7 @@
   module for the precise wording of the license and the AUTHORS file
   for the list of copyright holders.
 */
-
+#if 0
 #include "TransientAlternateMinimization.hpp"
 #include <chrono>
 #include <cmath>
@@ -492,3 +492,4 @@ RealVector TransientAlternateMinimization::assembleRightHandSide( int stage
     
     return rhs;
 }
+#endif

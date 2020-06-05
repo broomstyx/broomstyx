@@ -45,6 +45,7 @@ namespace broomstyx
 
     private:
         int _nThreads;
+        RealVector _contribCount;
         RealVector _dofGrpCount;
         
         RealMatrix _contribCountPerThread;

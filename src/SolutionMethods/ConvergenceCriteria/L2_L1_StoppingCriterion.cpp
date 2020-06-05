@@ -103,22 +103,27 @@ bool L2_L1_StoppingCriterion::checkConvergenceOf( const std::vector<RealVector>&
     _corrCrit.init(_nDofGroups);
     _residNorm.init(_nDofGroups);
     _residCrit.init(_nDofGroups);
+    _dofGrpCount.init(_nDofGroups);
+    _contribCount.init(_nDofGroups);
 
     for ( int i = 0; i < _nThreads; i++ )
         for ( int j = 0; j < _nDofGroups; j++ )
         {
-            _corrNorm(j) += _corrNormPerThread(i,j)/_dofGrpCountPerThread(i,j);
-            _corrCrit(j) += _corrCritPerThread(i,j)/_dofGrpCountPerThread(i,j);
-            _residNorm(j) += _residNormPerThread(i,j)/_dofGrpCountPerThread(i,j);
-            _residCrit(j) += _residCritPerThread(i,j)/_contribCountPerThread(i,j);
+            _corrNorm(j) += _corrNormPerThread(i,j);
+            _corrCrit(j) += _corrCritPerThread(i,j);
+            _residNorm(j) += _residNormPerThread(i,j);
+            _residCrit(j) += _residCritPerThread(i,j); // /_contribCountPerThread(i,j);
+            _dofGrpCount(j) += _dofGrpCountPerThread(i,j);
+            _contribCount(j) += _contribCountPerThread(i,j);
         }
 
     for ( int i = 0; i < _nDofGroups; i++ )
     {
         // Normalize values
-        _corrNorm(i) = std::sqrt(_corrNorm(i));
-        _corrCrit(i) = std::sqrt(_corrCrit(i));
-        _residNorm(i) = std::sqrt(_residNorm(i));
+        _corrNorm(i) = std::sqrt(_corrNorm(i)/_dofGrpCount(i));
+        _corrCrit(i) = std::sqrt(_corrCrit(i)/_dofGrpCount(i));
+        _residNorm(i) = std::sqrt(_residNorm(i)/_dofGrpCount(i));
+        _residCrit(i) /= _contribCount(i);
 
         // Apply relative tolerances
         _corrCrit(i) *= _relTolCor(i);
