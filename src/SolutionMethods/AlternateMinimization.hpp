@@ -66,26 +66,7 @@ namespace broomstyx
         std::vector<int> _dofGrpNum;
         RealVector _dofGrpCount;
         
-        RealVector _relTolCor;
-        RealVector _relTolRes;
-        RealVector _absTolCor;
-        RealVector _absTolRes;
-        RealVector _sumAbsFlux;
-        RealVector _fluxCount;
-
         L2_L1_StoppingCriterion _stoppingCriterion;
-        
-        /****************************************************
-            Solution control parameters
-            
-              0 : relative tolerance on corrections
-              1 : relative tolerance on residuals
-              2 : absolute tolerance on corrections
-              3 : absolute tolerance on residuals
-              4 : sum of absolute flux contributions
-              5 : number of flux contributions
-
-         ***************************************************/
         
         int _maxIter;
         int _substepCount;
@@ -105,13 +86,8 @@ namespace broomstyx
                                   , const std::vector<FieldCondition>& fldCond
                                   , const TimeData& time );
         
-        std::tuple< bool,RealMatrix >
-             computeConvergenceNormsFrom( const std::vector<RealVector>& resid
-                                        , const std::vector<Dof*>&       dof );
-        
         int  giveIndexForDofGroup( int dofGroupNum );
         int  giveIndexForSubsystem( int subsysNum );
-        void reportConvergenceStatus( const RealMatrix& normDat );
     };
 }
 
