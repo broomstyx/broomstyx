@@ -30,9 +30,13 @@
 #include <vector>
 #include "SparseMatrix/SparseMatrix.hpp"
 #include "ConvergenceCriteria/L2_L1_StoppingCriterion.hpp"
+#include "ConvergenceCriteria/LInf_LInf_StoppingCriterion.hpp"
 
 namespace broomstyx
 {
+    // Selection of stopping criterion
+    using StoppingCriterion = LInf_LInf_StoppingCriterion;
+
     class Dof;
     class LinearSolver;
     
@@ -66,7 +70,7 @@ namespace broomstyx
         std::vector<int> _dofGrpNum;
         RealVector _dofGrpCount;
         
-        L2_L1_StoppingCriterion _stoppingCriterion;
+        StoppingCriterion _stoppingCriterion;
         
         int _maxIter;
         int _substepCount;
