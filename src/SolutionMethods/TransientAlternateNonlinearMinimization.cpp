@@ -21,6 +21,7 @@
   for the list of copyright holders.
 */
 
+#if 0
 #include "TransientAlternateNonlinearMinimization.hpp"
 #include <chrono>
 #include <cmath>
@@ -690,3 +691,5 @@ RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int s
     
     return rhs;
 }
+
+#endif

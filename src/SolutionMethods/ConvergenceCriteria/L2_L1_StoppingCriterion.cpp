@@ -167,6 +167,11 @@ void L2_L1_StoppingCriterion::initialize( int nDofGroups )
     _relTolRes.init(_nDofGroups);
     _absTolCor.init(_nDofGroups);
     _absTolRes.init(_nDofGroups);
+
+    _corrNorm.init(_nDofGroups);
+    _corrCrit.init(_nDofGroups);
+    _residNorm.init(_nDofGroups);
+    _residCrit.init(_nDofGroups);
 }
 // ----------------------------------------------------------------------------------------
 void L2_L1_StoppingCriterion::processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum )

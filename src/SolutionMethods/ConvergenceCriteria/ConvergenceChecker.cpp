@@ -56,6 +56,7 @@ std::vector<int> ConvergenceChecker::giveDofGroupNumbers()
 // ----------------------------------------------------------------------------------------
 void ConvergenceChecker::readDataFromFile( FILE* fp )
 {
+    _dofGrpNum.assign(_nDofGroups, -1);
     for ( int i = 0; i < _nDofGroups; i++ )
     {
         // Read DOF group number

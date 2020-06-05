@@ -47,11 +47,6 @@ namespace broomstyx
         int _nThreads;
         RealVector _dofGrpCount;
         
-        RealVector _corrNorm;
-        RealVector _corrCrit;
-        RealVector _residNorm;
-        RealVector _residCrit;
-        
         RealMatrix _contribCountPerThread;
         RealMatrix _corrCritPerThread;
         RealMatrix _corrNormPerThread;

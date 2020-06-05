@@ -20,7 +20,7 @@
   module for the precise wording of the license and the AUTHORS file
   for the list of copyright holders.
 */
-
+#if 0
 #include "AlternateNonlinearMinimization.hpp"
 #include <chrono>
 #include <cmath>
@@ -745,3 +745,5 @@ bool AlternateNonlinearMinimization::checkSubsystemConvergenceAt( int stage
 
     return isConverged;
 }
+
+#endif
