@@ -21,8 +21,8 @@
   for the list of copyright holders.
 */
 
-#ifndef CONVERGENCECHECKER_HPP
-#define	CONVERGENCECHECKER_HPP
+#ifndef CONVERGENCECRITERION_HPP
+#define	CONVERGENCECRITERION_HPP
 
 #include <string>
 #include <vector>
@@ -33,21 +33,24 @@ namespace broomstyx
 {
     class Dof;
     
-    class ConvergenceChecker
+    class ConvergenceCriterion
     {
     public:
-        ConvergenceChecker();
-        virtual ~ConvergenceChecker();
+        ConvergenceCriterion() {}
+        virtual ~ConvergenceCriterion() {}
 
-        RealMatrix giveConvergenceData();
-        std::vector<int> giveDofGroupNumbers();
-        void readDataFromFile( FILE* fp );
+        std::vector<int> giveDofGroupNumbers()
+        {
+            return _dofGrpNum;
+        }
         
         virtual bool checkConvergenceOf( const std::vector<RealVector>& resid
                                        , const std::vector<int>& subsysNumbers
                                        , const std::vector<Dof*>& dof ) = 0;
+        virtual RealMatrix giveConvergenceData() = 0;
         virtual void initialize( int nDofGroups ) = 0;
         virtual void processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum ) = 0;
+        virtual void readDataFromFile( FILE* fp ) = 0;
         virtual void reportConvergenceStatus() = 0;
         virtual void resetResidualCriteria() = 0;
         
@@ -55,17 +58,7 @@ namespace broomstyx
         std::string _name;
         int _nDofGroups;
         std::vector<int> _dofGrpNum;
-
-        RealVector _relTolCor;
-        RealVector _relTolRes;
-        RealVector _absTolCor;
-        RealVector _absTolRes;
-
-        RealVector _corrNorm;
-        RealVector _corrCrit;
-        RealVector _residNorm;
-        RealVector _residCrit;
     };
 }
 
-#endif	/* CONVERGENCECHECKER_HPP */
+#endif	/* CONVERGENCECRITERION_HPP */

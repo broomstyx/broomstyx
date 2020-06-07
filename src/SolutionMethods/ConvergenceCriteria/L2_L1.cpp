@@ -21,28 +21,32 @@
   for the list of copyright holders.
 */
 
-#include "L2_L1_StoppingCriterion.hpp"
+#include "L2_L1.hpp"
 #include <omp.h>
 #include <chrono>
 #include <cmath>
 #include "Core/AnalysisModel.hpp"
 #include "Core/Diagnostics.hpp"
 #include "Core/DofManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
-L2_L1_StoppingCriterion::L2_L1_StoppingCriterion()
+registerBroomstyxObject(ConvergenceCriterion, L2_L1)
+
+L2_L1::L2_L1()
 {
-    _name = "L2_L1_StoppingCriterion";
+    _name = "L2_L1 (Convergence criterion)";
 }
 
-L2_L1_StoppingCriterion::~L2_L1_StoppingCriterion() {}
+L2_L1::~L2_L1() {}
 
 // Public methods
 // ----------------------------------------------------------------------------------------
-bool L2_L1_StoppingCriterion::checkConvergenceOf( const std::vector<RealVector>& resid
-                                                , const std::vector<int>& subsysNumbers
-                                                , const std::vector<Dof*>& dof )
+bool L2_L1::checkConvergenceOf( const std::vector<RealVector>& resid
+                              , const std::vector<int>& subsysNumbers
+                              , const std::vector<Dof*>& dof )
 {
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
@@ -152,7 +156,22 @@ bool L2_L1_StoppingCriterion::checkConvergenceOf( const std::vector<RealVector>&
     return convergenceStatus;
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1_StoppingCriterion::initialize( int nDofGroups )
+RealMatrix L2_L1::giveConvergenceData()
+{
+    RealMatrix convData(2*_nDofGroups, 2);
+
+    for ( int i = 0; i < _nDofGroups; i++ )
+    {
+        convData(2*i, 0) = _corrNorm(i);
+        convData(2*i, 1) = _corrCrit(i);
+        convData(2*i+1, 0) = _residNorm(i);
+        convData(2*i+1, 1) = _residCrit(i);
+    }
+
+    return convData;
+}
+// ----------------------------------------------------------------------------------------
+void L2_L1::initialize( int nDofGroups )
 {
     _nDofGroups = nDofGroups;
     
@@ -179,7 +198,7 @@ void L2_L1_StoppingCriterion::initialize( int nDofGroups )
     _residCrit.init(_nDofGroups);
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1_StoppingCriterion::processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum )
+void L2_L1::processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum )
 {
     for ( int i = 0; i < contrib.dim(); i++ )
     {
@@ -192,7 +211,32 @@ void L2_L1_StoppingCriterion::processLocalResidualContribution( RealVector& cont
     }
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1_StoppingCriterion::reportConvergenceStatus()
+void L2_L1::readDataFromFile( FILE* fp )
+{
+    _dofGrpNum.assign(_nDofGroups, -1);
+    for ( int i = 0; i < _nDofGroups; i++ )
+    {
+        // Read DOF group number
+        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF group number from input file!", _name);
+
+        // Read DOF group convergence parameters
+        verifyKeyword(fp, "Parameters", _name);
+
+        // Correction tolerance
+        _relTolCor(i) = getRealInputFrom(fp, "Failed to read correction tolerance from input file!", _name);
+
+        // Residual tolerance
+        _relTolRes(i) = getRealInputFrom(fp, "Failed to read residual tolerance from input file!", _name);
+
+        // Absolute tolerance for corrections
+        _absTolCor(i) = getRealInputFrom(fp, "Failed to read absolute correction tolerance from input file!", _name);
+
+        // Absolute tolerance for residuals
+        _absTolRes(i) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", _name);
+    }
+}
+// ----------------------------------------------------------------------------------------
+void L2_L1::reportConvergenceStatus()
 {
     // Report status
     std::printf("\n\n    DOF Grp   L2-Norm         Criterion");
@@ -212,7 +256,7 @@ void L2_L1_StoppingCriterion::reportConvergenceStatus()
     }
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1_StoppingCriterion::resetResidualCriteria()
+void L2_L1::resetResidualCriteria()
 {
     _contribCountPerThread.init(_nThreads, _nDofGroups);
     _residCritPerThread.init(_nThreads, _nDofGroups);

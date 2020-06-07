@@ -21,32 +21,44 @@
   for the list of copyright holders.
 */
 
-#ifndef L2_L1_STOPPINGCRITERION_HPP
-#define	L2_L1_STOPPINGCRITERION_HPP
+#ifndef L2_L1_HPP
+#define	L2_L1_HPP
 
-#include "ConvergenceChecker.hpp"
+#include "ConvergenceCriterion.hpp"
 #include "Util/RealMatrix.hpp"
 
 namespace broomstyx
 {
-    class L2_L1_StoppingCriterion : public ConvergenceChecker
+    class L2_L1 : public ConvergenceCriterion
     {
     public:
-        L2_L1_StoppingCriterion();
-        virtual ~L2_L1_StoppingCriterion();
+        L2_L1();
+        virtual ~L2_L1();
 
         bool checkConvergenceOf( const std::vector<RealVector>& resid
                                , const std::vector<int>& subsysNumbers
-                               , const std::vector<Dof*>& dof );
-        void initialize( int nDofGroups );
-        void processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum );
-        void reportConvergenceStatus();
-        void resetResidualCriteria();
+                               , const std::vector<Dof*>& dof ) override;
+        RealMatrix giveConvergenceData() override;
+        void initialize( int nDofGroups ) override;
+        void processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum ) override;
+        void readDataFromFile( FILE* fp ) override;
+        void reportConvergenceStatus() override;
+        void resetResidualCriteria() override;
 
     private:
         int _nThreads;
         RealVector _contribCount;
         RealVector _dofGrpCount;
+
+        RealVector _relTolCor;
+        RealVector _relTolRes;
+        RealVector _absTolCor;
+        RealVector _absTolRes;
+
+        RealVector _corrNorm;
+        RealVector _corrCrit;
+        RealVector _residNorm;
+        RealVector _residCrit;
         
         RealMatrix _contribCountPerThread;
         RealMatrix _corrCritPerThread;
@@ -77,4 +89,4 @@ namespace broomstyx
     };
 }
 
-#endif	/* L2_L1_STOPPINGCRITERION_HPP */
+#endif	/* L2_L1_HPP */

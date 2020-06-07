@@ -28,17 +28,14 @@
 #include <map>
 #include <tuple>
 #include <vector>
-#include "SparseMatrix/SparseMatrix.hpp"
-#include "ConvergenceCriteria/L2_L1_StoppingCriterion.hpp"
-#include "ConvergenceCriteria/LInf_LInf_StoppingCriterion.hpp"
+//#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {
-    // Selection of stopping criterion
-    using StoppingCriterion = LInf_LInf_StoppingCriterion;
-
+    class ConvergenceCriterion;
     class Dof;
     class LinearSolver;
+    class SparseMatrix;
     
     class AlternateMinimization : public SolutionMethod
     {
@@ -70,7 +67,7 @@ namespace broomstyx
         std::vector<int> _dofGrpNum;
         RealVector _dofGrpCount;
         
-        StoppingCriterion _stoppingCriterion;
+        ConvergenceCriterion* _convergenceCriterion;
         
         int _maxIter;
         int _substepCount;

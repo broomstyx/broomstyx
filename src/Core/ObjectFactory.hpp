@@ -30,6 +30,7 @@
 
 namespace broomstyx
 {
+    class ConvergenceCriterion;
     class LinearSolver;
     class Material;
     class MeshReader;
@@ -57,17 +58,19 @@ namespace broomstyx
         
         bool hasError();
         
-        LinearSolver*   instantiateLinearSolver( std::string name );
-        Material*       instantiateMaterial( std::string name );
-        MeshReader*     instantiateMeshReader( std::string name );
-        Numerics*       instantiateNumerics( std::string name );
-        OutputQuantity* instantiateOutputQuantity( std::string name );
-        OutputWriter*   instantiateOutputWriter( std::string name );
-        SolutionMethod* instantiateSolutionMethod( std::string name );
-        SparseMatrix*   instantiateSparseMatrix( std::string name );
-        UserFunction*   instantiateUserFunction( std::string name );
+        ConvergenceCriterion* instantiateConvergenceCriterion( std::string name );
+        LinearSolver*         instantiateLinearSolver( std::string name );
+        Material*             instantiateMaterial( std::string name );
+        MeshReader*           instantiateMeshReader( std::string name );
+        Numerics*             instantiateNumerics( std::string name );
+        OutputQuantity*       instantiateOutputQuantity( std::string name );
+        OutputWriter*         instantiateOutputWriter( std::string name );
+        SolutionMethod*       instantiateSolutionMethod( std::string name );
+        SparseMatrix*         instantiateSparseMatrix( std::string name );
+        UserFunction*         instantiateUserFunction( std::string name );
         
-        bool registerLinearSolver ( std::string name, LinearSolver* (*)() );
+        bool registerConvergenceCriterion( std::string name, ConvergenceCriterion* (*)() );
+        bool registerLinearSolver( std::string name, LinearSolver* (*)() );
         bool registerMaterial( std::string name, Material* (*)() );
         bool registerMeshReader( std::string name, MeshReader* (*)() );
         bool registerNumerics( std::string name, Numerics* (*)() );
@@ -78,15 +81,16 @@ namespace broomstyx
         bool registerUserFunction( std::string name, UserFunction* (*)() );
 
     private:
-        std::map< std::string, LinearSolver* (*)() >   _linearSolver;
-        std::map< std::string, Material* (*)() >       _material;
-        std::map< std::string, MeshReader* (*)() >     _meshReader;
-        std::map< std::string, Numerics* (*)() >       _numerics;
-        std::map< std::string, OutputQuantity* (*)() > _outputQuantity;
-        std::map< std::string, OutputWriter* (*)() >   _outputWriter;
-        std::map< std::string, SolutionMethod* (*)() > _solutionMethod;
-        std::map< std::string, SparseMatrix* (*)() >   _sparseMatrix;
-        std::map< std::string, UserFunction* (*)() >   _userFunction;
+        std::map< std::string, ConvergenceCriterion* (*)() > _convergenceCriterion;
+        std::map< std::string, LinearSolver* (*)() >         _linearSolver;
+        std::map< std::string, Material* (*)() >             _material;
+        std::map< std::string, MeshReader* (*)() >           _meshReader;
+        std::map< std::string, Numerics* (*)() >             _numerics;
+        std::map< std::string, OutputQuantity* (*)() >       _outputQuantity;
+        std::map< std::string, OutputWriter* (*)() >         _outputWriter;
+        std::map< std::string, SolutionMethod* (*)() >       _solutionMethod;
+        std::map< std::string, SparseMatrix* (*)() >         _sparseMatrix;
+        std::map< std::string, UserFunction* (*)() >         _userFunction;
         
         bool _errorInRegistration;
     };

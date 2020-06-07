@@ -21,28 +21,32 @@
   for the list of copyright holders.
 */
 
-#include "LInf_LInf_StoppingCriterion.hpp"
+#include "LInf_LInf.hpp"
 #include <omp.h>
 #include <chrono>
 #include <cmath>
 #include "Core/AnalysisModel.hpp"
 #include "Core/Diagnostics.hpp"
 #include "Core/DofManager.hpp"
+#include "Core/ObjectFactory.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
-LInf_LInf_StoppingCriterion::LInf_LInf_StoppingCriterion()
+registerBroomstyxObject(ConvergenceCriterion, LInf_LInf)
+
+LInf_LInf::LInf_LInf()
 {
-    _name = "L2_L1_StoppingCriterion";
+    _name = "LInf_LInf (Convergence criterion)";
 }
 
-LInf_LInf_StoppingCriterion::~LInf_LInf_StoppingCriterion() {}
+LInf_LInf::~LInf_LInf() {}
 
 // Public methods
 // ----------------------------------------------------------------------------------------
-bool LInf_LInf_StoppingCriterion::checkConvergenceOf( const std::vector<RealVector>& resid
-                                                    , const std::vector<int>& subsysNumbers
-                                                    , const std::vector<Dof*>& dof )
+bool LInf_LInf::checkConvergenceOf( const std::vector<RealVector>& resid
+                                  , const std::vector<int>& subsysNumbers
+                                  , const std::vector<Dof*>& dof )
 {
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
@@ -146,7 +150,22 @@ bool LInf_LInf_StoppingCriterion::checkConvergenceOf( const std::vector<RealVect
     return convergenceStatus;
 }
 // ----------------------------------------------------------------------------------------
-void LInf_LInf_StoppingCriterion::initialize( int nDofGroups )
+RealMatrix LInf_LInf::giveConvergenceData()
+{
+    RealMatrix convData(2*_nDofGroups, 2);
+
+    for ( int i = 0; i < _nDofGroups; i++ )
+    {
+        convData(2*i, 0) = _corrNorm(i);
+        convData(2*i, 1) = _corrCrit(i);
+        convData(2*i+1, 0) = _residNorm(i);
+        convData(2*i+1, 1) = _residCrit(i);
+    }
+
+    return convData;
+}
+// ----------------------------------------------------------------------------------------
+void LInf_LInf::initialize( int nDofGroups )
 {
     _nDofGroups = nDofGroups;
     
@@ -173,7 +192,7 @@ void LInf_LInf_StoppingCriterion::initialize( int nDofGroups )
     _residCrit.init(_nDofGroups);
 }
 // ----------------------------------------------------------------------------------------
-void LInf_LInf_StoppingCriterion::processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum )
+void LInf_LInf::processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum )
 {
     for ( int i = 0; i < contrib.dim(); i++ )
     {
@@ -187,7 +206,32 @@ void LInf_LInf_StoppingCriterion::processLocalResidualContribution( RealVector& 
     }
 }
 // ----------------------------------------------------------------------------------------
-void LInf_LInf_StoppingCriterion::reportConvergenceStatus()
+void LInf_LInf::readDataFromFile( FILE* fp )
+{
+    _dofGrpNum.assign(_nDofGroups, -1);
+    for ( int i = 0; i < _nDofGroups; i++ )
+    {
+        // Read DOF group number
+        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF group number from input file!", _name);
+
+        // Read DOF group convergence parameters
+        verifyKeyword(fp, "Parameters", _name);
+
+        // Correction tolerance
+        _relTolCor(i) = getRealInputFrom(fp, "Failed to read correction tolerance from input file!", _name);
+
+        // Residual tolerance
+        _relTolRes(i) = getRealInputFrom(fp, "Failed to read residual tolerance from input file!", _name);
+
+        // Absolute tolerance for corrections
+        _absTolCor(i) = getRealInputFrom(fp, "Failed to read absolute correction tolerance from input file!", _name);
+
+        // Absolute tolerance for residuals
+        _absTolRes(i) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", _name);
+    }
+}
+// ----------------------------------------------------------------------------------------
+void LInf_LInf::reportConvergenceStatus()
 {
     // Report status
     std::printf("\n\n    DOF Grp   Inf-Norm         Criterion");
@@ -207,7 +251,7 @@ void LInf_LInf_StoppingCriterion::reportConvergenceStatus()
     }
 }
 // ----------------------------------------------------------------------------------------
-void LInf_LInf_StoppingCriterion::resetResidualCriteria()
+void LInf_LInf::resetResidualCriteria()
 {
     _contribCountPerThread.init(_nThreads, _nDofGroups);
     _residCritPerThread.init(_nThreads, _nDofGroups);

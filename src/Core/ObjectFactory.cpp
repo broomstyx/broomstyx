@@ -38,6 +38,15 @@ bool ObjectFactory::hasError()
     return _errorInRegistration;
 }
 // ----------------------------------------------------------------------------
+ConvergenceCriterion* ObjectFactory::instantiateConvergenceCriterion( std::string name )
+{
+    auto it = _convergenceCriterion.find(name);
+    if ( it != _convergenceCriterion.end() )
+        return (it->second)();
+    else
+        throw std::runtime_error("LinearSolver '" + name + "' has not been registered.\n");
+}
+// ----------------------------------------------------------------------------
 LinearSolver* ObjectFactory::instantiateLinearSolver( std::string name )
 {
     auto it = _linearSolver.find(name);
@@ -120,6 +129,24 @@ UserFunction* ObjectFactory::instantiateUserFunction( std::string name )
 }
 
 // Class Registration
+// ----------------------------------------------------------------------------
+bool ObjectFactory::registerConvergenceCriterion( std::string name, ConvergenceCriterion* (*creator)() )
+{
+    auto it = _convergenceCriterion.find(name);
+    if ( it != _convergenceCriterion.end() )
+    {
+        std::string errmsg = "\nERROR: Multiple registrations of ConvergenceCriterion '" + name + "' detected!\n";
+        std::printf("%s", errmsg.c_str());
+        _errorInRegistration = true;
+    }
+    else
+    {
+        _convergenceCriterion[name] = creator;
+        if ( VERBOSE_REGISTRATION )
+            std::printf("Registered ConvergenceCriterion class '%s'\n", name.c_str());
+    }
+    return _errorInRegistration;
+}
 // ----------------------------------------------------------------------------
 bool ObjectFactory::registerLinearSolver( std::string name, LinearSolver* (*creator)() )
 {

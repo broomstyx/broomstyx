@@ -31,6 +31,7 @@
 #include <list>
 #include <iterator>
 
+#include "ConvergenceCriteria/ConvergenceCriterion.hpp"
 #include "Core/AnalysisModel.hpp"
 #include "Core/ObjectFactory.hpp"
 #include "Core/Diagnostics.hpp"
@@ -38,10 +39,11 @@
 #include "Core/DomainManager.hpp"
 #include "Core/LoadStep.hpp"
 #include "Core/NumericsManager.hpp"
-#include "MeshReaders/MeshReader.hpp"
 #include "Core/SolutionManager.hpp"
 #include "LinearSolvers/LinearSolver.hpp"
+#include "MeshReaders/MeshReader.hpp"
 #include "Numerics/Numerics.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 #include "Util/linearAlgebra.hpp"
 #include "Util/readOperations.hpp"
 #include "Util/reductions.hpp"
@@ -62,6 +64,8 @@ AlternateMinimization::~AlternateMinimization()
         delete _spMatrix[i];
         delete _solver[i];
     }
+
+    delete _convergenceCriterion;
 }
 
 // Public methods
@@ -118,7 +122,7 @@ int AlternateMinimization::computeSolutionFor( int stage
         diagnostics().addPostprocessingTime(tictoc.count());
         
         analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
-        _stoppingCriterion.resetResidualCriteria();
+        _convergenceCriterion->resetResidualCriteria();
 
         // Calculate residual for each subsystem
         // Note: We calculate global right hand sides in each
@@ -148,9 +152,9 @@ int AlternateMinimization::computeSolutionFor( int stage
 //            if ( _enableLineSearch )
 //                this->performLineSearchAt(stage, dof, rhs, initResid, time, dU, resid);
 
-            converged = _stoppingCriterion.checkConvergenceOf(resid, _subsysNum, dof);
-            normDat = _stoppingCriterion.giveConvergenceData();
-            _stoppingCriterion.reportConvergenceStatus();
+            converged = _convergenceCriterion->checkConvergenceOf(resid, _subsysNum, dof);
+            normDat = _convergenceCriterion->giveConvergenceData();
+            _convergenceCriterion->reportConvergenceStatus();
         }
         
         // Additional convergence checks from numerics
@@ -381,12 +385,15 @@ void AlternateMinimization::readDataFromFile( FILE* fp )
     verifyKeyword(fp, "DofGroups", _name);
     _nDofGroups = getIntegerInputFrom(fp, "Failed to read number of DOF groups from input file!", _name);
 
-    // Initialize stopping criterion and read tolerance criteria
-    _stoppingCriterion.initialize(_nDofGroups);
-    _stoppingCriterion.readDataFromFile(fp);
+    // Read convergence criterion and associated data
+    verifyKeyword(fp, "ConvergenceCriterion", _name);
+    std::string convCritName = getStringInputFrom(fp, "Failed to read convergence criterion type from input file!", _name);
+    _convergenceCriterion = objectFactory().instantiateConvergenceCriterion(convCritName);
+    _convergenceCriterion->initialize(_nDofGroups);
+    _convergenceCriterion->readDataFromFile(fp);
 
     // Retrieve DOF group numbers
-    _dofGrpNum = _stoppingCriterion.giveDofGroupNumbers();
+    _dofGrpNum = _convergenceCriterion->giveDofGroupNumbers();
 
     // Read number of subsystems
     verifyKeyword(fp, "Subsystems", _name);
@@ -497,7 +504,7 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
                 }
             }
 
-            _stoppingCriterion.processLocalResidualContribution(localLhs, localDofGrp, threadNum);
+            _convergenceCriterion->processLocalResidualContribution(localLhs, localDofGrp, threadNum);
         }
     }
     
@@ -619,7 +626,7 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                         }
                     }
 
-                    _stoppingCriterion.processLocalResidualContribution(localRhs, localDofGrp, threadNum);
+                    _convergenceCriterion->processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
         }
@@ -678,7 +685,7 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                         }
                     }
 
-                    _stoppingCriterion.processLocalResidualContribution(localRhs, localDofGrp, threadNum);
+                    _convergenceCriterion->processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
         }
