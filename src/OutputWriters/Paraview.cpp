@@ -48,13 +48,13 @@ Paraview::Paraview()
     _vtuFileCount = 0;
     _writeCounter = 0;
     
-    _nPointScalars = 0;
-    _nPointVectors = 0;
-    _nPointTensors = 0;
+    // _nPointScalars = 0;
+    // _nPointVectors = 0;
+    // _nPointTensors = 0;
     
-    _nCellScalars = 0;
-    _nCellVectors = 0;
-    _nCellTensors = 0;
+    // _nCellScalars = 0;
+    // _nCellVectors = 0;
+    // _nCellTensors = 0;
 }  
 
 // Destructor
@@ -108,19 +108,16 @@ void Paraview::readDataFrom(FILE* fp)
         {
             _pointData[i].dataType = scalar;
             _pointData[i].field.assign(1, 0);
-            _nPointScalars++;
         }
         else if ( str == "VECTOR" )
         {
             _pointData[i].dataType = vector;
             _pointData[i].field.assign(3, 0);
-            _nPointVectors++;
         }
         else if ( str == "TENSOR" )
         {
             _pointData[i].dataType = tensor;
             _pointData[i].field.assign(6, 0);
-            _nPointTensors++;
         }
         else
             throw std::runtime_error("Invalid point data type '" + str + "' encountered in input file!\nSource: " + src);
@@ -146,19 +143,20 @@ void Paraview::readDataFrom(FILE* fp)
         {
             _cellData[i].dataType = scalar;
             _cellData[i].field.assign(1, 0);
-            _nCellScalars++;
         }
         else if ( str == "VECTOR" )
         {
             _cellData[i].dataType = vector;
             _cellData[i].field.assign(3, 0);
-            _nCellVectors++;
         }
         else if ( str == "TENSOR" )
         {
             _cellData[i].dataType = tensor;
             _cellData[i].field.assign(6, 0);
-            _nCellTensors++;
+        }
+        else if ( str == "PHYSTAG" )
+        {
+            _cellData[i].dataType = physTag;
         }
         else
             throw std::runtime_error("Invalid point data type '" + str + "' encountered in input file!\nSource: " + src);
@@ -348,7 +346,21 @@ void Paraview::writeOutput( double time )
         // --- Individual data arrays
         for ( int i = 0; i < _nCellData; i++)
         {
-            if ( _cellData[i].dataType == scalar )
+                // Physical number assignment
+            if ( _cellData[i].dataType == physTag )
+            {
+                std::fprintf(vtuFile, "\t\t\t\t<DataArray type=\"Float32\" ");
+                std::fprintf(vtuFile, "Name=\"%s\" format=\"ascii\">\n", _cellData[i].name.c_str());
+                for ( int j = 0; j < nCells; j++)
+                {
+                    Cell* curCell = analysisModel().domainManager().giveDomainCell(j);
+                    int label = analysisModel().domainManager().giveLabelOf(curCell);
+                    std::fprintf(vtuFile, "\t\t\t\t\t%25.15e\n", (double)label);
+                }
+                    
+                std::fprintf(vtuFile, "\t\t\t\t</DataArray>\n");        
+            }
+            else if ( _cellData[i].dataType == scalar )
             {
                 // Scalar data
                 std::fprintf(vtuFile, "\t\t\t\t<DataArray type=\"Float32\" ");
@@ -405,6 +417,8 @@ void Paraview::writeOutput( double time )
         }
         std::fprintf(vtuFile, "\t\t\t</CellData>\n");
     }
+
+            
     
     std::fprintf(vtuFile, "\t\t</Piece>\n");
     std::fprintf(vtuFile, "\t</UnstructuredGrid>\n");

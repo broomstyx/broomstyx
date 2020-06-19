@@ -41,7 +41,7 @@ namespace broomstyx
         void writeOutput( double time ) override;
 
     private:
-        enum DataType { scalar, vector, tensor };
+        enum DataType { scalar, vector, tensor, physTag };
         
         struct OutputData
         {
@@ -57,15 +57,8 @@ namespace broomstyx
         int _writeCounter;    
 
         int _nPointData;
-        int _nPointScalars;
-        int _nPointVectors;
-        int _nPointTensors;
-
         int _nCellData;
-        int _nCellScalars;
-        int _nCellVectors;
-        int _nCellTensors;
-
+        
         std::vector<OutputData> _pointData;
         std::vector<OutputData> _cellData;
     };
