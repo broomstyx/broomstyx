@@ -46,12 +46,6 @@ namespace broomstyx
         void assembleJacobian( int stage
                              , int subsys
                              , const TimeData& time ) override;
-        
-        RealVector assembleRightHandSide( int stage
-                                        , int subsys
-                                        , const std::vector<BoundaryCondition>& bndCond
-                                        , const std::vector<FieldCondition>& fldCond
-                                        , const TimeData& time ) override;        
     };
 }
 
