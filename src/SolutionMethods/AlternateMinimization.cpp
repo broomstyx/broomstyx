@@ -503,7 +503,6 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
                     analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
                 }
             }
-
             _convergenceCriterion->processLocalResidualContribution(localLhs, localDofGrp, threadNum);
         }
     }
@@ -625,7 +624,6 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                             analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                         }
                     }
-
                     _convergenceCriterion->processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
@@ -684,7 +682,6 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                             analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                         }
                     }
-
                     _convergenceCriterion->processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
