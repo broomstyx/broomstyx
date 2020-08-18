@@ -216,6 +216,15 @@ void MKL_Pardiso::readDataFrom( FILE* fp )
 // ----------------------------------------------------------------------------
 RealVector MKL_Pardiso::solve( SparseMatrix* coefMat, RealVector& rhs )
 {
+    // Reset number of threads for Pardiso
+#ifdef _OPENMP
+    int error = mkl_domain_set_num_threads(_nThreads, MKL_DOMAIN_PARDISO);
+#else
+    int error = mkl_domain_set_num_threads(1, MKL_DOMAIN_PARDISO);
+#endif
+    if ( error == 0 )
+        throw std::runtime_error("ERROR: Failed to set specified number of threads for MKL Pardiso!\n");
+
     if ( !_memoryIsAllocated )
         throw std::runtime_error("MKL Pardiso solve phase called without proper memory allocation!");
     
@@ -249,7 +258,8 @@ RealVector MKL_Pardiso::solve( SparseMatrix* coefMat, RealVector& rhs )
     b = rhs.ptr();
     x = u.ptr();
 
-    int error = 0;
+    // int error = 0;
+    error = 0;
     
     // ***********************************************************************
     // Numerical factorization, back-substitution and iterative refinement.
