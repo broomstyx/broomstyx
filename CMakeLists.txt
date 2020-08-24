@@ -2,6 +2,10 @@ cmake_minimum_required (VERSION 3.5)
 project (broomstyx)
 list (APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake/Modules")
 
+if(POLICY CMP0074)
+	cmake_policy(SET CMP0074 NEW)
+endif()
+
 file (GLOB_RECURSE sourcefiles "${PROJECT_SOURCE_DIR}/src/*.cpp")
 add_executable (broomstyx ${sourcefiles})
 
