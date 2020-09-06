@@ -261,7 +261,6 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
             
             // Calculate cell internal forces
             std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, subsys, time);
-            std::vector<int> localDofGrp(localLhs.dim(), -1);
 
             // Assembly
             // A. Static part
@@ -272,9 +271,12 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
                     int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
                     int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
 
+                    int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                    int idx = this->giveIndexForDofGroup(dofGrp);
+                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j), threadNum);
+
                     if ( rowNum != UNASSIGNED && ssNum == subsys )
                     {
-                        localDofGrp[j] = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -284,7 +286,6 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
                     analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
                 }
             }
-            _convergenceCriterion->processLocalResidualContribution(localLhs, localDofGrp, threadNum);
             
             /***************************************/
 
@@ -293,7 +294,6 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
             std::tie(rowDof,tLhsNew) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, current_value);
             std::tie(rowDof,tLhsOld) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, converged_value);
             localLhs = (tLhsNew - tLhsOld);
-            localDofGrp.assign(localLhs.dim(), -1);
 
             // Assembly
             for ( int j = 0; j < (int)rowDof.size(); j++)
@@ -303,9 +303,12 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
                     int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
                     int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
 
+                    int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                    int idx = this->giveIndexForDofGroup(dofGrp);
+                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j)/time.increment, threadNum);
+
                     if ( rowNum != UNASSIGNED && ssNum == subsys )
                     {
-                        localDofGrp[j] = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -315,7 +318,6 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
                     analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j)/time.increment);
                 }
             }
-            _convergenceCriterion->processLocalResidualContribution(localLhs, localDofGrp, threadNum);
         }
     }
 

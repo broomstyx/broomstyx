@@ -53,6 +53,7 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
     _threadCorrCrit.init(_nThreads);
     _threadCorrNorm.init(_nThreads);
     _threadResidNorm.init(_nThreads);
+    _threadDofCount.init(_nThreads);
 
 #ifdef _OPENMP
 #pragma omp parallel
@@ -71,7 +72,7 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
             // Find group number of DOF
             int grpNum = analysisModel().dofManager().giveGroupNumberFor(dof[i]);
             
-            if ( grpNum = _dofGrpNum )
+            if ( grpNum == _dofGrpNum )
             {
                 // Find equation number of DOF
                 int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[i]);
@@ -206,7 +207,7 @@ void L2_L1::processLocalResidualContribution( const RealVector& contrib, const s
 void L2_L1::readDataFromFile( FILE* fp )
 {
     // Read DOF group convergence parameters
-    std::string _trackingOption = getStringInputFrom(fp, "Failed to read criterion option from input file!", _name);
+    _trackingOption = getStringInputFrom(fp, "Failed to read criterion option from input file!", _name);
     
     if ( _trackingOption != "C" && _trackingOption != "R" && _trackingOption != "CR" )
         throw std::runtime_error("ERROR: Invalid tracking option encountered in input file! Valid: (C/R/CR)");
@@ -231,10 +232,6 @@ void L2_L1::readDataFromFile( FILE* fp )
 // ----------------------------------------------------------------------------------------
 void L2_L1::reportConvergenceStatus()
 {
-    // Report status
-    // std::printf("\n\n    DOF Grp   Inf-Norm         Criterion");
-    // std::printf("\n   -------------------------------------------------------");
-    
     // Convergence of corrections
     if ( _trackingOption == "C" || _trackingOption == "CR" )
     {

@@ -198,7 +198,7 @@ void LInf::processLocalResidualContribution( const RealVector& contrib, const st
 void LInf::readDataFromFile( FILE* fp )
 {
     // Read DOF group convergence parameters
-    std::string _trackingOption = getStringInputFrom(fp, "Failed to read criterion option from input file!", _name);
+    _trackingOption = getStringInputFrom(fp, "Failed to read criterion option from input file!", _name);
     
     if ( _trackingOption != "C" && _trackingOption != "R" && _trackingOption != "CR" )
         throw std::runtime_error("ERROR: Invalid tracking option encountered in input file! Valid: (C/R/CR)");
@@ -223,10 +223,6 @@ void LInf::readDataFromFile( FILE* fp )
 // ----------------------------------------------------------------------------------------
 void LInf::reportConvergenceStatus()
 {
-    // Report status
-    // std::printf("\n\n    DOF Grp   Inf-Norm         Criterion");
-    // std::printf("\n   -------------------------------------------------------");
-    
     // Convergence of corrections
     if ( _trackingOption == "C" || _trackingOption == "CR" )
     {
@@ -234,7 +230,7 @@ void LInf::reportConvergenceStatus()
         if ( _corrNorm <= _corrCrit )
             std::printf(" << CONVERGED");
     }
-        
+
     // Convergence of residuals
     if ( _trackingOption == "R" || _trackingOption == "CR" )
     {

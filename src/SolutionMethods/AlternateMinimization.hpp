@@ -67,7 +67,7 @@ namespace broomstyx
         std::vector<int> _dofGrpNum;
         RealVector _dofGrpCount;
         
-        ConvergenceCriterion* _convergenceCriterion;
+        std::vector<ConvergenceCriterion*> _convergenceCriterion;
         
         int _maxIter;
         int _substepCount;

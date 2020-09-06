@@ -65,7 +65,8 @@ AlternateMinimization::~AlternateMinimization()
         delete _solver[i];
     }
 
-    delete _convergenceCriterion;
+    for ( int i = 0; i < _nDofGroups; i++ )
+        delete _convergenceCriterion[i];
 }
 
 // Public methods
@@ -122,7 +123,8 @@ int AlternateMinimization::computeSolutionFor( int stage
         diagnostics().addPostprocessingTime(tictoc.count());
         
         analysisModel().dofManager().resetSecondaryVariablesAtStage(stage);
-        _convergenceCriterion->resetResidualCriteria();
+        for ( int i = 0; i < _nDofGroups; i++ )
+            _convergenceCriterion[i]->resetResidualCriteria();
 
         // Calculate residual for each subsystem
         // Note: We calculate global right hand sides in each
@@ -142,19 +144,38 @@ int AlternateMinimization::computeSolutionFor( int stage
         std::printf("\n   -----------------");
         
         // Compute convergence norms
-        RealMatrix normDat;
+        RealMatrix normDat(2*_nDofGroups, 2);
 
         // Disallow convergence at initial guess
         if ( iterCount == 0 )
             converged = false;
         else
         {
-//            if ( _enableLineSearch )
-//                this->performLineSearchAt(stage, dof, rhs, initResid, time, dU, resid);
+            converged = true;
+            for ( int i = 0; i < _nSubsystems; i++ )
+                for ( int j = 0; j < (int)_subsysDofGroup[i].size(); i++ )
+                {
+                    int idx = this->giveIndexForDofGroup(_subsysDofGroup[i][j]);
+                    bool dofGrpConverged = _convergenceCriterion[idx]->checkConvergenceOf(resid[i], dof);
+                    if ( !dofGrpConverged )
+                        converged = false;
+                }
 
-            converged = _convergenceCriterion->checkConvergenceOf(resid, _subsysNum, dof);
-            normDat = _convergenceCriterion->giveConvergenceData();
-            _convergenceCriterion->reportConvergenceStatus();
+            for ( int i = 0; i < _nDofGroups; i++ )
+            {
+                RealMatrix dofGrpNormDat = _convergenceCriterion[i]->giveConvergenceData();
+                normDat(2*i, 0) = dofGrpNormDat(0, 0);
+                normDat(2*i, 1) = dofGrpNormDat(0, 1);
+                normDat(2*i+1, 0) = dofGrpNormDat(1, 0);
+                normDat(2*i+1, 1) = dofGrpNormDat(1, 1);
+            }
+            
+            // Report convergence status
+            std::printf("\n\n    DOF Grp      Norm          Criterion");
+            std::printf("\n   -------------------------------------------------------");
+
+            for ( int i = 0; i < _nDofGroups; i++ )
+                _convergenceCriterion[i]->reportConvergenceStatus();
         }
         
         // Additional convergence checks from numerics
@@ -380,21 +401,24 @@ void AlternateMinimization::initializeSolvers()
 }
 // ---------------------------------------------------------------------------
 void AlternateMinimization::readDataFromFile( FILE* fp )
-{    
+{
     // Read number of DOF groups
     verifyKeyword(fp, "DofGroups", _name);
     _nDofGroups = getIntegerInputFrom(fp, "Failed to read number of DOF groups from input file!", _name);
+    _dofGrpNum.assign(_nDofGroups, -1);
 
     // Read convergence criterion and associated data
-    verifyKeyword(fp, "ConvergenceCriterion", _name);
-    std::string convCritName = getStringInputFrom(fp, "Failed to read convergence criterion type from input file!", _name);
-    _convergenceCriterion = objectFactory().instantiateConvergenceCriterion(convCritName);
-    _convergenceCriterion->initialize(_nDofGroups);
-    _convergenceCriterion->readDataFromFile(fp);
-
-    // Retrieve DOF group numbers
-    _dofGrpNum = _convergenceCriterion->giveDofGroupNumbers();
-
+    _convergenceCriterion.assign(_nDofGroups, nullptr);
+    
+    for ( int i = 0; i < _nDofGroups; i++ )
+    {
+        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF groupnumber from input file!", _name);
+        std::string convCritName = getStringInputFrom(fp, "Failed to read convergence criterion type from input file!", _name);
+        _convergenceCriterion[i] = objectFactory().instantiateConvergenceCriterion(convCritName);
+        _convergenceCriterion[i]->initialize(_dofGrpNum[i]);
+        _convergenceCriterion[i]->readDataFromFile(fp);
+    }
+    
     // Read number of subsystems
     verifyKeyword(fp, "Subsystems", _name);
     _nSubsystems = getIntegerInputFrom(fp, "Failed reading number of subsystems from input file!", _name);
@@ -481,7 +505,6 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
             
             // Calculate cell internal forces
             std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, subsys, time);
-            std::vector<int> localDofGrp(localLhs.dim(), -1);
             
             // Assembly
             for ( int j = 0; j < (int)rowDof.size(); j++ )
@@ -491,9 +514,12 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
                     int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
                     int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
 
+                    int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                    int idx = this->giveIndexForDofGroup(dofGrp);
+                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j), threadNum);
+
                     if ( rowNum != UNASSIGNED && ssNum == subsys )
                     {
-                        localDofGrp[j] = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -503,7 +529,6 @@ RealVector AlternateMinimization::assembleLeftHandSide( int stage
                     analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
                 }
             }
-            _convergenceCriterion->processLocalResidualContribution(localLhs, localDofGrp, threadNum);
         }
     }
     
@@ -603,18 +628,20 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
 
                     Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
                     std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, fldCond[ifc], time);
-                    std::vector<int> localDofGrp(localRhs.dim(), -1);
-
+                    
                     for ( int j = 0; j < localRhs.dim(); j++)
                     {
                         if ( rowDof[j] )
                         {
                             int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
                             int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+                            
+                            int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                            int idx = this->giveIndexForDofGroup(dofGrp);
+                            _convergenceCriterion[idx]->processLocalResidualContribution(localRhs(j), threadNum);
 
                             if ( rowNum != UNASSIGNED && ssNum == subsys )
                             {
-                                localDofGrp[j] = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -624,7 +651,6 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                             analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                         }
                     }
-                    _convergenceCriterion->processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
         }
@@ -661,7 +687,6 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
 
                     // Specifics of BC imposition are handled by numerics
                     std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, bndCond[ibc], time);
-                    std::vector<int> localDofGrp(localRhs.dim(), -1);
 
                     for ( int j = 0; j < localRhs.dim(); j++)
                     {
@@ -670,9 +695,12 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                             int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
                             int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
 
+                            int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                            int idx = this->giveIndexForDofGroup(dofGrp);
+                            _convergenceCriterion[idx]->processLocalResidualContribution(localRhs(j), threadNum);
+
                             if ( rowNum != UNASSIGNED && ssNum == subsys )
                             {
-                                localDofGrp[j] = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -682,7 +710,6 @@ RealVector AlternateMinimization::assembleRightHandSide( int stage
                             analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
                         }
                     }
-                    _convergenceCriterion->processLocalResidualContribution(localRhs, localDofGrp, threadNum);
                 }
             }
         }
