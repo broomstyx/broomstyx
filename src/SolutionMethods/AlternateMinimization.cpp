@@ -408,8 +408,7 @@ void AlternateMinimization::readDataFromFile( FILE* fp )
     _dofGrpNum.assign(_nDofGroups, -1);
 
     // Read convergence criterion and associated data
-    _convergenceCriterion.assign(_nDofGroups, nullptr);
-    
+    _convergenceCriterion.assign(_nDofGroups, nullptr);    
     for ( int i = 0; i < _nDofGroups; i++ )
     {
         _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF groupnumber from input file!", _name);
