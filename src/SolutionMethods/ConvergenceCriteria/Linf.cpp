@@ -21,7 +21,7 @@
   for the list of copyright holders.
 */
 
-#include "L2_L1.hpp"
+#include "LInf.hpp"
 #include <omp.h>
 #include <chrono>
 #include <cmath>
@@ -33,18 +33,18 @@
 
 using namespace broomstyx;
 
-registerBroomstyxObject(ConvergenceCriterion, L2_L1)
+registerBroomstyxObject(ConvergenceCriterion, LInf)
 
-L2_L1::L2_L1()
+LInf::LInf()
 {
-    _name = "L2_L1 (Convergence criterion)";
+    _name = "LInf (Convergence criterion)";
 }
 
-L2_L1::~L2_L1() {}
+LInf::~LInf() {}
 
 // Public methods
 // ----------------------------------------------------------------------------------------
-bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>& dof )
+bool LInf::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>& dof )
 {
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
@@ -70,26 +70,27 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
         {
             // Find group number of DOF
             int grpNum = analysisModel().dofManager().giveGroupNumberFor(dof[i]);
+            // int grpIdx = this->giveIndexForDofGroup(grpNum);
             
-            if ( grpNum = _dofGrpNum )
+            if ( grpNum == _dofGrpNum )
             {
                 // Find equation number of DOF
                 int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[i]);
 
                 // Contribution to L2-norm of corrections
-                double corrVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], correction);
-                _threadCorrNorm(threadNum) += corrVal*corrVal;
+                double corrVal = std::fabs(analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], correction));
+                if ( corrVal > _threadCorrNorm(threadNum) )
+                    _threadCorrNorm(threadNum) = corrVal;
 
                 // Contribution to L2-norm of incremental solution
-                double incVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], incremental_value);
-                _threadCorrCrit(threadNum) += incVal*incVal;
+                double incVal = std::fabs(analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], incremental_value));
+                if ( incVal > _threadCorrCrit(threadNum) )
+                    _threadCorrCrit(threadNum) = incVal;
                 
                 // Contribution to L2-norm of residual
-                double rVal = resid(eqNo);
-                _threadResidNorm(threadNum) += rVal*rVal;
-
-                // Increase DOF count
-                _threadDofCount(threadNum) += 1.;
+                double rVal = std::fabs(resid(eqNo));
+                if ( rVal > _threadResidNorm(threadNum) )
+                    _threadResidNorm(threadNum) = rVal;
             }
         }
     }
@@ -99,24 +100,18 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
     _corrCrit = 0.;
     _residNorm = 0.;
     _residCrit = 0.;
-    _dofCount = 0.;
-    _contribCount = 0.;
 
     for ( int i = 0; i < _nThreads; i++ )
     {
-        _corrNorm += _threadCorrNorm(i);
-        _corrCrit += _threadCorrCrit(i);
-        _residNorm += _threadResidNorm(i);
-        _residCrit += _threadResidCrit(i);
-        _dofCount += _threadDofCount(i);
-        _contribCount += _threadContribCount(i);
+        if ( _corrNorm < _threadCorrNorm(i) )
+            _corrNorm = _threadCorrNorm(i);
+        if ( _corrCrit < _threadCorrCrit(i) )
+            _corrCrit = _threadCorrCrit(i);
+        if ( _residNorm < _threadResidNorm(i) )
+            _residNorm = _threadResidNorm(i);
+        if ( _residCrit < _threadResidCrit(i) )
+            _residCrit = _threadResidCrit(i);
     }
-
-    // Normalize values
-    _corrNorm = std::sqrt(_corrNorm/_dofCount);
-    _corrCrit = std::sqrt(_corrCrit/_dofCount);
-    _residNorm = std::sqrt(_residNorm/_dofCount);
-    _residCrit /= _contribCount;
 
     // Apply relative tolerances
     _corrCrit *= _relTolCorr;
@@ -133,7 +128,7 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
         convergenceStatus = false;
     if ( _residNorm > _residCrit )
         convergenceStatus = false;
-    
+
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
     diagnostics().addConvergenceCheckTime(tictoc.count());
@@ -141,22 +136,22 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
     return convergenceStatus;
 }
 // ----------------------------------------------------------------------------------------
-RealMatrix L2_L1::giveConvergenceData()
+RealMatrix LInf::giveConvergenceData()
 {
     RealMatrix convData(2, 2);
 
-    convData(0, 0) = _corrNorm;
-    convData(0, 1) = _corrCrit;
-    convData(1, 0) = _residNorm;
-    convData(1, 1) = _residCrit;
+        convData(0, 0) = _corrNorm;
+        convData(0, 1) = _corrCrit;
+        convData(1, 0) = _residNorm;
+        convData(1, 1) = _residCrit;
     
     return convData;
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1::initialize( int dofGrpNum )
+void LInf::initialize( int dofGrpNum )
 {
     _dofGrpNum = dofGrpNum;
-
+    
     #ifdef _OPENMP
     #pragma omp parallel
     {
@@ -180,20 +175,20 @@ void L2_L1::initialize( int dofGrpNum )
     _residCrit = 0.;
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1::processLocalResidualContribution( const RealVector& contrib, const std::vector<int>& dofGrp, int threadNum )
+void LInf::processLocalResidualContribution( const RealVector& contrib, const std::vector<int>& dofGrp, int threadNum )
 {
     for ( int i = 0; i < contrib.dim(); i++ )
     {
         double val = std::fabs(contrib(i));
         if ( dofGrp[i] == _dofGrpNum && val > _absTolRes )
         {
-            _threadResidCrit( threadNum) += val;
-            _threadContribCount( threadNum) += 1.;
+            if ( val > _threadResidCrit(threadNum) )
+                _threadResidCrit(threadNum) = val;
         }
     }
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1::readDataFromFile( FILE* fp )
+void LInf::readDataFromFile( FILE* fp )
 {
     // Read DOF group convergence parameters
     std::string _trackingOption = getStringInputFrom(fp, "Failed to read criterion option from input file!", _name);
@@ -219,7 +214,7 @@ void L2_L1::readDataFromFile( FILE* fp )
     }
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1::reportConvergenceStatus()
+void LInf::reportConvergenceStatus()
 {
     // Report status
     // std::printf("\n\n    DOF Grp   Inf-Norm         Criterion");
@@ -242,8 +237,8 @@ void L2_L1::reportConvergenceStatus()
     }
 }
 // ----------------------------------------------------------------------------------------
-void L2_L1::resetResidualCriteria()
+void LInf::resetResidualCriteria()
 {
-    _threadContribCount.init(_nThreads);
-    _threadResidCrit.init(_nThreads);
+    _threadContribCount.init(_nThreads );
+    _threadResidCrit.init(_nThreads );
 }

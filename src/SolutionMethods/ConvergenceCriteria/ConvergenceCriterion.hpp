@@ -39,25 +39,17 @@ namespace broomstyx
         ConvergenceCriterion() {}
         virtual ~ConvergenceCriterion() {}
 
-        std::vector<int> giveDofGroupNumbers()
-        {
-            return _dofGrpNum;
-        }
-        
-        virtual bool checkConvergenceOf( const std::vector<RealVector>& resid
-                                       , const std::vector<int>& subsysNumbers
-                                       , const std::vector<Dof*>& dof ) = 0;
+        virtual bool checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>& dof ) = 0;
         virtual RealMatrix giveConvergenceData() = 0;
-        virtual void initialize( int nDofGroups ) = 0;
-        virtual void processLocalResidualContribution( RealVector& contrib, std::vector<int>& dofGrp, int threadNum ) = 0;
+        virtual void initialize( int dofGrpNum ) = 0;
+        virtual void processLocalResidualContribution( const RealVector& contrib, const std::vector<int>& dofGrp, int threadNum ) = 0;
         virtual void readDataFromFile( FILE* fp ) = 0;
         virtual void reportConvergenceStatus() = 0;
         virtual void resetResidualCriteria() = 0;
         
     protected:
         std::string _name;
-        int _nDofGroups;
-        std::vector<int> _dofGrpNum;
+        int _dofGrpNum;
     };
 }
 

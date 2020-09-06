@@ -21,23 +21,23 @@
   for the list of copyright holders.
 */
 
-#ifndef L2_L1_HPP
-#define	L2_L1_HPP
+#ifndef LINF_HPP
+#define	LINF_HPP
 
 #include "ConvergenceCriterion.hpp"
 #include "Util/RealMatrix.hpp"
 
 namespace broomstyx
 {
-    class L2_L1 : public ConvergenceCriterion
+    class LInf : public ConvergenceCriterion
     {
     public:
-        L2_L1();
-        virtual ~L2_L1();
+        LInf();
+        virtual ~LInf();
 
         bool checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>& dof ) override;
         RealMatrix giveConvergenceData() override;
-        void initialize( int nDofGroup ) override;
+        void initialize( int dofGrpNum ) override;
         void processLocalResidualContribution( const RealVector& contrib, const std::vector<int>& dofGrp, int threadNum ) override;
         void readDataFromFile( FILE* fp ) override;
         void reportConvergenceStatus() override;
@@ -47,7 +47,7 @@ namespace broomstyx
         std::string _trackingOption;
         int    _nThreads;
         double _contribCount;
-        double _dofCount;
+        double _dofGrpCount;
 
         double _relTolCorr;
         double _relTolRes;
@@ -62,10 +62,9 @@ namespace broomstyx
         RealVector _threadContribCount;
         RealVector _threadCorrCrit;
         RealVector _threadCorrNorm;
-        RealVector _threadDofCount;
         RealVector _threadResidCrit;
         RealVector _threadResidNorm;
     };
 }
 
-#endif	/* L2_L1_HPP */
+#endif	/* LINF_HPP */
