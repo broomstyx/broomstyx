@@ -180,6 +180,16 @@ void L2_L1::initialize( int dofGrpNum )
     _residCrit = 0.;
 }
 // ----------------------------------------------------------------------------------------
+void L2_L1::processLocalResidualContribution( double contrib, int threadNum )
+{
+    double val = std::fabs(contrib);
+    if ( val > _absTolRes )
+    {
+        _threadResidCrit(threadNum) += val;
+        _threadContribCount(threadNum) += 1.;
+    }
+}
+// ----------------------------------------------------------------------------------------
 void L2_L1::processLocalResidualContribution( const RealVector& contrib, const std::vector<int>& dofGrp, int threadNum )
 {
     for ( int i = 0; i < contrib.dim(); i++ )
@@ -187,8 +197,8 @@ void L2_L1::processLocalResidualContribution( const RealVector& contrib, const s
         double val = std::fabs(contrib(i));
         if ( dofGrp[i] == _dofGrpNum && val > _absTolRes )
         {
-            _threadResidCrit( threadNum) += val;
-            _threadContribCount( threadNum) += 1.;
+            _threadResidCrit(threadNum) += val;
+            _threadContribCount(threadNum) += 1.;
         }
     }
 }

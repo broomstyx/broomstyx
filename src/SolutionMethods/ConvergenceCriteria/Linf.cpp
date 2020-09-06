@@ -175,6 +175,13 @@ void LInf::initialize( int dofGrpNum )
     _residCrit = 0.;
 }
 // ----------------------------------------------------------------------------------------
+void LInf::processLocalResidualContribution( double contrib, int threadNum )
+{
+    double val = std::fabs(contrib);
+    if ( val > _absTolRes && val > _threadResidCrit(threadNum) )
+        _threadResidCrit(threadNum) = val;
+}
+// ----------------------------------------------------------------------------------------
 void LInf::processLocalResidualContribution( const RealVector& contrib, const std::vector<int>& dofGrp, int threadNum )
 {
     for ( int i = 0; i < contrib.dim(); i++ )

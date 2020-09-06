@@ -38,6 +38,7 @@ namespace broomstyx
         bool checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>& dof ) override;
         RealMatrix giveConvergenceData() override;
         void initialize( int nDofGroup ) override;
+        void processLocalResidualContribution( double contrib, int threadNum ) override;
         void processLocalResidualContribution( const RealVector& contrib, const std::vector<int>& dofGrp, int threadNum ) override;
         void readDataFromFile( FILE* fp ) override;
         void reportConvergenceStatus() override;
