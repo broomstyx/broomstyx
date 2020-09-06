@@ -44,11 +44,7 @@
 #include "Util/linearAlgebra.hpp"
 #include "Util/readOperations.hpp"
 
-#define REPORT_SUBSYSTEM_STATUS true
-
-#define WRITE_DEBUG_OUTPUT false
-#define DEBUG_SUBSTEP 1
-#define DEBUG_SUBSYS 1
+#define REPORT_SUBSYSTEM_STATUS false
 
 using namespace broomstyx;
 
@@ -266,15 +262,8 @@ int AlternateNonlinearMinimization::computeSolutionFor
                     resid[curSubsys] = rhs[curSubsys] - lhs[curSubsys];
                     
                     // Check subsystem convergence
-                    subsysConverged = true;
-                    for ( int j = 0; j < (int)_subsysDofGroup[curSubsys].size(); j++ )
-                    {
-                        int idx = this->giveIndexForDofGroup(_subsysDofGroup[curSubsys][j]);
-                        bool dofGrpConverged = _convergenceCriterion[idx]->checkConvergenceOf(resid[curSubsys], dof);
-                        if ( !dofGrpConverged )
-                            subsysConverged = false;
-                    }
-
+                    subsysConverged = this->checkSubsystemConvergenceAt(stage, curSubsys, resid[curSubsys], iterCount, localIterCount);
+                    
                     if ( localIterCount == 0 )
                         subsysConverged = false;
                     
