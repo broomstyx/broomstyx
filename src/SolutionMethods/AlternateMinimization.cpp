@@ -153,7 +153,7 @@ int AlternateMinimization::computeSolutionFor( int stage
         {
             converged = true;
             for ( int i = 0; i < _nSubsystems; i++ )
-                for ( int j = 0; j < (int)_subsysDofGroup[i].size(); i++ )
+                for ( int j = 0; j < (int)_subsysDofGroup[i].size(); j++ )
                 {
                     int idx = this->giveIndexForDofGroup(_subsysDofGroup[i][j]);
                     bool dofGrpConverged = _convergenceCriterion[idx]->checkConvergenceOf(resid[i], dof);
