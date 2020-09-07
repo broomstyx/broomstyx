@@ -21,7 +21,6 @@
   for the list of copyright holders.
 */
 
-#if 0
 #include "TransientAlternateNonlinearMinimization.hpp"
 #include <chrono>
 #include <cmath>
@@ -31,11 +30,13 @@
 
 #include "Core/AnalysisModel.hpp"
 #include "Core/ObjectFactory.hpp"
+#include "Core/Diagnostics.hpp"
 #include "Core/DofManager.hpp"
 #include "Core/DomainManager.hpp"
 #include "Core/LoadStep.hpp"
 #include "Core/NumericsManager.hpp"
 #include "Core/SolutionManager.hpp"
+#include "ConvergenceCriteria/ConvergenceCriterion.hpp"
 #include "LinearSolvers/LinearSolver.hpp"
 #include "MeshReaders/MeshReader.hpp"
 #include "Numerics/Numerics.hpp"
@@ -220,155 +221,6 @@ void TransientAlternateNonlinearMinimization::formSparsityProfileForStage( int s
         std::printf("\n         Sparsity ratio = %.4e\n", spratio);
     }
 }
-// ---------------------------------------------------------------------------
-void TransientAlternateNonlinearMinimization::readDataFromFile( FILE* fp )
-{    
-    std::string key, errmsg, src = "AlternateNonlinearMinimization (SolutionMethod)";
-    
-    // Read number of DOF groups
-    verifyKeyword(fp, "DofGroups", _name);
-    _nDofGroups = getIntegerInputFrom(fp, "Failed to read number of DOF groups from input file!", _name);
-    _dofGrpNum.assign(_nDofGroups, 0);
-    
-    // Initialize solution control vectors
-    _relTolCor.init(_nDofGroups);
-    _relTolRes.init(_nDofGroups);
-    _absTolCor.init(_nDofGroups);
-    _absTolRes.init(_nDofGroups);
-    _sumAbsFlux.init(_nDofGroups);
-    _fluxCount.init(_nDofGroups);
-    
-//    // Initialize solution control vectors
-//    _ctrlParam.init(_nDofGroups,6);
-    _isTransient.assign(_nDofGroups, true);
-    
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        // Read DOF group number
-        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF group number from input file!", _name);
-
-        // Read DOF group convergence parameters
-        verifyKeyword(fp, key = "Parameters", _name);
-
-        // Correction tolerance
-        _relTolCor(i) = getRealInputFrom(fp, "Failed to read correction tolerance from input file!", _name);
-
-        // Residual tolerance
-        _relTolRes(i) = getRealInputFrom(fp, "Failed to read residual tolerance from input file!", _name);
-
-        // Absolute tolerance for corrections
-        _absTolCor(i) = getRealInputFrom(fp, "Failed to read absolute correction tolerance from input file!", _name);
-
-        // Absolute tolerance for residuals
-        _absTolRes(i) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", _name);
-        
-        // // Specify whether DOF group belongs to a non-transient equation
-        // key = getStringInputFrom(fp, "Failed to read static/transient specification for DOF group from input file!", _name);
-        // if ( key == "Static" )
-        //     _isTransient[i] = false;
-        // else if ( key == "Transient" )
-        //     _isTransient[i] = true;
-        // else
-        // {
-        //     errmsg = "Unrecognized specification '" + key + "' encountered, must be either 'Static' or 'Transient'.\nSource: " + _name;
-        //     throw std::runtime_error(errmsg);
-        // }
-    }
-
-    // Read number of subsystems
-    verifyKeyword(fp, "Subsystems", _name);
-    _nSubsystems = getIntegerInputFrom(fp, "Failed reading number of subsystems from input file!", _name);
-
-    _subsysNum.assign(_nSubsystems, 0);
-    _subsysDofGroup.assign(_nSubsystems, std::vector<int>());
-    _symmetry.assign(_nSubsystems, false);
-    _solver.assign(_nSubsystems, nullptr);
-    _spMatrix.assign(_nSubsystems, nullptr);
-    _nUnknowns.assign(_nSubsystems, 0);
-    _overRelaxation.init(_nSubsystems);
-    _maxSubsysIter.assign(_nSubsystems, 0);
-    _initMultiplier.init(_nSubsystems);
-    _tolFactor.init(_nSubsystems, 2);
-    _enableLineSearch.assign(_nSubsystems, false);
-    _slackTolerance.init(_nSubsystems);
-    _minMultiplier.init(_nSubsystems);
-    _maxMultiplier.init(_nSubsystems);
-    _maxLineSearchIter.assign(_nSubsystems, 0);
-    
-    for ( int i = 0; i < _nSubsystems; i++ )
-    {
-        // Read subsystem number
-        _subsysNum[i] = getIntegerInputFrom(fp, "Failed reading subsystem number from input file!", _name);
-        
-        // Read which DOF groups are part of subsystem
-        verifyKeyword(fp, "nDofGroups", _name);
-        int nDofGrp = getIntegerInputFrom(fp, "Failed to read number of subsystem DOF groups from input file!", _name);
-        
-        _subsysDofGroup[i].assign(nDofGrp, UNASSIGNED);
-        verifyKeyword(fp, "Label", _name);
-        for ( int j = 0; j < nDofGrp; j++ )
-            _subsysDofGroup[i][j] = getIntegerInputFrom(fp, "Failed to read subsystem DOF group from input file!", _name);
-            
-        // Read linear solver to be used
-        verifyKeyword(fp, "LinearSolver", _name);
-        key = getStringInputFrom(fp, "Failed to read linear solver from input file!", _name);
-        _solver[i] = objectFactory().instantiateLinearSolver(key);
-        _solver[i]->readDataFrom(fp);
-        _symmetry[i] = _solver[i]->giveSymmetryOption();
-                
-        // Maximum number of iterations in each subsystem
-        verifyKeyword(fp, key = "MaxSubsystemIterations", _name);
-        _maxSubsysIter[i] = getIntegerInputFrom(fp, "Failed to read maximum number of subsystem iterations from input file!", _name);
-        
-        // Subsystem overrelaxation
-        verifyKeyword(fp, key = "InitMultiplier", _name);
-        _initMultiplier(i) = getRealInputFrom(fp, "Failed to read subsystem damping factor from input file!", _name);
-        
-        // Tolerance reduction factors
-        verifyKeyword(fp, key = "TolReduction", _name);
-        _tolFactor(i,0) = getRealInputFrom(fp, "Failed to read subsystem tolerance reduction factor for corrections from input file!", _name);
-        _tolFactor(i,1) = getRealInputFrom(fp, "Failed to read subsystem tolerance reduction factor for residuals from input file!", _name);
-        
-        // Line search
-        verifyKeyword(fp, "LineSearch", this->_name);
-        key = getStringInputFrom(fp, "Failed to reach line search option from input file!", _name);
-        if ( key == "On" )
-        {
-            _enableLineSearch[i] = true;
-            
-        }
-        else if ( key == "Off" )
-            _enableLineSearch[i] = false;
-        else
-        {
-            std::printf("Error in line search option for solution method '%s': < On/Off > expected, '%s' found.", _name.c_str(), key.c_str());
-            throw std::runtime_error("");
-        }
-
-        if ( _enableLineSearch[i] )
-        {
-            verifyKeyword(fp, "SlackTolerance", _name);
-            _slackTolerance(i) = getRealInputFrom(fp, "Failed to read line search slack tolerance from input file!", _name);
-
-            verifyKeyword(fp, "MinMultiplier", _name);
-            _minMultiplier(i) = getRealInputFrom(fp, "Failed to read minimum line search multiplier from input file", _name);
-            
-            verifyKeyword(fp, "MaxMultiplier", _name);
-            _maxMultiplier(i) = getRealInputFrom(fp, "Failed to read maximum line search multiplier from input file", _name);
-
-            verifyKeyword(fp, "MaxLineSearchIterations", _name);
-            _maxLineSearchIter[i] = getRealInputFrom(fp, "Failed to read maximum number of line search iterations from input file!", _name);
-        }
-        
-        // Create sparse matrices
-        _spMatrix[i] = objectFactory().instantiateSparseMatrix(_solver[i]->giveRequiredMatrixFormat());
-        _spMatrix[i]->setSymmetryTo(_symmetry[i]);
-    }
-
-    // Maximum number of iterations
-    verifyKeyword(fp, key = "MaxIterations", _name);
-    _maxIter = getIntegerInputFrom(fp, "Failed to read maximum number of iterations from input file!", _name);
-}
 
 // Private methods
 // --------------------------------------------------------------------------
@@ -376,6 +228,10 @@ RealVector TransientAlternateNonlinearMinimization::assembleLeftHandSide( int st
                                                                         , int subsys
                                                                         , const TimeData& time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     // Find subsystem index
     int idx = this->giveIndexForSubsystem(subsys);
     
@@ -384,51 +240,43 @@ RealVector TransientAlternateNonlinearMinimization::assembleLeftHandSide( int st
     // Assembly of global internal force vector for current subsystem
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     
-    // ...because OpenMP doesn't allow class members to be shared by parallel threads
-    RealVector sumAbsFlux = _sumAbsFlux;
-    RealVector fluxCount = _fluxCount;
-    
 #ifdef _OPENMP
-#pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
+#pragma omp parallel
 #endif
-    for ( int i = 0; i < nCells; i++ )
     {
-        Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
-        Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
-        
-        std::vector<Dof*> rowDof;
-        RealVector localLhs;
-        
-        // Calculate cell internal forces
-        std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, subsys, time);
-        
-        // Assembly
-        // A. Static part
-        for ( int j = 0; j < (int)rowDof.size(); j++ )
+        int threadNum = 0;
+#ifdef _OPENMP
+        threadNum = omp_get_thread_num();
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+        for ( int i = 0; i < nCells; i++ )
         {
-            if ( rowDof[j] )
+            Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
+            Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+            
+            std::vector<Dof*> rowDof;
+            RealVector localLhs;
+            
+            // Calculate cell internal forces
+            std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, subsys, time);
+
+            // Assembly
+            // A. Static part
+            for ( int j = 0; j < (int)rowDof.size(); j++ )
             {
-                int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
-                
-                if ( rowNum != UNASSIGNED && ssNum == subsys )
+                if ( rowDof[j] )
                 {
-                    int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                    int idx = this->giveIndexForDofGroup(grp);
-                    
-//                     if ( _isTransient[idx] )
-//                     {
-//                         sumAbsFlux(idx) += std::fabs(localLhs(j)*time.increment);
-//                         fluxCount(idx) += 1.;
-// #ifdef _OPENMP
-// #pragma omp atomic
-// #endif
-//                         lhs(rowNum) += localLhs(j)*time.increment;
-//                     }
-//                     else
+                    int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                    int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+
+                    int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                    int idx = this->giveIndexForDofGroup(dofGrp);
+                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j), threadNum);
+
+                    if ( rowNum != UNASSIGNED && ssNum == subsys )
                     {
-                        sumAbsFlux(idx) += std::fabs(localLhs(j));
-                        fluxCount(idx) += 1.;
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -438,42 +286,44 @@ RealVector TransientAlternateNonlinearMinimization::assembleLeftHandSide( int st
                     analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
                 }
             }
-        }
-        
-        /***************************************/
+            
+            /***************************************/
 
-        // B. Transient part
-        RealVector tLhsOld, tLhsNew;
-        std::tie(rowDof,tLhsNew) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, current_value);
-        std::tie(rowDof,tLhsOld) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, converged_value);
-        localLhs = tLhsNew - tLhsOld;
+            // B. Transient part
+            RealVector tLhsOld, tLhsNew;
+            std::tie(rowDof,tLhsNew) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, current_value);
+            std::tie(rowDof,tLhsOld) = numerics->giveTransientLeftHandSideAt(curCell, stage, subsys, time, converged_value);
+            localLhs = (tLhsNew - tLhsOld);
 
-        // Assembly
-        for ( int j = 0; j < (int)rowDof.size(); j++)
-        {
-            if ( rowDof[j] )
+            // Assembly
+            for ( int j = 0; j < (int)rowDof.size(); j++)
             {
-                int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
-
-                if ( rowNum != UNASSIGNED && ssNum == subsys )
+                if ( rowDof[j] )
                 {
-                    int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                    int idx = this->giveIndexForDofGroup(grp);
-                    sumAbsFlux(idx) += std::fabs(localLhs(j)/time.increment);
-                    fluxCount(idx) += 1.;
+                    int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                    int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
+
+                    int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                    int idx = this->giveIndexForDofGroup(dofGrp);
+                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j)/time.increment, threadNum);
+
+                    if ( rowNum != UNASSIGNED && ssNum == subsys )
+                    {
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                    lhs(rowNum) += localLhs(j)/time.increment;
-                }
+                        lhs(rowNum) += localLhs(j)/time.increment;
+                    }
 
-                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j)/time.increment);
+                    analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j)/time.increment);
+                }
             }
         }
     }
-    _sumAbsFlux = sumAbsFlux;
-    _fluxCount = fluxCount;
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addLhsAssemblyTime(tictoc.count());
     
     return lhs;
 }
@@ -510,19 +360,8 @@ void TransientAlternateNonlinearMinimization::assembleJacobian( int stage
 
                 if ( rowNum != UNASSIGNED && rssNum == subsys && colNum != UNASSIGNED && cssNum == subsys )
                 {
-                    // int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                    // int grpIdx = this->giveIndexForDofGroup(grp);
-                            
-                    // if ( _isTransient[grpIdx] )
-                    // {
-                    //     int idx = this->giveIndexForSubsystem(subsys);
-                    //     _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)*time.increment);
-                    // }
-                    // else
-                    {
-                        int idx = this->giveIndexForSubsystem(subsys);
-                        _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j));
-                    }
+                    int idx = this->giveIndexForSubsystem(subsys);
+                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j));
                 }
             }
         }
@@ -548,148 +387,3 @@ void TransientAlternateNonlinearMinimization::assembleJacobian( int stage
         }
     }
 }
-// ---------------------------------------------------------------------------
-RealVector TransientAlternateNonlinearMinimization::assembleRightHandSide( int stage
-                                                                         , int subsys
-                                                                         , const std::vector<BoundaryCondition>& bndCond
-                                                                         , const std::vector<FieldCondition>& fldCond
-                                                                         , const TimeData& time )
-{
-    // Get subsystem index
-    int idx = this->giveIndexForSubsystem(subsys);
-    RealVector rhs(_nUnknowns[idx]);
-    
-    // Loop through all field conditions
-    int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
-    
-    // ...because OpenMP doesn't allow class members to be shared by parallel threads
-    RealVector sumAbsFlux = _sumAbsFlux;
-    RealVector fluxCount = _fluxCount;
-    
-#ifdef _OPENMP
-#pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
-#endif
-    for ( int i = 0; i < nCells; i++ )
-    {
-        Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
-        int label = analysisModel().domainManager().giveLabelOf(curCell);
-
-        for ( int ifc = 0; ifc < (int)fldCond.size(); ifc++ )
-        {
-            int fcLabel = analysisModel().domainManager().givePhysicalEntityNumberFor(fldCond[ifc].domainLabel());
-            if ( label == fcLabel )
-            {
-                RealVector localRhs;
-                std::vector<Dof*> rowDof;
-
-                Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
-                std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, fldCond[ifc], time);
-
-                for ( int j = 0; j < localRhs.dim(); j++ )
-                {
-                    if ( rowDof[j] )
-                    {
-                        int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                        int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
-
-                        if ( rowNum != UNASSIGNED && ssNum == subsys )
-                        {
-                            // int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            // int idx = this->giveIndexForDofGroup(grp);
-                            
-//                             if ( _isTransient[idx] )
-//                             {
-//                                 sumAbsFlux(idx) += std::fabs(localRhs(j)*time.increment);
-//                                 fluxCount(idx) += 1.;
-// #ifdef _OPENMP
-// #pragma omp atomic
-// #endif
-//                                 rhs(rowNum) += localRhs(j)*time.increment;
-//                             }
-//                             else
-                            {
-                                sumAbsFlux(idx) += std::fabs(localRhs(j));
-                                fluxCount(idx) += 1.;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif                                
-                                rhs(rowNum) += localRhs(j);
-                            }
-
-                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    // Loop through all natural boundary conditions
-    for ( int ibc = 0; ibc < (int)bndCond.size(); ibc++ )
-    {
-        int boundaryId = analysisModel().domainManager().givePhysicalEntityNumberFor(bndCond[ibc].boundaryName());
-        Numerics* numerics = analysisModel().numericsManager().giveNumerics(bndCond[ibc].targetNumerics());
-        
-        int nBCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
-#ifdef _OPENMP
-#pragma omp parallel for reduction ( + : sumAbsFlux, fluxCount )
-#endif
-        for ( int i = 0; i < nBCells; i++ ) 
-        {
-            Cell* curCell = analysisModel().domainManager().giveBoundaryCell(i);
-            int label = analysisModel().domainManager().giveLabelOf(curCell);
-
-            if ( label == boundaryId )
-            {
-                RealVector localRhs;
-                std::vector<Dof*> rowDof;
-
-                // Specifics of BC imposition are handled by numerics
-                std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, subsys, bndCond[ibc], time);
-
-                for ( int j = 0; j < localRhs.dim(); j++)
-                {
-                    if ( rowDof[j] )
-                    {
-                        int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                        int ssNum = analysisModel().dofManager().giveSubsystemNumberFor(rowDof[j]);
-
-                        if ( rowNum != UNASSIGNED && ssNum == subsys )
-                        {
-                            // int grp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            // int idx = this->giveIndexForDofGroup(grp);
-                            
-//                             if ( _isTransient[idx] )
-//                             {
-//                                 sumAbsFlux(idx) += std::fabs(localRhs(j)*time.increment);
-//                                 fluxCount(idx) += 1.;
-// #ifdef _OPENMP
-// #pragma omp atomic
-// #endif
-//                                 rhs(rowNum) += localRhs(j)*time.increment;
-//                             }
-//                             else
-                            {
-                                sumAbsFlux(idx) += std::fabs(localRhs(j));
-                                fluxCount(idx) += 1.;
-#ifdef _OPENMP
-#pragma omp atomic
-#endif                                
-                                rhs(rowNum) += localRhs(j);
-                            }
-
-                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
-                        }
-                    }
-                }
-            }
-        }
-    }
-    
-    _sumAbsFlux = sumAbsFlux;
-    _fluxCount = fluxCount;
-    
-    return rhs;
-}
-
-#endif
