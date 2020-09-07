@@ -292,30 +292,29 @@ int AlternateNonlinearMinimization::computeSolutionFor
                         tictoc = innertoc - innertic;
                         diagnostics().addSolveTime(tictoc.count());
                         
-                        // {
-                            innertic = std::chrono::high_resolution_clock::now();
+
+                        innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-                            for ( int i = 0; i < (int)dof.size(); i++ )
-                                if ( analysisModel().dofManager().giveSubsystemNumberFor(dof[i]) == _subsysNum[curSubsys] )
+                        for ( int i = 0; i < (int)dof.size(); i++ )
+                            if ( analysisModel().dofManager().giveSubsystemNumberFor(dof[i]) == _subsysNum[curSubsys] )
+                            {
+                                int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[i]);
+                                if ( eqNo != UNASSIGNED )
                                 {
-                                    int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[i]);
-                                    if ( eqNo != UNASSIGNED )
-                                    {
-                                        // Update primary variable at DOF
-                                        analysisModel().dofManager().updatePrimaryVariableAt(dof[i], dU[curSubsys](eqNo), correction);
-                                        sum_dU[curSubsys](eqNo) += dU[curSubsys](eqNo);
-                                        
-                                        // Update secondary variable at DOF with residual
-                                        analysisModel().dofManager().updateResidualAt(dof[i], resid[curSubsys](eqNo));
-                                    }
+                                    // Update primary variable at DOF
+                                    analysisModel().dofManager().updatePrimaryVariableAt(dof[i], dU[curSubsys](eqNo), correction);
+                                    sum_dU[curSubsys](eqNo) += dU[curSubsys](eqNo);
+                                    
+                                    // Update secondary variable at DOF with residual
+                                    analysisModel().dofManager().updateResidualAt(dof[i], resid[curSubsys](eqNo));
                                 }
+                            }
 
-                            innertoc = std::chrono::high_resolution_clock::now();
-                            tictoc = innertoc - innertic;
-                            diagnostics().addUpdateTime(tictoc.count());
-                        // }
+                        innertoc = std::chrono::high_resolution_clock::now();
+                        tictoc = innertoc - innertic;
+                        diagnostics().addUpdateTime(tictoc.count());
                     }
                 }
 
