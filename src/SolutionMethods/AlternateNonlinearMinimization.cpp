@@ -346,7 +346,7 @@ int AlternateNonlinearMinimization::computeSolutionFor
     }
     
     std::printf("\n");
-    if ( !converged )
+    if ( !converged && _abortAtMaxIter )
         return 1;
     else
         return 0;
@@ -415,6 +415,17 @@ void AlternateNonlinearMinimization::readDataFromFile( FILE* fp )
     // Maximum number of iterations
     verifyKeyword(fp, "MaxIterations", _name);
     _maxIter = getIntegerInputFrom(fp, "Failed to read maximum number of iterations from input file!", _name);
+
+    // Directive upon reaching maximum iterations
+    std::string directive = getStringInputFrom(fp, "Failed to read solution method directive from input file!", _name);
+    if ( directive == "Abort" )
+        _abortAtMaxIter = true;
+    else if ( directive == "Continue" )
+        _abortAtMaxIter = false;
+    else
+    {
+        throw std::runtime_error("ERROR: Invalid directive to solution method encountered! Valid options are \"Abort\" or \"Continue\"\n");
+    }
 }
 
 // Private methods
