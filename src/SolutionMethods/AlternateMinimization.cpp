@@ -209,6 +209,19 @@ int AlternateMinimization::computeSolutionFor( int stage
             tictoc = innertoc - innertic;
             diagnostics().addOutputWriteTime(tictoc.count());
         }
+        else if ( iterCount == _maxIter )
+        {
+            // Clear memory for solvers
+            for ( int i = 0; i < _nSubsystems; i++ )
+                _solver[i]->clearInternalMemory();
+            
+            innertic = std::chrono::high_resolution_clock::now();
+            _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addOutputWriteTime(tictoc.count());
+            ++iterCount;
+        }
         else
         {
             // Start of new iteration
@@ -266,7 +279,7 @@ int AlternateMinimization::computeSolutionFor( int stage
     }
     
     std::printf("\n");
-    if ( !converged )
+    if ( !converged && _abortAtMaxIter )
         return 1;
     else
         return 0;
@@ -463,6 +476,17 @@ void AlternateMinimization::readDataFromFile( FILE* fp )
     // Maximum number of iterations
     verifyKeyword(fp, "MaxIterations", _name);
     _maxIter = getIntegerInputFrom(fp, "Failed to read maximum number of iterations from input file!", _name);
+
+    // Directive upon reaching maximum iterations
+    std::string directive = getStringInputFrom(fp, "Failed to read solution method directive from input file!", _name);
+    if ( directive == "Abort" )
+        _abortAtMaxIter = true;
+    else if ( directive == "Continue" )
+        _abortAtMaxIter = false;
+    else
+    {
+        throw std::runtime_error("ERROR: Invalid directive to solution method encountered! Valid options are \"Abort\" or \"Continue\"\n");
+    }
 }
 
 // Private methods

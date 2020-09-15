@@ -71,6 +71,7 @@ namespace broomstyx
         
         int _maxIter;
         int _substepCount;
+        bool _abortAtMaxIter;
         
         virtual RealVector assembleLeftHandSide( int stage
                                                , int subsys
