@@ -37,6 +37,8 @@ using namespace broomstyx;
 
 registerBroomstyxObject(Numerics, PhaseFieldFracture_Fe_Tri3)
 
+#define CRACKLENGTH_CUTOFF 0.99
+
 // Numerics status
 NumericsStatus_PhaseFieldFracture_Fe_Tri3::NumericsStatus_PhaseFieldFracture_Fe_Tri3()
     : _strain(RealVector(4))
@@ -222,7 +224,13 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
     else if ( fieldTag == "ene_b" )
         fieldVal(0) = cns->_bulkEgy;
     else if ( fieldTag == "cr_len" )
-        fieldVal(0) = cns->_surfEgy/_Gc;
+    {
+        if ( cns->_phi < CRACKLENGTH_CUTOFF )
+            fieldVal(0) = cns->_surfEgy/_Gc;
+        else
+            fieldVal(0) = 0.;
+    }
+        
     else if ( fieldTag == "eigVec1_1" || fieldTag == "eigVec1_2" || fieldTag == "eigVec2_1" || fieldTag == "eigVec2_2" )
         fieldVal(0) = material[1]->giveMaterialVariable(fieldTag, cns->_materialStatus[1]);
     else
