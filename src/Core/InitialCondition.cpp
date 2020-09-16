@@ -62,6 +62,7 @@ void InitialCondition::readDataFrom( FILE* fp )
     {
         std::string fcnName = getStringInputFrom(fp, "Failed to read user function for initial condition from input file!", src);
         _usrFcn = analysisModel().solutionManager().makeNewUserFunction(fcnName);
+        _usrFcn->readDataFrom(fp);
     }
     else
         throw std::runtime_error("Invalid specification type '" + str + "' encountered for initial condition in input file!");

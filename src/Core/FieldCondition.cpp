@@ -82,6 +82,7 @@ void FieldCondition::readDataFrom( FILE* fp )
     {
         std::string fcnName = getStringInputFrom(fp, "Failed to read user function name for field condition from input file!", src);
         _usrFcn = analysisModel().solutionManager().makeNewUserFunction(fcnName);
+        _usrFcn->readDataFrom(fp);
     }
     else
         throw std::runtime_error("Invalid specification type '" + str + "' for field condition in input file!");

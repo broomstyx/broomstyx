@@ -35,8 +35,12 @@ namespace broomstyx
         virtual ~LayeredSurfingBC_dispX();
         
         double at( const RealVector& coor, const TimeData& time ) override;
+        void readDataFrom( FILE* fp ) override;
 
     private:
+        double _E;
+        double _nu;
+        double _KI;
     };
 }
 

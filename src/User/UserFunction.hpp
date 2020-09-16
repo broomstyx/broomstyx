@@ -24,6 +24,8 @@
 #ifndef USERFUNCTION_HPP
 #define USERFUNCTION_HPP
 
+#include <cstdio>
+#include <string>
 #include "Core/TimeData.hpp"
 #include "Util/RealVector.hpp"
 
@@ -40,6 +42,10 @@ namespace broomstyx
         UserFunction& operator=( const UserFunction& ) = delete;
 
         virtual double at( const RealVector& coor, const TimeData& time ) = 0;
+        virtual void readDataFrom( FILE* fp ) {}
+    
+    protected:
+        std::string _name;
     };
 }
 

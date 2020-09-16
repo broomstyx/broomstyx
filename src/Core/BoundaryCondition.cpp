@@ -89,6 +89,7 @@ void BoundaryCondition::readDataFrom( FILE* fp )
         // Read user function number
         std::string fcnName = getStringInputFrom(fp, "Failed to read user function for boundary condition from input file!", src);
         _usrFcn = analysisModel().solutionManager().makeNewUserFunction(fcnName);
+        _usrFcn->readDataFrom(fp);
     }
     else
         throw std::runtime_error("Invalid specification type '" + _specType + "' for boundary condition encountered in input file!");

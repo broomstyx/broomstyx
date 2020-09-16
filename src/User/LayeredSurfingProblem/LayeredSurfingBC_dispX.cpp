@@ -25,23 +25,22 @@
 
 #include <cmath>
 #include "Core/ObjectFactory.hpp"
+#include "Util/readOperations.hpp"
 
 using namespace broomstyx;
 
 registerBroomstyxObject(UserFunction, LayeredSurfingBC_dispX)
         
-LayeredSurfingBC_dispX::LayeredSurfingBC_dispX() {}
+LayeredSurfingBC_dispX::LayeredSurfingBC_dispX()
+{
+    _name = "LayeredSurfingBC_dispX";
+}
 
 LayeredSurfingBC_dispX::~LayeredSurfingBC_dispX() {}
 
 double LayeredSurfingBC_dispX::at( const RealVector& coor, const TimeData& time )
 {
     double PI = 4.*std::atan(1.);
-
-    // Hard-coded parameters
-    double Gc = 1.;
-    double E  = 1.;
-    double nu = 0.3;
 
     double x = coor(0) - time.target;
     double y = coor(1);
@@ -52,12 +51,16 @@ double LayeredSurfingBC_dispX::at( const RealVector& coor, const TimeData& time 
     if ( y < 0 )
         theta = -theta;
 
-    // Stress intensity factor
-    double KI = std::sqrt(E*Gc);
-
     // Kolosov constant for plane strain
-    double kappa = 3. - 4.*nu;
+    double kappa = 3. - 4.*_nu;
 
     // Calculate x-displacement
-    return KI * (1. + nu)/E * std::sqrt(r/(2.*PI)) * (kappa - x/r) * std::cos(theta/2.);
+    return _KI * (1. + _nu)/_E * std::sqrt(r/(2.*PI)) * (kappa - x/r) * std::cos(theta/2.);
+}
+
+void LayeredSurfingBC_dispX::readDataFrom( FILE* fp )
+{
+    _E = getRealInputFrom(fp, "Failed to read value of Young's modulus from input file!", _name);
+    _nu = getRealInputFrom(fp, "Failed to read value of Poisson ratio from input file!", _name);
+    _KI = getRealInputFrom(fp, "Failed to read value of KI stress intensity factor from input file!", _name);
 }
