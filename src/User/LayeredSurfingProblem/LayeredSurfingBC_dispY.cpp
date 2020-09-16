@@ -53,7 +53,7 @@ double LayeredSurfingBC_dispY::at( const RealVector& coor, const TimeData& time 
         theta = -theta;
 
     // Stress intensity factor
-    double KI = KI = std::sqrt(E*Gc/(1.-nu*nu));
+    double KI = std::sqrt(E*Gc);
 
     // Kolosov constant for plane strain
     double kappa = 3. - 4.*nu;
