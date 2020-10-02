@@ -40,19 +40,19 @@ registerBroomstyxObject(OutputWriter, Gmsh)
 Gmsh::Gmsh()
 {
     // Initialize counters
-    m_writeCounter = 0;
+    _writeCounter = 0;
     
-    m_nodeDataScalars = 0;
-    m_nodeDataVectors = 0;
-    m_nodeDataTensors = 0;
+    _nodeDataScalars = 0;
+    _nodeDataVectors = 0;
+    _nodeDataTensors = 0;
     
-    m_elemDataScalars = 0;
-    m_elemDataVectors = 0;
-    m_elemDataTensors = 0;
+    _elemDataScalars = 0;
+    _elemDataVectors = 0;
+    _elemDataTensors = 0;
     
-    m_elemNodeDataScalars = 0;
-    m_elemNodeDataVectors = 0;
-    m_elemNodeDataTensors = 0;
+    _elemNodeDataScalars = 0;
+    _elemNodeDataVectors = 0;
+    _elemNodeDataTensors = 0;
 }
 
 // Destructor
@@ -73,121 +73,121 @@ void Gmsh::readDataFrom( FILE *fp )
     
     // Output filename
     verifyDeclaration(fp, key = "FILENAME", src);
-    m_outputFilename = getStringInputFrom(fp, "Failed to read Gmsh output filename from input file!", src);
+    _outputFilename = getStringInputFrom(fp, "Failed to read Gmsh output filename from input file!", src);
     
     // Output style
     verifyDeclaration(fp, key = "OUTPUT_STYLE", src);
     str = getStringInputFrom(fp, "Failed to read Gmsh output style (binary/ascii) from input file!", src);
     if ( str == "binary" )
-        m_isBinary = true;
+        _isBinary = true;
     else if ( str == "ascii" )
-        m_isBinary = false;
+        _isBinary = false;
     else
         throw std::runtime_error("Invalid output style specification '" + str + "' encountered in input file!"
                 + std::string("\nValid options: 'binary' or 'ascii'\nSource: ") + src);
     
     // Node data
     verifyDeclaration(fp, key = "NODE_DATA", src);
-    m_nNodeData = getIntegerInputFrom(fp, "Failed to read number of node data output from input file!", src);    
-    m_nodeData.assign(m_nNodeData, OutputData());
+    _nNodeData = getIntegerInputFrom(fp, "Failed to read number of node data output from input file!", src);    
+    _nodeData.assign(_nNodeData, OutputData());
     
-    for ( int i = 0; i < m_nNodeData; i++)
+    for ( int i = 0; i < _nNodeData; i++)
     {
         str = getStringInputFrom(fp, "Failed to read node data type from input file!", src);
         if ( str == "SCALAR" )
         {
-            m_nodeData[i].dataType = scalar;
-            m_nodeData[i].field.assign(1, 0);
+            _nodeData[i].dataType = scalar;
+            _nodeData[i].field.assign(1, 0);
         }
         else if ( str == "VECTOR" )
         {
-            m_nodeData[i].dataType = vector;
-            m_nodeData[i].field.assign(3, 0);
+            _nodeData[i].dataType = vector;
+            _nodeData[i].field.assign(3, 0);
         }
         else if ( str == "TENSOR" )
         {
-            m_nodeData[i].dataType = tensor;
-            m_nodeData[i].field.assign(9, 0);
+            _nodeData[i].dataType = tensor;
+            _nodeData[i].field.assign(9, 0);
         }
         else
             throw std::runtime_error("Invalid point data type '" + str + "' encountered in input file!\nSource: " + src);
         
         // Data name to use in Gmsh
-        m_nodeData[i].name = getStringInputFrom(fp, "Failed reading node data label from input file!", src);
+        _nodeData[i].name = getStringInputFrom(fp, "Failed reading node data label from input file!", src);
         
         // Nodal fields comprising components of output data
-        for (int j = 0; j < (int)m_nodeData[i].field.size(); j++)
-            m_nodeData[i].field[j] = getIntegerInputFrom(fp, "Failed to read nodal field number for point data from input file.", src);
+        for (int j = 0; j < (int)_nodeData[i].field.size(); j++)
+            _nodeData[i].field[j] = getIntegerInputFrom(fp, "Failed to read nodal field number for point data from input file.", src);
     }
     
     // Element data
     verifyDeclaration(fp, key = "ELEMENT_DATA", src);
-    m_nElemData = getIntegerInputFrom(fp, "Failed reading number of cell data output from input file!", src);
+    _nElemData = getIntegerInputFrom(fp, "Failed reading number of cell data output from input file!", src);
     
-    m_elemData.assign(m_nElemData, OutputData());
+    _elemData.assign(_nElemData, OutputData());
     
-    for ( int i = 0; i < m_nElemData; i++)
+    for ( int i = 0; i < _nElemData; i++)
     {
         str = getStringInputFrom(fp, "Failed reading element data type from input file!", src);
         if ( str == "SCALAR" )
         {
-            m_elemData[i].dataType = scalar;
-            m_elemData[i].field.assign(1, 0);
+            _elemData[i].dataType = scalar;
+            _elemData[i].field.assign(1, 0);
         }
         else if ( str == "VECTOR" )
         {
-            m_elemData[i].dataType = vector;
-            m_elemData[i].field.assign(3, 0);
+            _elemData[i].dataType = vector;
+            _elemData[i].field.assign(3, 0);
         }
         else if ( str == "TENSOR" )
         {
-            m_elemData[i].dataType = tensor;
-            m_elemData[i].field.assign(9, 0);
+            _elemData[i].dataType = tensor;
+            _elemData[i].field.assign(9, 0);
         }
         else
             throw std::runtime_error("Invalid element data type '" + str + "' encountered in input file!\nSource: " + src);
         
         // Data name to use in Paraview
-        m_elemData[i].name = getStringInputFrom(fp, "Failed reading cell data label from input file!", src);
+        _elemData[i].name = getStringInputFrom(fp, "Failed reading cell data label from input file!", src);
         
         // Element fields comprising components of output data
-        for (int j = 0; j < (int)m_elemData[i].field.size(); j++)
-            m_elemData[i].field[j] = getIntegerInputFrom(fp, "Failed to read cell field number for element data from input file!", src);
+        for (int j = 0; j < (int)_elemData[i].field.size(); j++)
+            _elemData[i].field[j] = getIntegerInputFrom(fp, "Failed to read cell field number for element data from input file!", src);
     }
 
     // Element node data
     verifyDeclaration(fp, key = "ELEMENT_NODE_DATA", src);
-    m_nElemNodeData = getIntegerInputFrom(fp, "Failed reading number of cell data output from input file!", src);
+    _nElemNodeData = getIntegerInputFrom(fp, "Failed reading number of cell data output from input file!", src);
     
-    m_elemNodeData.assign(m_nElemNodeData, OutputData());
+    _elemNodeData.assign(_nElemNodeData, OutputData());
     
-    for ( int i = 0; i < m_nElemNodeData; i++)
+    for ( int i = 0; i < _nElemNodeData; i++)
     {
         str = getStringInputFrom(fp, "Failed reading element node data type from input file!", src);
         if ( str == "SCALAR" )
         {
-            m_elemNodeData[i].dataType = scalar;
-            m_elemNodeData[i].field.assign(1, 0);
+            _elemNodeData[i].dataType = scalar;
+            _elemNodeData[i].field.assign(1, 0);
         }
         else if ( str == "VECTOR" )
         {
-            m_elemNodeData[i].dataType = vector;
-            m_elemNodeData[i].field.assign(3, 0);
+            _elemNodeData[i].dataType = vector;
+            _elemNodeData[i].field.assign(3, 0);
         }
         else if ( str == "TENSOR" )
         {
-            m_elemNodeData[i].dataType = tensor;
-            m_elemNodeData[i].field.assign(9, 0);
+            _elemNodeData[i].dataType = tensor;
+            _elemNodeData[i].field.assign(9, 0);
         }
         else
             throw std::runtime_error("Invalid element node data type '" + str + "' encountered in input file!\nSource: " + src);
         
         // Data name to use in Gmsh
-        m_elemNodeData[i].name = getStringInputFrom(fp, "Failed reading element node data label from input file!", src);
+        _elemNodeData[i].name = getStringInputFrom(fp, "Failed reading element node data label from input file!", src);
         
         // Element fields comprising components of output data
-        for (int j = 0; j < (int)m_elemNodeData[i].field.size(); j++)
-            m_elemNodeData[i].field[j] = getIntegerInputFrom(fp, "Failed to read cell field number for element node data from input file!", src);
+        for (int j = 0; j < (int)_elemNodeData[i].field.size(); j++)
+            _elemNodeData[i].field[j] = getIntegerInputFrom(fp, "Failed to read cell field number for element node data from input file!", src);
     }
 }
 
@@ -196,7 +196,7 @@ void Gmsh::writeOutput( double time )
     // build complete string for vtu filename
     std::string mshFilename;
     
-    mshFilename = "./Output_Gmsh/" + m_outputFilename + "_" + std::to_string(m_writeCounter) + ".msh";
+    mshFilename = "./Output_Gmsh/" + _outputFilename + "_" + std::to_string(_writeCounter) + ".msh";
     
     // Write .msh file
     std::printf("\n  %-40s", "Writing results to file ...");
@@ -210,7 +210,7 @@ void Gmsh::writeOutput( double time )
     // Mesh format
     std::fprintf(mshFile, "$MeshFormat");
     std::fprintf(mshFile, "\n2.2 ");
-    if ( m_isBinary )
+    if ( _isBinary )
         std::fprintf(mshFile, "1 ");
     else
         std::fprintf(mshFile, "0 ");
@@ -275,21 +275,21 @@ void Gmsh::writeOutput( double time )
     std::fprintf(mshFile, "$EndElements\n");
     
     // A. Node Data
-    if ( m_nNodeData > 0 )
+    if ( _nNodeData > 0 )
     {
-        for ( int i = 0; i < m_nNodeData; i++)
+        for ( int i = 0; i < _nNodeData; i++)
         {
             std::fprintf(mshFile, "$NodeData\n");
             // String tags
-            std::fprintf(mshFile, "1\n\"%s\"\n", m_nodeData[i].name.c_str());
+            std::fprintf(mshFile, "1\n\"%s\"\n", _nodeData[i].name.c_str());
             
             // Real tags
             std::fprintf(mshFile, "1\n%.15e\n", time);
             
             // Integer tags
-            std::fprintf(mshFile, "3\n%d\n", m_writeCounter);
+            std::fprintf(mshFile, "3\n%d\n", _writeCounter);
             int nComp;
-            switch ( m_nodeData[i].dataType )
+            switch ( _nodeData[i].dataType )
             {
                 case scalar:
                     nComp = 1;
@@ -309,27 +309,27 @@ void Gmsh::writeOutput( double time )
                 std::fprintf(mshFile, "%d ", j+1);
                 Node* curNode = analysisModel().domainManager().giveNode(j);
                 
-                if ( m_nodeData[i].dataType == scalar )
-                    std::fprintf(mshFile, "%25.15e\n", analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[0]));
-                else if ( m_nodeData[i].dataType == vector )
+                if ( _nodeData[i].dataType == scalar )
+                    std::fprintf(mshFile, "%25.15e\n", analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[0]));
+                else if ( _nodeData[i].dataType == vector )
                 {
                     std::fprintf(mshFile, "%25.15e%25.15e%25.15e\n",
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[0]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[1]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[2]));
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[0]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[1]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[2]));
                 }
                 else
                 {
                     std::fprintf(mshFile, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n",
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[0]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[1]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[2]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[3]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[4]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[5]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[6]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[7]),
-                            analysisModel().domainManager().giveFieldValueAt(curNode, m_nodeData[i].field[8]));
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[0]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[1]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[2]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[3]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[4]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[5]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[6]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[7]),
+                            analysisModel().domainManager().giveFieldValueAt(curNode, _nodeData[i].field[8]));
                 }
             }
             std::fprintf(mshFile, "$EndNodeData\n");
@@ -337,21 +337,21 @@ void Gmsh::writeOutput( double time )
     }
     
     // B. Element Data
-    if ( m_nElemData > 0 )
+    if ( _nElemData > 0 )
     {
-        for ( int i = 0; i < m_nElemData; i++)
+        for ( int i = 0; i < _nElemData; i++)
         {
             std::fprintf(mshFile, "$ElementData\n");
             // String tags
-            std::fprintf(mshFile, "1\n\"%s\"\n", m_elemData[i].name.c_str());
+            std::fprintf(mshFile, "1\n\"%s\"\n", _elemData[i].name.c_str());
             
             // Real tags
             std::fprintf(mshFile, "1\n%.15e\n", time);
             
             // Integer tags
-            std::fprintf(mshFile, "3\n%d\n", m_writeCounter);
+            std::fprintf(mshFile, "3\n%d\n", _writeCounter);
             int nComp;
-            switch ( m_elemData[i].dataType )
+            switch ( _elemData[i].dataType )
             {
                 case scalar:
                     nComp = 1;
@@ -373,27 +373,27 @@ void Gmsh::writeOutput( double time )
                 int label = analysisModel().domainManager().giveLabelOf(curCell);
                 Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
                 
-                if ( m_elemData[i].dataType == scalar )
-                    std::fprintf(mshFile, "%25.15e\n", numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[0]));
-                else if ( m_elemData[i].dataType == vector )
+                if ( _elemData[i].dataType == scalar )
+                    std::fprintf(mshFile, "%25.15e\n", numerics->giveCellFieldValueAt(curCell, _elemData[i].field[0]));
+                else if ( _elemData[i].dataType == vector )
                 {
                     std::fprintf(mshFile, "%25.15e%25.15e%25.15e\n",
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[0]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[1]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[2]));
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[0]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[1]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[2]));
                 }
                 else
                 {
                     std::fprintf(mshFile, "%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n",
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[0]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[1]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[2]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[3]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[4]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[5]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[6]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[7]),
-                            numerics->giveCellFieldValueAt(curCell, m_elemData[i].field[8]));
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[0]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[1]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[2]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[3]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[4]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[5]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[6]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[7]),
+                            numerics->giveCellFieldValueAt(curCell, _elemData[i].field[8]));
                 }
             }
             std::fprintf(mshFile, "$EndElementData\n");
@@ -401,21 +401,21 @@ void Gmsh::writeOutput( double time )
     }
     
     // C. Element Node Data
-    if ( m_nElemNodeData > 0 )
+    if ( _nElemNodeData > 0 )
     {
-        for ( int i = 0; i < m_nElemNodeData; i++)
+        for ( int i = 0; i < _nElemNodeData; i++)
         {
             std::fprintf(mshFile, "$ElementNodeData\n");
             // String tags
-            std::fprintf(mshFile, "1\n\"%s\"\n", m_elemNodeData[i].name.c_str());
+            std::fprintf(mshFile, "1\n\"%s\"\n", _elemNodeData[i].name.c_str());
             
             // Real tags
             std::fprintf(mshFile, "1\n%.15e\n", time);
             
             // Integer tags
-            std::fprintf(mshFile, "3\n%d\n", m_writeCounter);
+            std::fprintf(mshFile, "3\n%d\n", _writeCounter);
             int nComp;
-            switch ( m_elemNodeData[i].dataType )
+            switch ( _elemNodeData[i].dataType )
             {
                 case scalar:
                     nComp = 1;
@@ -440,20 +440,20 @@ void Gmsh::writeOutput( double time )
                 int label = analysisModel().domainManager().giveLabelOf(curCell);
                 Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
                 
-                if ( m_elemNodeData[i].dataType == scalar )
+                if ( _elemNodeData[i].dataType == scalar )
                 {
-                    RealVector cellNodeVals = numerics->giveCellNodeFieldValuesAt(curCell, m_elemNodeData[i].field[0]);
+                    RealVector cellNodeVals = numerics->giveCellNodeFieldValuesAt(curCell, _elemNodeData[i].field[0]);
                     
                     for (  int k = 0; k < nCellNodes; k++ )
                         std::fprintf(mshFile, "%25.15e", cellNodeVals(k));
                     std::fprintf(mshFile, "\n");
                 }
-                else if ( m_elemNodeData[i].dataType == vector )
+                else if ( _elemNodeData[i].dataType == vector )
                 {
                     std::vector<RealVector> cellNodeVals;
                     cellNodeVals.assign(3, RealVector());
                     for (  int p = 0; p < 3; p++ )
-                        cellNodeVals[p] = numerics->giveCellNodeFieldValuesAt(curCell, m_elemNodeData[i].field[p]);
+                        cellNodeVals[p] = numerics->giveCellNodeFieldValuesAt(curCell, _elemNodeData[i].field[p]);
                     
                     for (  int k = 0; k < nCellNodes; k++ )
                         for ( int p = 0; p < 3; p++ )
@@ -465,7 +465,7 @@ void Gmsh::writeOutput( double time )
                     std::vector<RealVector> cellNodeVals;
                     cellNodeVals.assign(9, RealVector());
                     for (  int p = 0; p < 9; p++ )
-                        cellNodeVals[p] = numerics->giveCellNodeFieldValuesAt(curCell, m_elemNodeData[i].field[p]);
+                        cellNodeVals[p] = numerics->giveCellNodeFieldValuesAt(curCell, _elemNodeData[i].field[p]);
                     
                     for (  int k = 0; k < nCellNodes; k++ )
                         for ( int p = 0; p < 9; p++ )
@@ -481,7 +481,7 @@ void Gmsh::writeOutput( double time )
     std::fclose(mshFile);
     
     // Increment file count
-    m_writeCounter += 1;
+    _writeCounter += 1;
 
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;

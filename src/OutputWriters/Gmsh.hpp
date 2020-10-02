@@ -50,30 +50,30 @@ namespace broomstyx
             std::string      name;
         };
         
-        std::string m_outputFilename;
+        std::string _outputFilename;
         
-        bool m_isBinary;
+        bool _isBinary;
         
-        int m_writeCounter;
+        int _writeCounter;
 
-        int m_nNodeData;
-        int m_nodeDataScalars;
-        int m_nodeDataVectors;
-        int m_nodeDataTensors;
+        int _nNodeData;
+        int _nodeDataScalars;
+        int _nodeDataVectors;
+        int _nodeDataTensors;
 
-        int m_nElemData;
-        int m_elemDataScalars;
-        int m_elemDataVectors;
-        int m_elemDataTensors;
+        int _nElemData;
+        int _elemDataScalars;
+        int _elemDataVectors;
+        int _elemDataTensors;
 
-        int m_nElemNodeData;
-        int m_elemNodeDataScalars;
-        int m_elemNodeDataVectors;
-        int m_elemNodeDataTensors;
+        int _nElemNodeData;
+        int _elemNodeDataScalars;
+        int _elemNodeDataVectors;
+        int _elemNodeDataTensors;
 
-        std::vector<OutputData> m_nodeData;
-        std::vector<OutputData> m_elemData;
-        std::vector<OutputData> m_elemNodeData;
+        std::vector<OutputData> _nodeData;
+        std::vector<OutputData> _elemData;
+        std::vector<OutputData> _elemNodeData;
         
         int giveElementType( int dim, int nNodes );
     };
