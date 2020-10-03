@@ -47,14 +47,6 @@ Paraview::Paraview()
     // Initialize counters
     _vtuFileCount = 0;
     _writeCounter = 0;
-    
-    // _nPointScalars = 0;
-    // _nPointVectors = 0;
-    // _nPointTensors = 0;
-    
-    // _nCellScalars = 0;
-    // _nCellVectors = 0;
-    // _nCellTensors = 0;
 }  
 
 // Destructor
@@ -417,8 +409,6 @@ void Paraview::writeOutput( double time )
         }
         std::fprintf(vtuFile, "\t\t\t</CellData>\n");
     }
-
-            
     
     std::fprintf(vtuFile, "\t\t</Piece>\n");
     std::fprintf(vtuFile, "\t</UnstructuredGrid>\n");
