@@ -41,7 +41,7 @@ namespace broomstyx
         void writeOutput( double time ) override;
 
     private:
-        enum DataType { scalar, vector, tensor, physTag, cellNodeScalar, cellNodeVector, cellNodeTensor };
+        enum DataType { scalar, vector, tensor, physTag, cnScalar, cnVector, cnTensor };
         
         struct OutputData
         {

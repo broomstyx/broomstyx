@@ -111,6 +111,21 @@ void Paraview_DD::readDataFrom(FILE* fp)
             _pointData[i].dataType = tensor;
             _pointData[i].field.assign(6, 0);
         }
+        else if ( str == "CN_SCALAR" )
+        {
+            _pointData[i].dataType = cnScalar;
+            _pointData[i].field.assign(1, 0);
+        }
+        else if ( str == "CN_VECTOR" )
+        {
+            _pointData[i].dataType = cnVector;
+            _pointData[i].field.assign(3, 0);
+        }
+        else if ( str == "CN_TENSOR" )
+        {
+            _pointData[i].dataType = cnTensor;
+            _pointData[i].field.assign(6, 0);
+        }
         else
             throw std::runtime_error("Invalid point data type '" + str + "' encountered in input file!\nSource: " + src);
         
@@ -262,6 +277,8 @@ void Paraview_DD::writeOutput( double time )
             cellType = 5;
         else if ( dim == 3 && nCellNodes == 4 )
             cellType = 10;
+        else if ( dim == 2 && nCellNodes == 6 )
+            cellType = 22;
         else
             throw std::runtime_error("Cells of dim = " + std::to_string(dim) + " and nNodes = " + std::to_string(nCellNodes) + " not yet programmed in Paraview output writer!");
         
@@ -340,6 +357,64 @@ void Paraview_DD::writeOutput( double time )
                                 analysisModel().domainManager().giveFieldValueAt(curCellNode[k], _pointData[i].field[4]),
                                 analysisModel().domainManager().giveFieldValueAt(curCellNode[k], _pointData[i].field[5]));
                     }
+                }
+                std::fprintf(vtuFile, "\t\t\t\t</DataArray>\n");
+            }
+            else if ( _pointData[i].dataType == cnScalar )
+            {
+                // discontinuous scalar data
+                std::fprintf(vtuFile, "\t\t\t\t<DataArray type=\"Float32");
+                std::fprintf(vtuFile, "\" Name=\"%s\" format=\"ascii\">\n", _pointData[i].name.c_str());
+                for ( int j = 0; j < nCells; j++)
+                {
+                    Cell* curCell = analysisModel().domainManager().giveDomainCell(j);
+                    Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+                    RealVector cellNodeVals = numerics->giveCellNodeFieldValuesAt(curCell, _pointData[i].field[0]);
+                    
+                    for ( int k = 0; k < cellNodeVals.dim(); k++ )
+                        std::fprintf(vtuFile, "\t\t\t\t\t%25.15e\n", cellNodeVals(k));
+                }
+                std::fprintf(vtuFile, "\t\t\t\t</DataArray>\n");
+            }
+            else if ( _pointData[i].dataType == cnVector )
+            {
+                // discontinuous scalar data
+                std::fprintf(vtuFile, "\t\t\t\t<DataArray type=\"Float32");
+                std::fprintf(vtuFile, "\" Name=\"%s\" format=\"ascii\">\n", _pointData[i].name.c_str());
+                for ( int j = 0; j < nCells; j++)
+                {
+                    Cell* curCell = analysisModel().domainManager().giveDomainCell(j);
+                    Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+                    std::vector<RealVector> cellNodeVals;
+                    cellNodeVals.assign(3, RealVector());
+                    for (  int p = 0; p < 3; p++ )
+                        cellNodeVals[p] = numerics->giveCellNodeFieldValuesAt(curCell, _pointData[i].field[p]);
+            
+                    for (  int k = 0; k < cellNodeVals[0].dim(); k++ )
+                        std::fprintf(vtuFile, "\t\t\t\t\t%25.15e%25.15e%25.15e\n", 
+                                cellNodeVals[0](k), cellNodeVals[1](k), cellNodeVals[2](k));
+                }
+                std::fprintf(vtuFile, "\t\t\t\t</DataArray>\n");
+            }
+            else if ( _pointData[i].dataType == cnTensor )
+            {
+                // Tensor data
+                std::fprintf(vtuFile, "\t\t\t\t<DataArray type=\"Float32\" ");
+                std::fprintf(vtuFile, "NumberOfComponents=\"6\" Name=");
+                std::fprintf(vtuFile, "\"%s\" format=\"ascii\">\n", _pointData[i].name.c_str());
+                for ( int j = 0; j < nCells; j++)
+                {
+                    Cell* curCell = analysisModel().domainManager().giveDomainCell(j);
+                    Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+                    std::vector<RealVector> cellNodeVals;
+                    cellNodeVals.assign(6, RealVector());
+                    for (  int p = 0; p < 6; p++ )
+                        cellNodeVals[p] = numerics->giveCellNodeFieldValuesAt(curCell, _pointData[i].field[p]);
+                    
+                    for ( int k = 0; k < cellNodeVals[0].dim(); k++ )
+                        std::fprintf(vtuFile, "\t\t\t\t\t%25.15e%25.15e%25.15e%25.15e%25.15e%25.15e\n",
+                                cellNodeVals[0](k), cellNodeVals[1](k), cellNodeVals[2](k), 
+                                cellNodeVals[3](k), cellNodeVals[4](k), cellNodeVals[5](k));
                 }
                 std::fprintf(vtuFile, "\t\t\t\t</DataArray>\n");
             }
