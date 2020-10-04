@@ -216,6 +216,27 @@ std::vector<int> GmshReader::giveFaceNodeNumbersForElementType( int elType, int 
                     throw std::runtime_error("\n");
             }
             break;
+        case 4: // 4-node tetrahedron
+            switch ( face )
+            {
+                case 0:
+                    faceNodeNum = {0, 3, 2};
+                    break;
+                case 1:
+                    faceNodeNum = {0, 1, 3};
+                    break;
+                case 2:
+                    faceNodeNum = {0, 2, 1};
+                    break;
+                case 3:
+                    faceNodeNum = {1, 2, 3};
+                    break;
+                default:
+                    std::printf("\nERROR: Unrecognized face number '%d' for element type '%d'!", face, elType );
+                    std::printf("\nSource: GmshReader (MeshReader)\n");
+                    throw std::runtime_error("\n");
+            }
+            break;
         case 9: // 6-node triangle
             switch ( face )
             {
@@ -234,20 +255,20 @@ std::vector<int> GmshReader::giveFaceNodeNumbersForElementType( int elType, int 
                     throw std::runtime_error("\n");
             }
             break;
-        case 4: // 4-node tetrahedron
+        case 16: // 8-node quadrilateral
             switch ( face )
             {
                 case 0:
-                    faceNodeNum = {0, 3, 2};
+                    faceNodeNum = {0, 4, 1};
                     break;
                 case 1:
-                    faceNodeNum = {0, 1, 3};
+                    faceNodeNum = {1, 5, 2};
                     break;
                 case 2:
-                    faceNodeNum = {0, 2, 1};
+                    faceNodeNum = {2, 6, 3};
                     break;
                 case 3:
-                    faceNodeNum = {1, 2, 3};
+                    faceNodeNum = {3, 7, 0};
                     break;
                 default:
                     std::printf("\nERROR: Unrecognized face number '%d' for element type '%d'!", face, elType );
@@ -271,17 +292,21 @@ int GmshReader::giveNumberOfFacesForElementType(int elType)
     switch ( elType)
     {
         case 2: // 3-node triangle
-        case 9: // 6-node triangle
             nFaces = 3;
             break;
         case 4: // 4-node tetrahedron
+            nFaces = 4;
+            break;
+        case 9: // 6-node triangle
+            nFaces = 3;
+            break;
+        case 16: // 8-node quadrilateral
             nFaces = 4;
             break;
         default:
             std::printf("\nERROR: Cannot give number of faces for element type '%d'!", elType);
             std::printf("\nSource: GmshReader\n");
             throw std::runtime_error("\n");
-            
     }
     
     return nFaces;

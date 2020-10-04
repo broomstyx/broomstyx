@@ -279,6 +279,8 @@ void Paraview_DD::writeOutput( double time )
             cellType = 10;
         else if ( dim == 2 && nCellNodes == 6 )
             cellType = 22;
+        else if ( dim == 2 && nCellNodes == 8 )
+            cellType = 23;
         else
             throw std::runtime_error("Cells of dim = " + std::to_string(dim) + " and nNodes = " + std::to_string(nCellNodes) + " not yet programmed in Paraview output writer!");
         
