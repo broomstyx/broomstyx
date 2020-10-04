@@ -36,7 +36,7 @@
 #include "IntegrationRules/Legendre_1D.hpp"
 #include "IntegrationRules/Legendre_2D_Quad.hpp"
 #include "BasisFunctions/Line_P2.hpp"
-#include "BasisFunctions/Quadrilateral_S2.hpp"
+#include "BasisFunctions/Quadrilateral_P2_3.hpp"
 
 using namespace broomstyx;
 
@@ -83,7 +83,7 @@ PlaneStrain_Fe_Quad8::PlaneStrain_Fe_Quad8()
     
     _name = "PlaneStrain_Fe_Quad8";
     
-    _basisFunction = new Quadrilateral_S2();
+    _basisFunction = new Quadrilateral_P2_3();
     _edgeBasisFunction = new Line_P2();
     _integrationRule = new Legendre_2D_Quad(4);
     _edgeIntegrationRule = new Legendre_1D(2);
