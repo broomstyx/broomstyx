@@ -333,6 +333,16 @@ void DomainManager::mustConstructFaces()
     _constructFaces = true;
 }
 // ----------------------------------------------------------------------------
+void DomainManager::setCoordinatesOf( Node* targetNode, const RealVector& coor )
+{
+#ifdef _OPENMP
+#pragma omp critical (NodalCoordinateModification)
+#endif
+    {
+        targetNode->_coordinates = coor;
+    }
+}
+// ----------------------------------------------------------------------------
 void DomainManager::setFieldValueAt( Node* targetNode, int fieldNum, double val )
 {
     targetNode->_fieldVal( fieldNum - 1 ) = val;
@@ -815,6 +825,22 @@ void DomainManager::removeAllCellConstraints()
         Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(_domCell[i]->_label);
         numerics->removeConstraintsOn(_domCell[i]);
     }
+}
+// ----------------------------------------------------------------------------
+void DomainManager::reorderNodesOf( Cell* targetCell, std::vector<int>& reordering )
+{
+    int nNodes = (int)reordering.size();
+    std::vector<Node*> reorderedNode(nNodes, nullptr);
+    if ( nNodes != (int)targetCell->_node.size() )
+        throw std::runtime_error("ERROR: Number of original and reordered cell nodes do not match!\nSource: DomainManager");
+    else
+        for ( int i = 0; i < nNodes; i++ )
+            reorderedNode[i] = targetCell->_node[reordering[i]];
+
+    targetCell->_node = reorderedNode; 
+
+    // Note: Implementation is incomplete in the sense that boundary associations, etc. also have to be
+    // updated (which is currently node done).
 }
 // ----------------------------------------------------------------------------
 void DomainManager::reportDetailedStatus()

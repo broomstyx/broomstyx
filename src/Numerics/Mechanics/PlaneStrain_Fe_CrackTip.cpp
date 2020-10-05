@@ -32,6 +32,7 @@
 #include "Materials/Material.hpp"
 #include "User/UserFunction.hpp"
 #include "Util/linearAlgebra.hpp"
+#include "Util/readOperations.hpp"
 
 #include "IntegrationRules/Legendre_1D.hpp"
 #include "IntegrationRules/Legendre_2D_Quad.hpp"
@@ -665,6 +666,78 @@ void PlaneStrain_Fe_CrackTip::initializeNumericsAt( Cell* targetCell )
         cns->_gp[i].coordinates = gpCoor[i];
         cns->_gp[i].weight = gpWt(i);
     }
+}
+// ---------------------------------------------------------------------------
+void PlaneStrain_Fe_CrackTip::performPreprocessingAt( Cell* targetCell, std::string directive )
+{
+    if ( directive == "ConfigureQuarterPointElements" )
+    {
+        // A. Find crack tip node
+        int crackTipPhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor(_crackTipLabel);
+
+        Node* crackTipNode;
+        bool crackTipFound = false;
+        int nBndCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
+        for ( int i = 0; i < nBndCells; i++ )
+        {
+            Cell* curBndCell = analysisModel().domainManager().giveBoundaryCell(i);
+            if ( analysisModel().domainManager().giveLabelOf(curBndCell) == crackTipPhysNum )
+            {
+                if ( crackTipFound == true )
+                    throw std::runtime_error("ERROR: Multiple entities found for specified crack tip label!\nSource: " + _name);
+                else
+                {
+                    crackTipFound = true;
+                    std::vector<Node*> bndCellNode = analysisModel().domainManager().giveNodesOf(curBndCell);
+                    int nNodes = (int)bndCellNode.size();
+                    if ( nNodes != 1 )
+                        throw std::runtime_error("ERROR: Specified crack tip has more than one node!\nSource: " + _name);
+                    else
+                        crackTipNode = bndCellNode[0];
+                }
+            }
+        }
+        if ( !crackTipFound )
+            throw std::runtime_error("ERROR: Failed to find node corresponding to crack tip!\nSource: " + _name);
+
+        // B. Permute nodes of cell so that crack tip is 1st node in list
+        
+        std::vector<Node*> cellNode = analysisModel().domainManager().giveNodesOf(targetCell);
+        std::vector<int> reordering;
+        if ( crackTipNode == cellNode[0] )
+            reordering = {0, 1, 2, 3, 4, 5};
+        else if ( crackTipNode == cellNode[1] )
+            reordering = {1, 2, 0, 4, 5, 3};
+        else if ( crackTipNode == cellNode[2] )
+            reordering = {2, 0, 1, 5, 3, 4};
+        else
+            throw std::runtime_error("ERROR: Encountered invalid location of cracktip node in domain cell!\nSource: " + _name);
+        
+        analysisModel().domainManager().reorderNodesOf(targetCell, reordering);
+
+        // C. Move relevant midside nodes to quarter-point locations
+
+        cellNode = analysisModel().domainManager().giveNodesOf(targetCell);
+        RealVector coor0, coor1, coor2, coor3, coor5;
+        coor0 = analysisModel().domainManager().giveCoordinatesOf(cellNode[0]);
+        coor1 = analysisModel().domainManager().giveCoordinatesOf(cellNode[1]);
+        coor2 = analysisModel().domainManager().giveCoordinatesOf(cellNode[2]);
+
+        coor3 = coor0 + 0.25*(coor1 - coor0);
+        coor5 = coor0 + 0.25*(coor2 - coor0);
+
+        analysisModel().domainManager().setCoordinatesOf(cellNode[3], coor3);
+        analysisModel().domainManager().setCoordinatesOf(cellNode[5], coor5);
+    }
+    else
+        throw std::runtime_error("No preprocessing directive named '" 
+                + directive + "' has been programmed for numerics type '" + _name + "'!");
+}
+// ---------------------------------------------------------------------------
+void PlaneStrain_Fe_CrackTip::readAdditionalDataFrom( FILE* fp )
+{
+    verifyKeyword(fp, "CrackTip", _name);
+    _crackTipLabel = getStringInputFrom(fp, "Failed to read physical entity label for crack tip from input file!", _name);
 }
 // ---------------------------------------------------------------------------
 void PlaneStrain_Fe_CrackTip::setDofStagesAt( Cell* targetCell )

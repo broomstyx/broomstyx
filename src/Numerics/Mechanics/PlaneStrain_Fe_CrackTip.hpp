@@ -159,6 +159,8 @@ namespace broomstyx
         
         void initializeMaterialsAt( Cell* targetCell ) override;
         void initializeNumericsAt( Cell* targetCell ) override;
+        void performPreprocessingAt( Cell* targetCell, std::string directive );
+        void readAdditionalDataFrom( FILE* fp ) override;
         void setDofStagesAt( Cell* targetCell ) override;
 
     private:
@@ -168,7 +170,7 @@ namespace broomstyx
         IntegrationRule* _integrationRule;
         IntegrationRule* _edgeIntegrationRule;
 
-        Node* _crackTip;
+        std::string _crackTipLabel;
         RealMatrix _extrapolationMatrix;
         
         void formExtrapolationMatrix();

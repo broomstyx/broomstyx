@@ -78,6 +78,7 @@ namespace broomstyx
         void   makeNewNodeAt( RealVector& location );
         void   performNodalPostProcessing();
         void   readNumberOfFieldsPerNodeFrom( FILE* fp );
+        void   setCoordinatesOf( Node* targetNode, const RealVector& coor );
         void   setFieldValueAt( Node* targetNode, int fieldNum, double val );
         
         // Methods involving cell access
@@ -119,6 +120,7 @@ namespace broomstyx
         void  readNumberOfFieldsPerCellFrom( FILE* fp );
         void  readNumberOfFieldsPerFaceFrom( FILE* fp );
         void  removeAllCellConstraints();
+        void  reorderNodesOf( Cell* targetCell, std::vector<int>& reordering );
         void  reportDetailedStatus();
         void  reportStatus();
         void  setElementTypeOf( Cell* targetCell, int elemType );
