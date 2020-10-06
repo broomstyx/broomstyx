@@ -212,7 +212,14 @@ RealVector PlaneStrain_Fe_CrackTip::giveCellNodeFieldValuesAt( Cell* targetCell,
         std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "g_xy");
         g_xy = _extrapolationMatrix*gpVals;
         
-        nodeVals(0) = 0.5*(s_xx(0)*e_xx(0) + s_yy(0)*e_yy(0) + s_xy(0)*g_xy(0));
+        double s_xx0 = s_xx(0) + s_xx(3) + s_xx(7);
+        double e_xx0 = e_xx(0) + e_xx(3) + e_xx(7);
+        double s_yy0 = s_yy(0) + s_yy(3) + s_yy(7);
+        double e_yy0 = e_yy(0) + e_yy(3) + e_yy(7);
+        double s_xy0 = s_xy(0) + s_xy(3) + s_xy(7);
+        double g_xy0 = g_xy(0) + g_xy(3) + g_xy(7);
+
+        nodeVals(0) = 0.5*(s_xx0*e_xx0 + s_yy0*e_yy0 + s_xy0*g_xy0);
         nodeVals(1) = 0.5*(s_xx(1)*e_xx(1) + s_yy(1)*e_yy(1) + s_xy(1)*g_xy(1));
         nodeVals(2) = 0.5*(s_xx(2)*e_xx(2) + s_yy(2)*e_yy(2) + s_xy(2)*g_xy(2));
         nodeVals(3) = 0.5*(s_xx(4)*e_xx(4) + s_yy(4)*e_yy(4) + s_xy(4)*g_xy(4));
@@ -224,7 +231,7 @@ RealVector PlaneStrain_Fe_CrackTip::giveCellNodeFieldValuesAt( Cell* targetCell,
         std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, fieldTag);
         RealVector linVals = _extrapolationMatrix*gpVals;
         
-        nodeVals(0) = linVals(0);
+        nodeVals(0) = linVals(0) + linVals(3) + linVals(7);
         nodeVals(1) = linVals(1);
         nodeVals(2) = linVals(2);
         nodeVals(3) = linVals(4);
@@ -673,6 +680,7 @@ void PlaneStrain_Fe_CrackTip::performPreprocessingAt( Cell* targetCell, std::str
     if ( directive == "ConfigureQuarterPointElements" )
     {
         // A. Find crack tip node
+
         int crackTipPhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor(_crackTipLabel);
 
         Node* crackTipNode;
