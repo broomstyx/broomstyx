@@ -43,14 +43,14 @@ RealVector Quadrilateral_P2_4::giveBasisFunctionsAt( const RealVector& coor )
     RealVector ld_psi_eta = _ld_basis.giveBasisFunctionsAt(eta);
 
     RealVector psi({ld_psi_xi(0)*ld_psi_eta(0),
-                    ld_psi_xi(2)*ld_psi_eta(0),
-                    ld_psi_xi(2)*ld_psi_eta(2),
-                    ld_psi_xi(0)*ld_psi_eta(2),
                     ld_psi_xi(1)*ld_psi_eta(0),
-                    ld_psi_xi(2)*ld_psi_eta(1),
-                    ld_psi_xi(1)*ld_psi_eta(2),
+                    ld_psi_xi(1)*ld_psi_eta(1),
                     ld_psi_xi(0)*ld_psi_eta(1),
-                    ld_psi_xi(1)*ld_psi_eta(1)});
+                    ld_psi_xi(2)*ld_psi_eta(0),
+                    ld_psi_xi(1)*ld_psi_eta(2),
+                    ld_psi_xi(2)*ld_psi_eta(1),
+                    ld_psi_xi(0)*ld_psi_eta(2),
+                    ld_psi_xi(2)*ld_psi_eta(2)});
 
     return psi;
 }
@@ -69,24 +69,24 @@ std::vector<RealVector> Quadrilateral_P2_4::giveBasisFunctionDerivativesAt( cons
     std::vector<RealVector> ld_dpsi_eta = _ld_basis.giveBasisFunctionDerivativesAt(eta);
     
     dpsi[0] = {ld_dpsi_xi[0](0)*ld_psi_eta(0),
-               ld_dpsi_xi[0](2)*ld_psi_eta(0),
-               ld_dpsi_xi[0](2)*ld_psi_eta(2),
-               ld_dpsi_xi[0](0)*ld_psi_eta(2),
                ld_dpsi_xi[0](1)*ld_psi_eta(0),
-               ld_dpsi_xi[0](2)*ld_psi_eta(1),
-               ld_dpsi_xi[0](1)*ld_psi_eta(2),
+               ld_dpsi_xi[0](1)*ld_psi_eta(1),
                ld_dpsi_xi[0](0)*ld_psi_eta(1),
-               ld_dpsi_xi[0](1)*ld_psi_eta(1)};
+               ld_dpsi_xi[0](2)*ld_psi_eta(0),
+               ld_dpsi_xi[0](1)*ld_psi_eta(2),
+               ld_dpsi_xi[0](2)*ld_psi_eta(1),
+               ld_dpsi_xi[0](0)*ld_psi_eta(2),
+               ld_dpsi_xi[0](2)*ld_psi_eta(2)};
 
     dpsi[1] = {ld_psi_xi(0)*ld_dpsi_eta[0](0),
-               ld_psi_xi(2)*ld_dpsi_eta[0](0),
-               ld_psi_xi(2)*ld_dpsi_eta[0](2),
-               ld_psi_xi(0)*ld_dpsi_eta[0](2),
                ld_psi_xi(1)*ld_dpsi_eta[0](0),
-               ld_psi_xi(2)*ld_dpsi_eta[0](1),
-               ld_psi_xi(1)*ld_dpsi_eta[0](2),
+               ld_psi_xi(1)*ld_dpsi_eta[0](1),
                ld_psi_xi(0)*ld_dpsi_eta[0](1),
-               ld_psi_xi(1)*ld_dpsi_eta[0](1)};
+               ld_psi_xi(2)*ld_dpsi_eta[0](0),
+               ld_psi_xi(1)*ld_dpsi_eta[0](2),
+               ld_psi_xi(2)*ld_dpsi_eta[0](1),
+               ld_psi_xi(0)*ld_dpsi_eta[0](2),
+               ld_psi_xi(2)*ld_dpsi_eta[0](2)};
     
     return dpsi;
 }
