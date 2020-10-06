@@ -38,36 +38,36 @@ Legendre_2D_Quad::giveIntegrationPointsAndWeights()
     RealVector gpWt(_nIntegrationPoints);
 
     // 2D integration rules are derived from appropriate lower-dimensional (1D) rules
-    int _nIntegrationPoints_1d;
+    int nIntegrationPoints_1d;
 
     switch (_nIntegrationPoints)
     {
         case 4:
-            _nIntegrationPoints_1d = 2;
+            nIntegrationPoints_1d = 2;
             break;
         case 9:
-            _nIntegrationPoints_1d = 3;
+            nIntegrationPoints_1d = 3;
             break;
         case 16:
-            _nIntegrationPoints_1d = 4;
+            nIntegrationPoints_1d = 4;
             break;
         case 25:
-            _nIntegrationPoints_1d = 5;
+            nIntegrationPoints_1d = 5;
             break;
         default:
             throw std::runtime_error("Invalid number of Gauss points specified for 'Legendre_2D_Quad'!");
     }
 
-    Legendre_1D integRule_1d(_nIntegrationPoints_1d);
+    Legendre_1D integRule_1d(nIntegrationPoints_1d);
     std::vector<RealVector> gpLoc_1d;
     RealVector gpWt_1d;
 
     std::tie(gpLoc_1d, gpWt_1d) = integRule_1d.giveIntegrationPointsAndWeights();
-    for ( int i = 0; i < _nIntegrationPoints_1d; i++ )
-        for ( int j = 0; j < _nIntegrationPoints_1d; j++ )
+    for ( int i = 0; i < nIntegrationPoints_1d; i++ )
+        for ( int j = 0; j < nIntegrationPoints_1d; j++ )
         {
-            gpLoc[2*i + j] = {gpLoc_1d[i](0), gpLoc_1d[j](0)};
-            gpWt(2*i + j) = gpWt_1d(i)*gpWt_1d(j);
+            gpLoc[nIntegrationPoints_1d*i + j] = {gpLoc_1d[i](0), gpLoc_1d[j](0)};
+            gpWt(nIntegrationPoints_1d*i + j) = gpWt_1d(i)*gpWt_1d(j);
         }
     
     return std::make_tuple(gpLoc, gpWt);
