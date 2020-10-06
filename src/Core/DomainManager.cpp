@@ -157,7 +157,7 @@ int DomainManager::givePhysicalEntityNumberFor( std::string name )
     }
     
     if ( !success )
-        throw std::runtime_error("Failed to find physical entity number corresponding to '" + name + "'!\nSource: MeshReader");
+        throw std::runtime_error("Failed to find physical entity number corresponding to '" + name + "'!\nSource: DomainManager");
     
     return physEntNumber;
 }
