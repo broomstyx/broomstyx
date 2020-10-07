@@ -73,15 +73,15 @@ double SIF_Elastic_QPE::computeOutput()
     else
         k = 3. - 4.*_nu;
     
-    double coef = _E/(6.*(1. + _nu)*(1. + k))*std::sqrt(2*PI/_h);
-    K_I = coef*(8.*(disp_tn[0][0] - disp_tn[1][0]) - (disp_tn[2][0] - disp_tn[3][0]));
-    K_II = coef*(8.*(disp_tn[0][1] - disp_tn[1][1]) - (disp_tn[2][1] - disp_tn[3][1]));
+    double coef = _E/(6.*(1. + _nu)*(1. + k))*std::sqrt(2.*PI/_h);
+    K_I = coef*(8.*(disp_tn[0][1] - disp_tn[1][1]) - (disp_tn[2][1] - disp_tn[3][1]));
+    K_II = coef*(8.*(disp_tn[0][0] - disp_tn[1][0]) - (disp_tn[2][0] - disp_tn[3][0]));
 
     // Output to screen
     if ( _mode == 1 )
-        std::printf("\nMode I SIF = %f\n", K_I);
+        std::printf("\nMode I SIF = %e\n", K_I);
     else
-        std::printf("\nMode II SIF = %f\n", K_II);
+        std::printf("\nMode II SIF = %e\n", K_II);
 
     if ( _mode == 1 )
         return K_I;
@@ -145,9 +145,8 @@ void SIF_Elastic_QPE::initialize()
                         coorA = analysisModel().domainManager().giveCoordinatesOf(node[0]);
                         coorB = analysisModel().domainManager().giveCoordinatesOf(node[1]);
                         dL = coorA - coorB;
-                        double len = std::sqrt(dL.dot(dL));
-                        _h = len/0.75;
-                        _crackTangent = dL/len;
+                        _h = std::sqrt(dL.dot(dL));
+                        _crackTangent = {dL(0)/_h, dL(1)/_h};
                         _crackNormal = {-_crackTangent(1), _crackTangent(0)};
                         
 
@@ -164,9 +163,8 @@ void SIF_Elastic_QPE::initialize()
                         coorA = analysisModel().domainManager().giveCoordinatesOf(node[1]);
                         coorB = analysisModel().domainManager().giveCoordinatesOf(node[0]);
                         dL = coorA - coorB;
-                        double len = std::sqrt(dL.dot(dL));
-                        _h = len/0.75;
-                        _crackTangent = dL/len;
+                        _h = std::sqrt(dL.dot(dL));
+                        _crackTangent = {dL(0)/_h, dL(1)/_h};
                         _crackNormal = {-_crackTangent(1), _crackTangent(0)};
                         
 
