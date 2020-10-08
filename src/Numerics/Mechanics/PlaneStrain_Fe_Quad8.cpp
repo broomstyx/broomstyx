@@ -531,7 +531,7 @@ PlaneStrain_Fe_Quad8::giveStaticRightHandSideAt( Cell* targetCell
             rowDof.assign(3, nullptr);
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
             rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
-            rowDof[3] = analysisModel().domainManager().giveNodalDof(dofNum, node[2]);
+            rowDof[2] = analysisModel().domainManager().giveNodalDof(dofNum, node[2]);
         }
         else if ( bndCond.conditionType() == "ConcentratedForce" )
         {
