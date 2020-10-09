@@ -52,11 +52,14 @@ namespace broomstyx
         std::string _crackFaceLabel[2];
         int _dispDofNum[2];
 
+        double _h;
         RealVector _crackTangent;
         RealVector _crackNormal;
+        Node* _nodePairA[2];
+        Node* _nodePairB[2];
+        
         Dof* _dof[4][2];
 
-        double _h;
         int _mode;
     };
 }

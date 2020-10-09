@@ -52,41 +52,89 @@ SIF_Elastic_QPE::~SIF_Elastic_QPE() {}
 // -----------------------------------------------------------------------------
 double SIF_Elastic_QPE::computeOutput()
 {
-    // Get displacement components normal and tangent to the crack
-    double disp_tn[4][2];
-    RealVector disp;
-        
-    for ( int i = 0; i < 4; i++ )
-    {
-        disp = {analysisModel().dofManager().giveValueOfPrimaryVariableAt(_dof[i][0], converged_value),
-                analysisModel().dofManager().giveValueOfPrimaryVariableAt(_dof[i][1], converged_value)};
-        
-        disp_tn[i][0] = disp.dot(_crackTangent);
-        disp_tn[i][1] = disp.dot(_crackNormal);
-    }
+    RealVector crackTipLoc, nodePairLoc, dX, crackNormal, crackTangent;
+    RealVector posDisp, negDisp;
+    Dof* uDof[2];
+    double r;
 
-    // Compute stress intensity factors
-    double K_I, K_II;
     double k;
     if ( _analysisMode == "PlaneStress" )
         k = (3. - _nu)/(1. + _nu);
     else
         k = 3. - 4.*_nu;
     
-    double coef = _E/(6.*(1. + _nu)*(1. + k))*std::sqrt(2.*PI/_h);
-    K_I = coef*(8.*(disp_tn[0][1] - disp_tn[1][1]) - (disp_tn[2][1] - disp_tn[3][1]));
-    K_II = coef*(8.*(disp_tn[0][0] - disp_tn[1][0]) - (disp_tn[2][0] - disp_tn[3][0]));
+    crackTipLoc = analysisModel().domainManager().giveCoordinatesOf(_crackTipNode);
+    
+    // Compute SIF for first pair
+    nodePairLoc = analysisModel().domainManager().giveCoordinatesOf(_nodePairA[0]);
+    dX = crackTipLoc - nodePairLoc;
+    r = std::sqrt(dX.dot(dX));
+    crackTangent = {dX(0)/r, dX(1)/r};
+    crackNormal = {-dX(1)/r, dX(0)/r};
+    
+    uDof[0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0],_nodePairA[0]);
+    uDof[1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1],_nodePairA[0]);
+    posDisp = {analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[0], converged_value),
+               analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[1], converged_value)};
+
+    posDisp.print("Pair A pos disp", 4);
+
+    uDof[0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0],_nodePairA[1]);
+    uDof[1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1],_nodePairA[1]);
+    negDisp = {analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[0], converged_value),
+               analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[1], converged_value)};
+    
+    negDisp.print("Pair A neg disp", 4);
+
+    double pairA_modeI_opening = 0.5*(posDisp - negDisp).dot(crackNormal);
+
+    std::printf("Pair A data: r = %f, Du = %f\n", r, pairA_modeI_opening);
+    double pairA_modeII_opening = 0.5*(posDisp - negDisp).dot(crackTangent);
+    double KI_A = _E/((1. + _nu)*(1. + k))*std::sqrt(2.*PI/r)*pairA_modeI_opening;
+    double KII_A = _E/((1. + _nu)*(1. + k))*std::sqrt(2.*PI/r)*pairA_modeII_opening;
+
+    // Compute SIF for second pair
+    nodePairLoc = analysisModel().domainManager().giveCoordinatesOf(_nodePairB[0]);
+    dX = crackTipLoc - nodePairLoc;
+    r = std::sqrt(dX.dot(dX));
+    crackTangent = {dX(0)/r, dX(1)/r};
+    crackNormal = {-dX(1)/r, dX(0)/r};
+    
+    uDof[0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0],_nodePairB[0]);
+    uDof[1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1],_nodePairB[0]);
+    posDisp = {analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[0], converged_value),
+               analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[1], converged_value)};
+
+    posDisp.print("Pair B pos disp", 4);
+
+    uDof[0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0],_nodePairB[1]);
+    uDof[1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1],_nodePairB[1]);
+    negDisp = {analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[0], converged_value),
+               analysisModel().dofManager().giveValueOfPrimaryVariableAt(uDof[1], converged_value)};
+    
+    negDisp.print("Pair B neg disp", 4);
+
+    double pairB_modeI_opening = 0.5*(posDisp - negDisp).dot(crackNormal);
+
+    std::printf("Pair A data: r = %f, Du = %f\n", r, pairB_modeI_opening);
+
+    double pairB_modeII_opening = 0.5*(posDisp - negDisp).dot(crackTangent);
+    double KI_B = _E/((1. + _nu)*(1. + k))*std::sqrt(2.*PI/r)*pairB_modeI_opening;
+    double KII_B = _E/((1. + _nu)*(1. + k))*std::sqrt(2.*PI/r)*pairB_modeII_opening;
+
+    double KI = 4.*KI_A/3. - KI_B/3.;
+    double KII = 4.*KII_A/3. - KII_B/3.;
 
     // Output to screen
     if ( _mode == 1 )
-        std::printf("\nMode I SIF = %e\n", K_I);
+        std::printf("    Mode I SIF = %E\n", KI);
     else
-        std::printf("\nMode II SIF = %e\n", K_II);
+        std::printf("    Mode II SIF = %E\n", KII);
 
     if ( _mode == 1 )
-        return K_I;
+        return KI;
     else
-        return K_II;
+        return KII;
 }
 // -----------------------------------------------------------------------------
 void SIF_Elastic_QPE::initialize()
@@ -118,6 +166,12 @@ void SIF_Elastic_QPE::initialize()
     if ( !crackTipFound )
         throw std::runtime_error("ERROR: Failed to find node corresponding to crack tip!\nSource: " + _name);
 
+    // ---->
+    std::printf("\nCrack tip found at node # %d\n", analysisModel().domainManager().giveIdOf(_crackTipNode));
+    RealVector temp = analysisModel().domainManager().giveCoordinatesOf(_crackTipNode);
+    temp.print("Crack tip coordinates: ", 4);
+    // ---->>
+
     // Find relevant boundary cells on crack face
     int crackFacePhysNum[2];
     crackFacePhysNum[0] = analysisModel().domainManager().givePhysicalEntityNumberFor(_crackFaceLabel[0]);
@@ -138,41 +192,29 @@ void SIF_Elastic_QPE::initialize()
                     if ( (int)node.size() != 3 )
                         throw std::runtime_error("ERROR: Boundary cell attached to crack tip must have 3 nodes!\nSource: " + _name);
                     
+                    // ---->
+                    std::printf("Positive boundary cell found at cell # %d.\n", analysisModel().domainManager().giveIdOf(curBndCell));
+                    std::printf("Nodes: ");
+                    auto bcellNode = analysisModel().domainManager().giveNodesOf(curBndCell);
+                    for ( int k = 0; k < (int)bcellNode.size(); k++ )
+                        std::printf("%d ", analysisModel().domainManager().giveIdOf(bcellNode[k]));
+                    std::printf("\n");
+                    for ( int k = 0; k < (int)bcellNode.size(); k++ )
+                    {
+                        RealVector bNodeCoor = analysisModel().domainManager().giveCoordinatesOf(bcellNode[k]);
+                        bNodeCoor.print(("Coordinates of node " + std::to_string(k)).c_str(), 4);
+                    }
+                    // ---->>
+
                     if ( j == 0 )
                     {
-                        // Compute crack orientation
-                        RealVector coorA, coorB, dL;
-                        coorA = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-                        coorB = analysisModel().domainManager().giveCoordinatesOf(node[1]);
-                        dL = coorA - coorB;
-                        _h = std::sqrt(dL.dot(dL));
-                        _crackTangent = {dL(0)/_h, dL(1)/_h};
-                        _crackNormal = {-_crackTangent(1), _crackTangent(0)};
-                        
-
-                        // Store DOFs
-                        _dof[0][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[2]);
-                        _dof[0][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[2]);
-                        _dof[2][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[1]);
-                        _dof[2][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[1]);
+                        _nodePairA[0] = node[2];
+                        _nodePairB[0] = node[1];
                     }
                     else // (j == 1)
                     {
-                        // Compute crack orientation
-                        RealVector coorA, coorB, dL;
-                        coorA = analysisModel().domainManager().giveCoordinatesOf(node[1]);
-                        coorB = analysisModel().domainManager().giveCoordinatesOf(node[0]);
-                        dL = coorA - coorB;
-                        _h = std::sqrt(dL.dot(dL));
-                        _crackTangent = {dL(0)/_h, dL(1)/_h};
-                        _crackNormal = {-_crackTangent(1), _crackTangent(0)};
-                        
-
-                        // Store DOFs
-                        _dof[0][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[2]);
-                        _dof[0][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[2]);
-                        _dof[2][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[0]);
-                        _dof[2][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[0]);
+                        _nodePairA[0] = node[2];
+                        _nodePairB[0] = node[0];
                     }
                 }
         }
@@ -192,21 +234,29 @@ void SIF_Elastic_QPE::initialize()
                     if ( (int)node.size() != 3 )
                         throw std::runtime_error("ERROR: Boundary cell attached to crack tip must have 3 nodes!\nSource: " + _name);
                     
+                    // ---->
+                    std::printf("Negative boundary cell found at cell # %d.\n", analysisModel().domainManager().giveIdOf(curBndCell));
+                    std::printf("Nodes: ");
+                    auto bcellNode = analysisModel().domainManager().giveNodesOf(curBndCell);
+                    for ( int k = 0; k < (int)bcellNode.size(); k++ )
+                        std::printf("%d ", analysisModel().domainManager().giveIdOf(bcellNode[k]));
+                    std::printf("\n");
+                    for ( int k = 0; k < (int)bcellNode.size(); k++ )
+                    {
+                        RealVector bNodeCoor = analysisModel().domainManager().giveCoordinatesOf(bcellNode[k]);
+                        bNodeCoor.print(("Coordinates of node " + std::to_string(k)).c_str(), 4);
+                    }
+                    // ---->>
+                    
                     if ( j == 0 )
                     {
-                        // Store DOFs
-                        _dof[1][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[2]);
-                        _dof[1][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[2]);
-                        _dof[3][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[1]);
-                        _dof[3][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[1]);
+                        _nodePairA[1] = node[2];
+                        _nodePairB[1] = node[1];
                     }
                     else // (j == 1)
                     {
-                        // Store DOFs
-                        _dof[1][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[2]);
-                        _dof[1][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[2]);
-                        _dof[3][0] = analysisModel().domainManager().giveNodalDof(_dispDofNum[0], node[0]);
-                        _dof[3][1] = analysisModel().domainManager().giveNodalDof(_dispDofNum[1], node[0]);
+                        _nodePairA[1] = node[2];
+                        _nodePairB[1] = node[0];
                     }
                 }
         }
