@@ -51,6 +51,36 @@ JIntegral::~JIntegral() {}
 double JIntegral::computeOutput()
 {
     double result = 0.;
+
+    int crackTipPhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor(_crackTipLabel);
+    
+    Node* crackTipNode = nullptr;
+    bool crackTipFound = false;
+    int nBndCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
+    for ( int i = 0; i < nBndCells; i++ )
+    {
+        Cell* curBndCell = analysisModel().domainManager().giveBoundaryCell(i);
+        if ( analysisModel().domainManager().giveLabelOf(curBndCell) == crackTipPhysNum )
+        {
+            if ( crackTipFound == true )
+                throw std::runtime_error("ERROR: Multiple entities found for specified crack tip label!\nSource: " + _name);
+            else
+            {
+                crackTipFound = true;
+                std::vector<Node*> bndCellNode = analysisModel().domainManager().giveNodesOf(curBndCell);
+                int nNodes = (int)bndCellNode.size();
+                if ( nNodes != 1 )
+                    throw std::runtime_error("ERROR: Specified crack tip has more than one node!\nSource: " + _name);
+                else
+                    crackTipNode = bndCellNode[0];
+            }
+        }
+    }
+    if ( !crackTipFound )
+        throw std::runtime_error("ERROR: Failed to find node corresponding to crack tip!\nSource: " + _name);
+    
+    RealVector coor = analysisModel().domainManager().giveCoordinatesOf(crackTipNode);
+    RealVector p_ref ({coor(0), coor(1)});
     
     for (  int i = 0; i < (int)_path.size(); i++ )
     {
@@ -65,8 +95,8 @@ double JIntegral::computeOutput()
         // Check orientation of unit vectors for segment
         // Note: Integration direction is clockwise w.r.t. reference point
         RealVector dirVec(2), dirVecP(2);
-        dirVec(0) = coor0(0) - _p_ref(0);
-        dirVec(1) = coor0(1) - _p_ref(1);
+        dirVec(0) = coor0(0) - p_ref(0);
+        dirVec(1) = coor0(1) - p_ref(1);
 
         
         dirVecP(0) = -dirVec(1);
@@ -181,10 +211,8 @@ void JIntegral::readDataFrom( FILE* fp )
     _boundaryLabel = getStringInputFrom(fp, "Failed reading boundary label from input file.", _name);
     
     // Read reference point
-    verifyKeyword(fp, "ReferencePoint", _name);
-    _p_ref.init(2);
-    _p_ref(0) = getRealInputFrom(fp, "Failed reading reference point x-coordinate from input file.", _name);
-    _p_ref(1) = getRealInputFrom(fp, "Failed reading reference point y-coordinate from input file.", _name);
+    verifyKeyword(fp, "CrackTip", _name);
+    _crackTipLabel = getStringInputFrom(fp, "Failed to read crack tip label from input file.", _name);
     
     // Tangential direction for crack
     verifyKeyword(fp, "CrackTangent", _name);

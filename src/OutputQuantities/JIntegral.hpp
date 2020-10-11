@@ -57,8 +57,7 @@ namespace broomstyx
 
     private:
         std::string _boundaryLabel;
-
-        RealVector _p_ref;
+        std::string _crackTipLabel;
         RealVector _ct;
 
         int _stressLabel[3];
