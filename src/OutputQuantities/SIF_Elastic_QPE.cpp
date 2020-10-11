@@ -116,7 +116,7 @@ double SIF_Elastic_QPE::computeOutput()
 
     double pairB_modeI_opening = 0.5*(posDisp - negDisp).dot(crackNormal);
 
-    std::printf("Pair A data: r = %f, Du = %f\n", r, pairB_modeI_opening);
+    std::printf("Pair B data: r = %f, Du = %f\n", r, pairB_modeI_opening);
 
     double pairB_modeII_opening = 0.5*(posDisp - negDisp).dot(crackTangent);
     double KI_B = _E/((1. + _nu)*(1. + k))*std::sqrt(2.*PI/r)*pairB_modeI_opening;
