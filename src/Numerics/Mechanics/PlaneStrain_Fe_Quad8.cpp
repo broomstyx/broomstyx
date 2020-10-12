@@ -37,6 +37,7 @@
 #include "IntegrationRules/Legendre_2D_Quad.hpp"
 #include "BasisFunctions/Line_P2.hpp"
 #include "BasisFunctions/Quadrilateral_P2_3.hpp"
+#include "BasisFunctions/Quadrilateral_P2_4.hpp"
 
 using namespace broomstyx;
 
@@ -85,8 +86,10 @@ PlaneStrain_Fe_Quad8::PlaneStrain_Fe_Quad8()
     
     _basisFunction = new Quadrilateral_P2_3();
     _edgeBasisFunction = new Line_P2();
-    _integrationRule = new Legendre_2D_Quad(4);
+    _integrationRule = new Legendre_2D_Quad(9);
     _edgeIntegrationRule = new Legendre_1D(2);
+
+    this->formExtrapolationMatrix();
 }
 
 // Destructor
@@ -179,18 +182,6 @@ RealVector PlaneStrain_Fe_Quad8::giveCellNodeFieldValuesAt( Cell* targetCell, in
     RealVector gpVals, wt, nodeVals(8);
     std::string fieldTag;
     
-    // Linear extrapolation from Gauss points to nodes (extrapolation matrix is specific to 2x2 integration rule
-    // using the arrangement implied in the tensor-product implementation found in class 'Legendre_2d_Quad')
-
-    const double c1 = std::sqrt(3.)/2. + 1.;
-    const double c2 = -0.5;
-    const double c3 = -std::sqrt(3.)/2. + 1.;
-    
-    RealMatrix coefMat({{c1, c2, c2, c3},
-                        {c2, c1, c3, c2},
-                        {c3, c2, c2, c1},
-                        {c2, c3, c1, c2}});
-    
     try
     {
         fieldTag = _cellFieldOutput.at(fieldNum);
@@ -200,57 +191,17 @@ RealVector PlaneStrain_Fe_Quad8::giveCellNodeFieldValuesAt( Cell* targetCell, in
         fieldTag = "unassigned";
     }
     
-    // We need a special method for calculating the elastic strain energy
-    // which has quadratic behavior within the element
-    if ( fieldTag == "ene" )
-    {
-        RealVector s_xx, s_yy, s_xy, e_xx, e_yy, g_xy;
-        std::string subTag;
-        
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_xx");
-        s_xx = coefMat*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_yy");
-        s_yy = coefMat*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_xy");
-        s_xy = coefMat*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "ux_x");
-        e_xx = coefMat*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "uy_y");
-        e_yy = coefMat*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "g_xy");
-        g_xy = coefMat*gpVals;
-        
-        nodeVals(0) = 0.5*(s_xx(0)*e_xx(0) + s_yy(0)*e_yy(0) + s_xy(0)*g_xy(0));
-        nodeVals(1) = 0.5*(s_xx(1)*e_xx(1) + s_yy(1)*e_yy(1) + s_xy(1)*g_xy(1));
-        nodeVals(2) = 0.5*(s_xx(2)*e_xx(2) + s_yy(2)*e_yy(2) + s_xy(2)*g_xy(2));
-        nodeVals(3) = 0.5*(s_xx(3)*e_xx(3) + s_yy(3)*e_yy(3) + s_xy(3)*g_xy(3));
-        nodeVals(4) = 0.5*(0.25*(s_xx(0) + s_xx(1))*(e_xx(0) + e_xx(1))
-                         + 0.25*(s_yy(0) + s_yy(1))*(e_yy(0) + e_yy(1))
-                         + 0.25*(s_xy(0) + s_xy(1))*(g_xy(0) + g_xy(1)));
-        nodeVals(5) = 0.5*(0.25*(s_xx(1) + s_xx(2))*(e_xx(1) + e_xx(2))
-                         + 0.25*(s_yy(1) + s_yy(2))*(e_yy(1) + e_yy(2))
-                         + 0.25*(s_xy(1) + s_xy(2))*(g_xy(1) + g_xy(2)));
-        nodeVals(6) = 0.5*(0.25*(s_xx(2) + s_xx(3))*(e_xx(2) + e_xx(3))
-                         + 0.25*(s_yy(2) + s_yy(3))*(e_yy(2) + e_yy(3))
-                         + 0.25*(s_xy(2) + s_xy(3))*(g_xy(2) + g_xy(3)));
-        nodeVals(7) = 0.5*(0.25*(s_xx(3) + s_xx(0))*(e_xx(3) + e_xx(0))
-                         + 0.25*(s_yy(3) + s_yy(0))*(e_yy(3) + e_yy(0))
-                         + 0.25*(s_xy(3) + s_xy(0))*(g_xy(3) + g_xy(0)));
-    }
-    else
-    {
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, fieldTag);
-        RealVector linVals = coefMat*gpVals;
-        
-        nodeVals(0) = linVals(0);
-        nodeVals(1) = linVals(1);
-        nodeVals(2) = linVals(2);
-        nodeVals(3) = linVals(3);
-        nodeVals(4) = 0.5*(linVals(0) + linVals(1));
-        nodeVals(5) = 0.5*(linVals(1) + linVals(2));
-        nodeVals(6) = 0.5*(linVals(2) + linVals(3));
-        nodeVals(7) = 0.5*(linVals(3) + linVals(0));
-    }
+    std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, fieldTag);
+    RealVector linVals = _extrapolationMatrix*gpVals;
+    
+    nodeVals(0) = linVals(0);
+    nodeVals(1) = linVals(1);
+    nodeVals(2) = linVals(2);
+    nodeVals(3) = linVals(3);
+    nodeVals(4) = linVals(4);
+    nodeVals(5) = linVals(5);
+    nodeVals(6) = linVals(6);
+    nodeVals(7) = linVals(7);
     
     return nodeVals;
 }
@@ -717,6 +668,26 @@ void PlaneStrain_Fe_Quad8::setDofStagesAt( Cell* targetCell )
 
 // Private methods
 // ---------------------------------------------------------------------------
+void PlaneStrain_Fe_Quad8::formExtrapolationMatrix()
+{
+    std::vector<RealVector> gpLoc;
+    RealVector gpWt;
+    Quadrilateral_P2_4 stressInterpolation;
+
+    int nPoints = _integrationRule->giveNumberOfIntegrationPoints();
+    std::tie(gpLoc, gpWt) = _integrationRule->giveIntegrationPointsAndWeights();
+    
+    RealMatrix interpolationMatrix(nPoints, nPoints);
+    for ( int i = 0; i < nPoints; i++ )
+    {
+        RealVector psi = stressInterpolation.giveBasisFunctionsAt(gpLoc[i]);
+        for ( int j = 0; j < nPoints; j++ )
+            interpolationMatrix(i,j) = psi(j);
+    }
+
+    _extrapolationMatrix = inv(interpolationMatrix);
+}
+// ---------------------------------------------------------------------------
 CellNumericsStatus_PlaneStrain_Fe_Quad8*
 PlaneStrain_Fe_Quad8::getNumericsStatusAt( Cell* targetCell )
 {
@@ -783,14 +754,10 @@ RealMatrix PlaneStrain_Fe_Quad8::giveBmatAt( Cell* targetCell, const RealVector&
     dpsi = inv(jmat)*dpsiNatMat;
     
     bmat = {
-        {dpsi(0,0), 0,         dpsi(0,1), 0,         dpsi(0,2), 0,         dpsi(0,3), 0,
-         dpsi(0,4), 0,         dpsi(0,5), 0,         dpsi(0,6), 0,         dpsi(0,7), 0},
-        {0,         dpsi(1,0), 0,         dpsi(1,1), 0,         dpsi(1,2), 0,         dpsi(1,3),
-         0,         dpsi(1,4), 0,         dpsi(1,5), 0,         dpsi(1,6), 0,         dpsi(1,7)},
-        {0,         0,         0,         0,         0,         0,         0,         0,
-         0,         0,         0,         0,         0,         0,         0,         0},
-        {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2), dpsi(1,3), dpsi(0,3),
-         dpsi(1,4), dpsi(0,4), dpsi(1,5), dpsi(0,5), dpsi(1,6), dpsi(0,6), dpsi(1,7), dpsi(0,7)}
+        {dpsi(0,0), 0,         dpsi(0,1), 0,         dpsi(0,2), 0,         dpsi(0,3), 0,         dpsi(0,4), 0,         dpsi(0,5), 0,         dpsi(0,6), 0,         dpsi(0,7), 0},
+        {0,         dpsi(1,0), 0,         dpsi(1,1), 0,         dpsi(1,2), 0,         dpsi(1,3), 0,         dpsi(1,4), 0,         dpsi(1,5), 0,         dpsi(1,6), 0,         dpsi(1,7)},
+        {0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0},
+        {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2), dpsi(1,3), dpsi(0,3), dpsi(1,4), dpsi(0,4), dpsi(1,5), dpsi(0,5), dpsi(1,6), dpsi(0,6), dpsi(1,7), dpsi(0,7)}
     };
 
     return bmat;

@@ -167,7 +167,9 @@ namespace broomstyx
         
         IntegrationRule* _integrationRule;
         IntegrationRule* _edgeIntegrationRule;
+        RealMatrix _extrapolationMatrix;
         
+        void formExtrapolationMatrix();
         CellNumericsStatus_PlaneStrain_Fe_Quad8*
                    getNumericsStatusAt( Cell* targetCell );
         EvalPtNumericsStatus_PlaneStrain_Fe_Quad8*
