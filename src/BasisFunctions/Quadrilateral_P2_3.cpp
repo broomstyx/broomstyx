@@ -38,10 +38,10 @@ RealVector Quadrilateral_P2_3::giveBasisFunctionsAt( const RealVector& coor )
     double xi = coor(0);
     double eta = coor(1);
     
-    RealVector psi({0.25*(1. - xi)*(1. - eta)*(-1. - xi - eta),
-                    0.25*(1. + xi)*(1. - eta)*(-1. + xi - eta),
-                    0.25*(1. + xi)*(1. + eta)*(-1. + xi + eta),
-                    0.25*(1. - xi)*(1. + eta)*(-1. - xi + eta),
+    RealVector psi({-0.25*(1. - xi)*(1. - eta)*(1. + xi + eta),
+                    -0.25*(1. + xi)*(1. - eta)*(1. - xi + eta),
+                    -0.25*(1. + xi)*(1. + eta)*(1. - xi - eta),
+                    -0.25*(1. - xi)*(1. + eta)*(1. + xi - eta),
                     0.5*(1. - xi*xi)*(1. - eta),
                     0.5*(1. + xi)*(1. - eta*eta),
                     0.5*(1. - xi*xi)*(1. + eta),
