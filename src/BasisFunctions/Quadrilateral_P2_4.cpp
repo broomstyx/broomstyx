@@ -25,8 +25,6 @@
 #include <cmath>
 #include "../Core/AnalysisModel.hpp"
 #include "../Core/DomainManager.hpp"
-//#include "../Util/linearAlgebra.hpp"
-
 
 using namespace broomstyx;
 
