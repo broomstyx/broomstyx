@@ -87,7 +87,7 @@ PlaneStrain_Fe_CrackTip::PlaneStrain_Fe_CrackTip()
     
     _basisFunction = new Quadrilateral_P2_3();
     _edgeBasisFunction = new Line_P2();
-    _integrationRule = new Legendre_2D_Quad(9);
+    _integrationRule = new Legendre_2D_Quad(25);
     _edgeIntegrationRule = new Legendre_1D(3);
 
     this->formExtrapolationMatrix();
@@ -128,15 +128,13 @@ void PlaneStrain_Fe_CrackTip::finalizeDataAt( Cell* targetCell )
     RealVector uVec = this->giveLocalDisplacementsAt(targetCell, converged_value);
     
     // Displacement values in matrix form
-    RealMatrix u(8,2);
+    RealMatrix u(6,2);
     u = {{uVec(0),  uVec(1)},
          {uVec(2),  uVec(3)},
          {uVec(4),  uVec(5)},
-         {uVec(0),  uVec(1)},
          {uVec(6),  uVec(7)},
          {uVec(8),  uVec(9)},
-         {uVec(10), uVec(11)},
-         {uVec(0),  uVec(1)}};
+         {uVec(10), uVec(11)}};
     
     // Gauss point locations and weights
     std::vector<RealVector> gpLoc;
@@ -157,10 +155,10 @@ void PlaneStrain_Fe_CrackTip::finalizeDataAt( Cell* targetCell )
         // Shape functions derivatives
         RealMatrix Jmat = this->giveJacobianMatrixAt(targetCell, cns->_gp[i].coordinates);
         
-        std::vector<RealVector> dpsiNat = _basisFunction->giveBasisFunctionDerivativesAt(cns->_gp[i].coordinates);
-        RealMatrix dpsiNatMat(2,8);
+        std::vector<RealVector> dpsiNat = this->giveBasisFunctionDerivativesAt(cns->_gp[i].coordinates);
+        RealMatrix dpsiNatMat(2,6);
         
-        for ( int j = 0; j < 8; j++)
+        for ( int j = 0; j < 6; j++)
         {
             dpsiNatMat(0,j) = dpsiNat[0](j);
             dpsiNatMat(1,j) = dpsiNat[1](j);
@@ -192,52 +190,52 @@ RealVector PlaneStrain_Fe_CrackTip::giveCellNodeFieldValuesAt( Cell* targetCell,
         fieldTag = "unassigned";
     }
     
-    // We need a special method for calculating the elastic strain energy
-    // which has quadratic behavior within the element
-    if ( fieldTag == "ene" )
-    {
-        RealVector s_xx, s_yy, s_xy, e_xx, e_yy, g_xy;
-        std::string subTag;
+    // // We need a special method for calculating the elastic strain energy
+    // // which has quadratic behavior within the element
+    // if ( fieldTag == "ene" )
+    // {
+    //     RealVector s_xx, s_yy, s_xy, e_xx, e_yy, g_xy;
+    //     std::string subTag;
         
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_xx");
-        s_xx = _extrapolationMatrix*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_yy");
-        s_yy = _extrapolationMatrix*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_xy");
-        s_xy = _extrapolationMatrix*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "ux_x");
-        e_xx = _extrapolationMatrix*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "uy_y");
-        e_yy = _extrapolationMatrix*gpVals;
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "g_xy");
-        g_xy = _extrapolationMatrix*gpVals;
+    //     std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_xx");
+    //     s_xx = _extrapolationMatrix*gpVals;
+    //     std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_yy");
+    //     s_yy = _extrapolationMatrix*gpVals;
+    //     std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "s_xy");
+    //     s_xy = _extrapolationMatrix*gpVals;
+    //     std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "ux_x");
+    //     e_xx = _extrapolationMatrix*gpVals;
+    //     std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "uy_y");
+    //     e_yy = _extrapolationMatrix*gpVals;
+    //     std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, subTag = "g_xy");
+    //     g_xy = _extrapolationMatrix*gpVals;
         
-        double s_xx0 = s_xx(0) + s_xx(3) + s_xx(7);
-        double e_xx0 = e_xx(0) + e_xx(3) + e_xx(7);
-        double s_yy0 = s_yy(0) + s_yy(3) + s_yy(7);
-        double e_yy0 = e_yy(0) + e_yy(3) + e_yy(7);
-        double s_xy0 = s_xy(0) + s_xy(3) + s_xy(7);
-        double g_xy0 = g_xy(0) + g_xy(3) + g_xy(7);
+    //     double s_xx0 = s_xx(0) + s_xx(3) + s_xx(7);
+    //     double e_xx0 = e_xx(0) + e_xx(3) + e_xx(7);
+    //     double s_yy0 = s_yy(0) + s_yy(3) + s_yy(7);
+    //     double e_yy0 = e_yy(0) + e_yy(3) + e_yy(7);
+    //     double s_xy0 = s_xy(0) + s_xy(3) + s_xy(7);
+    //     double g_xy0 = g_xy(0) + g_xy(3) + g_xy(7);
 
-        nodeVals(0) = 0.5*(s_xx0*e_xx0 + s_yy0*e_yy0 + s_xy0*g_xy0);
-        nodeVals(1) = 0.5*(s_xx(1)*e_xx(1) + s_yy(1)*e_yy(1) + s_xy(1)*g_xy(1));
-        nodeVals(2) = 0.5*(s_xx(2)*e_xx(2) + s_yy(2)*e_yy(2) + s_xy(2)*g_xy(2));
-        nodeVals(3) = 0.5*(s_xx(4)*e_xx(4) + s_yy(4)*e_yy(4) + s_xy(4)*g_xy(4));
-        nodeVals(4) = 0.5*(s_xx(5)*e_xx(5) + s_yy(5)*e_yy(5) + s_xy(5)*g_xy(5));
-        nodeVals(5) = 0.5*(s_xx(6)*e_xx(6) + s_yy(6)*e_yy(6) + s_xy(6)*g_xy(6));
-    }
-    else
-    {
-        std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, fieldTag);
-        RealVector linVals = _extrapolationMatrix*gpVals;
+    //     nodeVals(0) = 0.5*(s_xx0*e_xx0 + s_yy0*e_yy0 + s_xy0*g_xy0);
+    //     nodeVals(1) = 0.5*(s_xx(1)*e_xx(1) + s_yy(1)*e_yy(1) + s_xy(1)*g_xy(1));
+    //     nodeVals(2) = 0.5*(s_xx(2)*e_xx(2) + s_yy(2)*e_yy(2) + s_xy(2)*g_xy(2));
+    //     nodeVals(3) = 0.5*(s_xx(4)*e_xx(4) + s_yy(4)*e_yy(4) + s_xy(4)*g_xy(4));
+    //     nodeVals(4) = 0.5*(s_xx(5)*e_xx(5) + s_yy(5)*e_yy(5) + s_xy(5)*g_xy(5));
+    //     nodeVals(5) = 0.5*(s_xx(6)*e_xx(6) + s_yy(6)*e_yy(6) + s_xy(6)*g_xy(6));
+    // }
+    // else
+    // {
+    //     std::tie(gpVals,wt) = this->giveFieldOutputAt(targetCell, fieldTag);
+    //     RealVector linVals = _extrapolationMatrix*gpVals;
         
-        nodeVals(0) = linVals(0) + linVals(3) + linVals(7);
-        nodeVals(1) = linVals(1);
-        nodeVals(2) = linVals(2);
-        nodeVals(3) = linVals(4);
-        nodeVals(4) = linVals(5);
-        nodeVals(5) = linVals(6);
-    }
+    //     nodeVals(0) = linVals(0) + linVals(3) + linVals(7);
+    //     nodeVals(1) = linVals(1);
+    //     nodeVals(2) = linVals(2);
+    //     nodeVals(3) = linVals(4);
+    //     nodeVals(4) = linVals(5);
+    //     nodeVals(5) = linVals(6);
+    // }
     
     return nodeVals;
 }
@@ -256,8 +254,8 @@ std::vector<RealVector> PlaneStrain_Fe_CrackTip::giveEvaluationPointsFor( Cell *
     RealVector gpWt;
     std::tie(gpLoc, gpWt) = _integrationRule->giveIntegrationPointsAndWeights();
     
-    RealVector x(8), y(8), z(8);
-    for ( int i = 0; i < 8; i++)
+    RealVector x(6), y(6), z(6);
+    for ( int i = 0; i < 6; i++)
     {
         RealVector nodeCoor = analysisModel().domainManager().giveCoordinatesOf(node[i]);
         x(i) = nodeCoor(0);
@@ -268,7 +266,7 @@ std::vector<RealVector> PlaneStrain_Fe_CrackTip::giveEvaluationPointsFor( Cell *
     for ( int i = 0; i < nGaussPts; i++)
     {
         coor[i].init(3);
-        RealVector psi = _basisFunction->giveBasisFunctionsAt(gpLoc[i]);
+        RealVector psi = this->giveBasisFunctionsAt(gpLoc[i]);
         
         coor[i](0) = x.dot(psi);
         coor[i](1) = y.dot(psi);
@@ -349,7 +347,7 @@ PlaneStrain_Fe_CrackTip::giveStaticCoefficientMatrixAt( Cell*           targetCe
     
     if ( stage == _stage[0] && (subsys == _subsystem[0] || subsys == UNASSIGNED) )
     {
-        RealMatrix kmat(16,16);
+        RealMatrix kmat(12,12);
         
         // Retrieve nodal DOFs local to element
         std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);
@@ -378,16 +376,16 @@ PlaneStrain_Fe_CrackTip::giveStaticCoefficientMatrixAt( Cell*           targetCe
             kmat = kmat + trp(bmat)*cmat*(bmat*(J*cns->_gp[i].weight));
         }
         
-        rowDof.assign(256, nullptr);
-        colDof.assign(256, nullptr);
-        coefVal.init(256);
+        rowDof.assign(144, nullptr);
+        colDof.assign(144, nullptr);
+        coefVal.init(144);
         
-        for ( int i = 0; i < 16; i++)
-            for ( int j = 0; j < 16; j++)
+        for ( int i = 0; i < 12; i++)
+            for ( int j = 0; j < 12; j++)
             {
-                rowDof[16*i + j] = dof[i];
-                colDof[16*i + j] = dof[j];
-                coefVal(16*i + j) = kmat(i,j);
+                rowDof[12*i + j] = dof[i];
+                colDof[12*i + j] = dof[j];
+                coefVal(12*i + j) = kmat(i,j);
             }
     }
     
@@ -419,7 +417,7 @@ PlaneStrain_Fe_CrackTip::giveStaticLeftHandSideAt( Cell*           targetCell
         auto cns = this->getNumericsStatusAt(targetCell);
         
         // Initialize local LHS
-        lhs.init(16);
+        lhs.init(12);
         
         // Loop through Gauss points
         for ( int i = 0; i < cns->_nGaussPts; i++ )
@@ -518,7 +516,7 @@ PlaneStrain_Fe_CrackTip::giveStaticRightHandSideAt( Cell* targetCell
             rowDof.assign(3, nullptr);
             rowDof[0] = analysisModel().domainManager().giveNodalDof(dofNum, node[0]);
             rowDof[1] = analysisModel().domainManager().giveNodalDof(dofNum, node[1]);
-            rowDof[3] = analysisModel().domainManager().giveNodalDof(dofNum, node[2]);
+            rowDof[2] = analysisModel().domainManager().giveNodalDof(dofNum, node[2]);
         }
         else if ( bndCond.conditionType() == "ConcentratedForce" )
         {
@@ -596,7 +594,7 @@ PlaneStrain_Fe_CrackTip::giveStaticRightHandSideAt( Cell*                 target
                 double rho = material[0]->giveMaterialVariable("Density", gpns->_materialStatus[0]);
 
                 // Get shape functions
-                RealVector psi = _basisFunction->giveBasisFunctionsAt(cns->_gp[i].coordinates);
+                RealVector psi = this->giveBasisFunctionsAt(cns->_gp[i].coordinates);
 
                 // Add Gauss point contribution to rhs
 #pragma GCC ivdep
@@ -673,73 +671,64 @@ void PlaneStrain_Fe_CrackTip::initializeNumericsAt( Cell* targetCell )
         cns->_gp[i].coordinates = gpCoor[i];
         cns->_gp[i].weight = gpWt(i);
     }
-}
-// ---------------------------------------------------------------------------
-void PlaneStrain_Fe_CrackTip::performPreprocessingAt( Cell* targetCell, std::string directive )
-{
-    if ( directive == "ConfigureQuarterPointElements" )
+
+    // A. Find crack tip node
+
+    int crackTipPhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor(_crackTipLabel);
+
+    Node* crackTipNode = nullptr;
+    bool crackTipFound = false;
+    int nBndCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
+    for ( int i = 0; i < nBndCells; i++ )
     {
-        // A. Find crack tip node
-
-        int crackTipPhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor(_crackTipLabel);
-
-        Node* crackTipNode;
-        bool crackTipFound = false;
-        int nBndCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
-        for ( int i = 0; i < nBndCells; i++ )
+        Cell* curBndCell = analysisModel().domainManager().giveBoundaryCell(i);
+        if ( analysisModel().domainManager().giveLabelOf(curBndCell) == crackTipPhysNum )
         {
-            Cell* curBndCell = analysisModel().domainManager().giveBoundaryCell(i);
-            if ( analysisModel().domainManager().giveLabelOf(curBndCell) == crackTipPhysNum )
+            if ( crackTipFound == true )
+                throw std::runtime_error("ERROR: Multiple entities found for specified crack tip label!\nSource: " + _name);
+            else
             {
-                if ( crackTipFound == true )
-                    throw std::runtime_error("ERROR: Multiple entities found for specified crack tip label!\nSource: " + _name);
+                crackTipFound = true;
+                std::vector<Node*> bndCellNode = analysisModel().domainManager().giveNodesOf(curBndCell);
+                int nNodes = (int)bndCellNode.size();
+                if ( nNodes != 1 )
+                    throw std::runtime_error("ERROR: Specified crack tip has more than one node!\nSource: " + _name);
                 else
-                {
-                    crackTipFound = true;
-                    std::vector<Node*> bndCellNode = analysisModel().domainManager().giveNodesOf(curBndCell);
-                    int nNodes = (int)bndCellNode.size();
-                    if ( nNodes != 1 )
-                        throw std::runtime_error("ERROR: Specified crack tip has more than one node!\nSource: " + _name);
-                    else
-                        crackTipNode = bndCellNode[0];
-                }
+                    crackTipNode = bndCellNode[0];
             }
         }
-        if ( !crackTipFound )
-            throw std::runtime_error("ERROR: Failed to find node corresponding to crack tip!\nSource: " + _name);
-
-        // B. Permute nodes of cell so that crack tip is 1st node in list
-        
-        std::vector<Node*> cellNode = analysisModel().domainManager().giveNodesOf(targetCell);
-        std::vector<int> reordering;
-        if ( crackTipNode == cellNode[0] )
-            reordering = {0, 1, 2, 3, 4, 5};
-        else if ( crackTipNode == cellNode[1] )
-            reordering = {1, 2, 0, 4, 5, 3};
-        else if ( crackTipNode == cellNode[2] )
-            reordering = {2, 0, 1, 5, 3, 4};
-        else
-            throw std::runtime_error("ERROR: Encountered invalid location of cracktip node in domain cell!\nSource: " + _name);
-        
-        analysisModel().domainManager().reorderNodesOf(targetCell, reordering);
-
-        // C. Move relevant midside nodes to quarter-point locations
-
-        cellNode = analysisModel().domainManager().giveNodesOf(targetCell);
-        RealVector coor0, coor1, coor2, coor3, coor5;
-        coor0 = analysisModel().domainManager().giveCoordinatesOf(cellNode[0]);
-        coor1 = analysisModel().domainManager().giveCoordinatesOf(cellNode[1]);
-        coor2 = analysisModel().domainManager().giveCoordinatesOf(cellNode[2]);
-
-        coor3 = coor0 + 0.25*(coor1 - coor0);
-        coor5 = coor0 + 0.25*(coor2 - coor0);
-
-        analysisModel().domainManager().setCoordinatesOf(cellNode[3], coor3);
-        analysisModel().domainManager().setCoordinatesOf(cellNode[5], coor5);
     }
+    if ( !crackTipFound )
+        throw std::runtime_error("ERROR: Failed to find node corresponding to crack tip!\nSource: " + _name);
+
+    // B. Permute nodes of cell so that crack tip is 1st node in list
+    
+    std::vector<Node*> cellNode = analysisModel().domainManager().giveNodesOf(targetCell);
+    std::vector<int> reordering;
+    if ( crackTipNode == cellNode[0] )
+        reordering = {0, 1, 2, 3, 4, 5};
+    else if ( crackTipNode == cellNode[1] )
+        reordering = {1, 2, 0, 4, 5, 3};
+    else if ( crackTipNode == cellNode[2] )
+        reordering = {2, 0, 1, 5, 3, 4};
     else
-        throw std::runtime_error("No preprocessing directive named '" 
-                + directive + "' has been programmed for numerics type '" + _name + "'!");
+        throw std::runtime_error("ERROR: Encountered invalid location of cracktip node in domain cell!\nSource: " + _name);
+    
+    analysisModel().domainManager().reorderNodesOf(targetCell, reordering);
+
+    // C. Move relevant midside nodes to quarter-point locations
+
+    cellNode = analysisModel().domainManager().giveNodesOf(targetCell);
+    RealVector coor0, coor1, coor2, coor3, coor5;
+    coor0 = analysisModel().domainManager().giveCoordinatesOf(cellNode[0]);
+    coor1 = analysisModel().domainManager().giveCoordinatesOf(cellNode[1]);
+    coor2 = analysisModel().domainManager().giveCoordinatesOf(cellNode[2]);
+
+    coor3 = coor0 + 0.25*(coor1 - coor0);
+    coor5 = coor0 + 0.25*(coor2 - coor0);
+
+    analysisModel().domainManager().setCoordinatesOf(cellNode[3], coor3);
+    analysisModel().domainManager().setCoordinatesOf(cellNode[5], coor5);
 }
 // ---------------------------------------------------------------------------
 void PlaneStrain_Fe_CrackTip::readAdditionalDataFrom( FILE* fp )
@@ -779,22 +768,22 @@ void PlaneStrain_Fe_CrackTip::setDofStagesAt( Cell* targetCell )
 // ---------------------------------------------------------------------------
 void PlaneStrain_Fe_CrackTip::formExtrapolationMatrix()
 {
-    std::vector<RealVector> gpLoc;
-    RealVector gpWt;
-    Quadrilateral_P2_4 stressInterpolation;
+    // std::vector<RealVector> gpLoc;
+    // RealVector gpWt;
+    // Quadrilateral_P2_4 stressInterpolation;
 
-    int nPoints = _integrationRule->giveNumberOfIntegrationPoints();
-    std::tie(gpLoc, gpWt) = _integrationRule->giveIntegrationPointsAndWeights();
+    // int nPoints = _integrationRule->giveNumberOfIntegrationPoints();
+    // std::tie(gpLoc, gpWt) = _integrationRule->giveIntegrationPointsAndWeights();
     
-    RealMatrix interpolationMatrix(nPoints, nPoints);
-    for ( int i = 0; i < nPoints; i++ )
-    {
-        RealVector psi = stressInterpolation.giveBasisFunctionsAt(gpLoc[i]);
-        for ( int j = 0; j < nPoints; j++ )
-            interpolationMatrix(i,j) = psi(j);
-    }
+    // RealMatrix interpolationMatrix(nPoints, nPoints);
+    // for ( int i = 0; i < nPoints; i++ )
+    // {
+    //     RealVector psi = stressInterpolation.giveBasisFunctionsAt(gpLoc[i]);
+    //     for ( int j = 0; j < nPoints; j++ )
+    //         interpolationMatrix(i,j) = psi(j);
+    // }
 
-    _extrapolationMatrix = inv(interpolationMatrix);
+    // _extrapolationMatrix = inv(interpolationMatrix);
 }
 // ---------------------------------------------------------------------------
 CellNumericsStatus_PlaneStrain_Fe_CrackTip*
@@ -817,14 +806,82 @@ PlaneStrain_Fe_CrackTip::getNumericsStatusAt( EvalPoint& gp )
     return gpns;
 }
 // ---------------------------------------------------------------------------
+// RealMatrix PlaneStrain_Fe_CrackTip::giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor )
+// {
+//     std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+//     std::vector<RealVector> dpsi = this->giveBasisFunctionDerivativesAt(natCoor);
+//     RealVector x(6), y(6);
+    
+// #pragma GCC ivdep
+//     for ( int i = 0; i < 6; i++ )
+//     {
+//         RealVector nodeCoor = analysisModel().domainManager().giveCoordinatesOf(node[i]);
+//         x(i) = nodeCoor(0);
+//         y(i) = nodeCoor(1);
+//     }
+    
+//     RealMatrix jmat(2,2);
+//     jmat(0,0) = dpsi[0].dot(x);
+//     jmat(0,1) = dpsi[0].dot(y);
+//     jmat(1,0) = dpsi[1].dot(x);
+//     jmat(1,1) = dpsi[1].dot(y);
+    
+//     return jmat;
+// }
+// ----------------------------------------------------------------------------
+RealVector PlaneStrain_Fe_CrackTip::giveBasisFunctionsAt( const RealVector& natCoor)
+{
+    RealVector psi = _basisFunction->giveBasisFunctionsAt(natCoor);
+    RealVector psi_c({psi(0) + psi(3) + psi(7), psi(1), psi(2), psi(4), psi(5), psi(6)});
+
+    return psi_c;
+}
+// ----------------------------------------------------------------------------
+std::vector<RealVector> PlaneStrain_Fe_CrackTip::giveBasisFunctionDerivativesAt( const RealVector& natCoor )
+{
+    std::vector<RealVector> dpsi = _basisFunction->giveBasisFunctionDerivativesAt(natCoor);
+    std::vector<RealVector> dpsi_c(2, RealVector());
+    dpsi_c[0] = {dpsi[0](0) + dpsi[0](3) + dpsi[0](7), dpsi[0](1), dpsi[0](2), dpsi[0](4), dpsi[0](5), dpsi[0](6)};
+    dpsi_c[1] = {dpsi[1](0) + dpsi[1](3) + dpsi[1](7), dpsi[1](1), dpsi[1](2), dpsi[1](4), dpsi[1](5), dpsi[1](6)};
+
+    return dpsi_c;
+}
+// ----------------------------------------------------------------------------
+RealMatrix PlaneStrain_Fe_CrackTip::giveBmatAt( Cell* targetCell, const RealVector& natCoor )
+{
+    RealMatrix dpsi, bmat(4,12);
+    
+    RealMatrix jmat = this->giveJacobianMatrixAt(targetCell, natCoor);
+    std::vector<RealVector> dpsiNat = this->giveBasisFunctionDerivativesAt(natCoor);
+    
+    RealMatrix dpsiNatMat(2,6);
+
+    for ( int i = 0; i < 6; i++)
+    {
+        dpsiNatMat(0,i) = dpsiNat[0](i);
+        dpsiNatMat(1,i) = dpsiNat[1](i);
+    }
+    
+    dpsi = inv(jmat)*dpsiNatMat;
+    
+    bmat = {
+        {dpsi(0,0), 0,         dpsi(0,1), 0,         dpsi(0,2), 0,         dpsi(0,3), 0,         dpsi(0,4), 0,         dpsi(0,5), 0},
+        {0,         dpsi(1,0), 0,         dpsi(1,1), 0,         dpsi(1,2), 0,         dpsi(1,3), 0,         dpsi(1,4), 0,         dpsi(1,5)},
+        {0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0,         0},
+        {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2), dpsi(1,3), dpsi(0,3), dpsi(1,4), dpsi(0,4), dpsi(1,5), dpsi(0,5)}
+    };
+
+    return bmat;
+}
+// ---------------------------------------------------------------------------
 RealMatrix PlaneStrain_Fe_CrackTip::giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor )
 {
-    std::vector<Node*> node = this->giveNodesOf(targetCell);
-    std::vector<RealVector> dpsi = _basisFunction->giveBasisFunctionDerivativesAt(natCoor);
-    RealVector x(8), y(8);
+    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+    std::vector<RealVector> dpsi = this->giveBasisFunctionDerivativesAt(natCoor);
+    RealVector x(6), y(6);
     
 #pragma GCC ivdep
-    for ( int i = 0; i < 8; i++ )
+    for ( int i = 0; i < 6; i++ )
     {
         RealVector nodeCoor = analysisModel().domainManager().giveCoordinatesOf(node[i]);
         x(i) = nodeCoor(0);
@@ -840,44 +897,13 @@ RealMatrix PlaneStrain_Fe_CrackTip::giveJacobianMatrixAt( Cell* targetCell, cons
     return jmat;
 }
 // ----------------------------------------------------------------------------
-RealMatrix PlaneStrain_Fe_CrackTip::giveBmatAt( Cell* targetCell, const RealVector& natCoor )
-{
-    RealMatrix dpsi, bmat(4,16);
-    
-    RealMatrix jmat = this->giveJacobianMatrixAt(targetCell, natCoor);
-    std::vector<RealVector> dpsiNat = _basisFunction->giveBasisFunctionDerivativesAt(natCoor);
-    
-    RealMatrix dpsiNatMat(2,8);
-
-    for ( int i = 0; i < 8; i++)
-    {
-        dpsiNatMat(0,i) = dpsiNat[0](i);
-        dpsiNatMat(1,i) = dpsiNat[1](i);
-    }
-    
-    dpsi = inv(jmat)*dpsiNatMat;
-    
-    bmat = {
-        {dpsi(0,0), 0,         dpsi(0,1), 0,         dpsi(0,2), 0,         dpsi(0,3), 0,
-         dpsi(0,4), 0,         dpsi(0,5), 0,         dpsi(0,6), 0,         dpsi(0,7), 0},
-        {0,         dpsi(1,0), 0,         dpsi(1,1), 0,         dpsi(1,2), 0,         dpsi(1,3),
-         0,         dpsi(1,4), 0,         dpsi(1,5), 0,         dpsi(1,6), 0,         dpsi(1,7)},
-        {0,         0,         0,         0,         0,         0,         0,         0,
-         0,         0,         0,         0,         0,         0,         0,         0},
-        {dpsi(1,0), dpsi(0,0), dpsi(1,1), dpsi(0,1), dpsi(1,2), dpsi(0,2), dpsi(1,3), dpsi(0,3),
-         dpsi(1,4), dpsi(0,4), dpsi(1,5), dpsi(0,5), dpsi(1,6), dpsi(0,6), dpsi(1,7), dpsi(0,7)}
-    };
-
-    return bmat;
-}
-// ----------------------------------------------------------------------------
 RealVector PlaneStrain_Fe_CrackTip::giveLocalDisplacementsAt( Cell* targetCell, ValueType valType )
 {    
     std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);
-    RealVector u(16);
+    RealVector u(12);
     
 #pragma GCC ivdep
-    for ( int i = 0; i < 16; i++ )
+    for ( int i = 0; i < 12; i++ )
         u(i) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], valType);
 
     return u;
@@ -885,11 +911,11 @@ RealVector PlaneStrain_Fe_CrackTip::giveLocalDisplacementsAt( Cell* targetCell, 
 // ----------------------------------------------------------------------------
 std::vector<Dof*> PlaneStrain_Fe_CrackTip::giveNodalDofsAt( Cell* targetCell )
 {
-    std::vector<Node*> node = this->giveNodesOf(targetCell);
-    std::vector<Dof*> dof(16, nullptr);
+    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+    std::vector<Dof*> dof(12, nullptr);
 
 #pragma GCC ivdep
-    for ( int i = 0; i < 8; i++ )
+    for ( int i = 0; i < 6; i++ )
     {
         dof[2*i] = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[i]);
         dof[2*i+1] = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[i]);
@@ -897,24 +923,24 @@ std::vector<Dof*> PlaneStrain_Fe_CrackTip::giveNodalDofsAt( Cell* targetCell )
     
     return dof;
 }
-// ----------------------------------------------------------------------------
-std::vector<Node*> PlaneStrain_Fe_CrackTip::giveNodesOf( Cell* targetCell )
-{
-    std::vector<Node*> reorderedNode(8, nullptr);
+// // ----------------------------------------------------------------------------
+// std::vector<Node*> PlaneStrain_Fe_CrackTip::giveNodesOf( Cell* targetCell )
+// {
+//     std::vector<Node*> reorderedNode(8, nullptr);
 
-    std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
-    int nNodes = (int)node.size();
-    if ( nNodes != 6 )
-        throw std::runtime_error("Error: Cell with " + std::to_string(nNodes) + " nodes detected!\n" + _name + " requires 6 nodes per cell.");
+//     std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
+//     int nNodes = (int)node.size();
+//     if ( nNodes != 6 )
+//         throw std::runtime_error("Error: Cell with " + std::to_string(nNodes) + " nodes detected!\n" + _name + " requires 6 nodes per cell.");
 
-    reorderedNode[0] = node[0];
-    reorderedNode[1] = node[1];
-    reorderedNode[2] = node[2];
-    reorderedNode[3] = node[0];
-    reorderedNode[4] = node[3];
-    reorderedNode[5] = node[4];
-    reorderedNode[6] = node[5];
-    reorderedNode[7] = node[0];
+//     reorderedNode[0] = node[0];
+//     reorderedNode[1] = node[1];
+//     reorderedNode[2] = node[2];
+//     reorderedNode[3] = node[0];
+//     reorderedNode[4] = node[3];
+//     reorderedNode[5] = node[4];
+//     reorderedNode[6] = node[5];
+//     reorderedNode[7] = node[0];
 
-    return reorderedNode;
-}
+//     return reorderedNode;
+// }

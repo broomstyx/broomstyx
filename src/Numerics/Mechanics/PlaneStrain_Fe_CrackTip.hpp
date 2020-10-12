@@ -159,7 +159,6 @@ namespace broomstyx
         
         void initializeMaterialsAt( Cell* targetCell ) override;
         void initializeNumericsAt( Cell* targetCell ) override;
-        void performPreprocessingAt( Cell* targetCell, std::string directive );
         void readAdditionalDataFrom( FILE* fp ) override;
         void setDofStagesAt( Cell* targetCell ) override;
 
@@ -178,11 +177,14 @@ namespace broomstyx
                    getNumericsStatusAt( Cell* targetCell );
         EvalPtNumericsStatus_PlaneStrain_Fe_CrackTip*
                    getNumericsStatusAt( EvalPoint& gp );
-        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
+        RealVector giveBasisFunctionsAt( const RealVector& natCoor );
+        std::vector<RealVector>
+                   giveBasisFunctionDerivativesAt( const RealVector& natCoor );
         RealMatrix giveBmatAt( Cell* targetCell, const RealVector& natCoor );
+        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
         RealVector giveLocalDisplacementsAt( Cell* targetCell, ValueType valType );
         std::vector<Dof*>  giveNodalDofsAt( Cell* targetCell );
-        std::vector<Node*> giveNodesOf( Cell* targetCell );
+        // std::vector<Node*> giveNodesOf( Cell* targetCell );
     };
 }
 
