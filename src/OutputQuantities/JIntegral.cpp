@@ -152,7 +152,7 @@ void JIntegral::initialize()
     int physNum = analysisModel().domainManager().givePhysicalEntityNumberFor(_boundaryLabel);
     int nCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
     int count = 0;
-    for (  int iCell = 0; iCell < nCells; iCell++ )
+    for ( int iCell = 0; iCell < nCells; iCell++ )
     {
         Cell* curCell = analysisModel().domainManager().giveBoundaryCell(iCell);
         if ( analysisModel().domainManager().giveLabelOf(curCell) == physNum )
