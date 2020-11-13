@@ -29,8 +29,10 @@
 #include <tuple>
 #include "omp.h"
 
+#include "ConvergenceCriteria/ConvergenceCriterion.hpp"
 #include "Core/AnalysisModel.hpp"
 #include "Core/ObjectFactory.hpp"
+#include "Core/Diagnostics.hpp"
 #include "Core/DofManager.hpp"
 #include "Core/DomainManager.hpp"
 #include "Core/LoadStep.hpp"
@@ -38,6 +40,7 @@
 #include "Core/SolutionManager.hpp"
 #include "LinearSolvers/LinearSolver.hpp"
 #include "Numerics/Numerics.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 #include "Util/linearAlgebra.hpp"
 #include "Util/readOperations.hpp"
 #include "Util/reductions.hpp"
@@ -69,6 +72,8 @@ int NewtonRaphson::computeSolutionFor( int stage
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
 
+    _substepCount += 1;
+
     // Get all active DOFs at current stage
     std::vector<Dof*> dof = analysisModel().dofManager().giveActiveDofsAtStage(stage);
     
@@ -89,19 +94,14 @@ int NewtonRaphson::computeSolutionFor( int stage
     while ( !converged && iterCount <= _maxIter )
     {
         // Pre-iteration operations, if any ...
+        auto innertic = std::chrono::high_resolution_clock::now();
         std::vector<Numerics*> numVec = analysisModel().numericsManager().giveAllNumerics();
         for ( Numerics* curNumerics : numVec )
-        {
             curNumerics->performPreIterationOperationsAt(stage, iterCount);
-        }
-        
-        // Reinitialize data for calculation of residual convergence
-        for ( int i = 0; i < _nDofGroups; i++ )
-        {
-            _ctrlParam(i,4) = 0.;
-            _ctrlParam(i,5) = 0.;
-        }
-        
+        auto innertoc = std::chrono::high_resolution_clock::now();
+        tictoc = innertoc - innertic;
+        diagnostics().addPostprocessingTime(tictoc.count());
+
         // Calculate global external force vectors
         // Note: this is normally redudant, but we recalculate them in each
         // iteration to accommodate numerics classes that implement special
@@ -121,9 +121,39 @@ int NewtonRaphson::computeSolutionFor( int stage
         std::printf("\n   -----------------");
         
         // Compute convergence norms
-        RealMatrix normDat;
-        std::tie(converged,normDat) = this->computeConvergenceNormsFrom(dU, resid, dof);
+        RealMatrix normDat(2*_nDofGroups, 2);
         
+        // Disallow convergence at initial guess
+        if ( iterCount == 0 )
+            converged = false;
+        else
+        {
+            converged = true;
+            for ( int i = 0; i < _nDofGroups; i++ )
+            {
+                int idx = this->giveIndexForDofGroup(_dofGrpNum[i]);
+                bool dofGrpConverged = _convergenceCriterion[idx]->checkConvergenceOf(resid, dof);
+                if ( !dofGrpConverged )
+                    converged = false;
+            }
+
+            for ( int i = 0; i < _nDofGroups; i++ )
+            {
+                RealMatrix dofGrpNormDat = _convergenceCriterion[i]->giveConvergenceData();
+                normDat(2*i, 0) = dofGrpNormDat(0, 0);
+                normDat(2*i, 1) = dofGrpNormDat(0, 1);
+                normDat(2*i+1, 0) = dofGrpNormDat(1, 0);
+                normDat(2*i+1, 1) = dofGrpNormDat(1, 1);
+            }
+
+            // Report convergence status
+            std::printf("\n\n    DOF Grp      Norm          Criterion");
+            std::printf("\n   -------------------------------------------------------");
+
+            for ( int i = 0; i < _nDofGroups; i++ )
+                _convergenceCriterion[i]->reportConvergenceStatus();
+        }
+            
         // Additional convergence checks from numerics
         bool numericsConverged = this->checkConvergenceOfNumericsAt(stage);
         if ( !numericsConverged )
@@ -137,16 +167,33 @@ int NewtonRaphson::computeSolutionFor( int stage
         std::printf("\n\n    Total time for iteration = %f sec.\n", tictoc.count());
         
         // Print post iteration messages from each numerics
-        for ( Numerics* curNumerics : numVec )
-        {
-            curNumerics->printPostIterationMessage(stage);
-        }
+        if ( iterCount >= 0 )
+            for ( Numerics* curNumerics : numVec )
+            {
+                curNumerics->printPostIterationMessage(stage);
+            }
         
         if ( converged )
         {
             // Clear memory for solvers
             _solver->clearInternalMemory();
+            innertic = std::chrono::high_resolution_clock::now();
             _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addOutputWriteTime(tictoc.count());
+        }
+        else if ( iterCount == _maxIter )
+        {
+            // Clear memory for solver
+            _solver->clearInternalMemory();
+            
+            innertic = std::chrono::high_resolution_clock::now();
+            _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addOutputWriteTime(tictoc.count());
+            ++iterCount;
         }
         else
         {
@@ -165,11 +212,18 @@ int NewtonRaphson::computeSolutionFor( int stage
             this->assembleJacobian(stage, time);
                 
             // Solve system and apply over-relaxation
+            innertic = std::chrono::high_resolution_clock::now();
+
             _solver->allocateInternalMemoryFor(_spMatrix);
             if ( _solver->takesInitialGuess() )
                 _solver->setInitialGuessTo(dU);
             dU = _overRelaxation*_solver->solve(_spMatrix, resid);
-                            
+
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addSolveTime(tictoc.count());
+
+            innertic = std::chrono::high_resolution_clock::now();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
@@ -178,12 +232,13 @@ int NewtonRaphson::computeSolutionFor( int stage
                 int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[j]);
                 if ( eqNo != UNASSIGNED )
                 {
-                    double lastVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[j], current_value);
-
                     // Update value primary variable at DOF
-                    analysisModel().dofManager().updatePrimaryVariableAt(dof[j], lastVal + dU(eqNo), current_value);
+                    analysisModel().dofManager().updatePrimaryVariableAt(dof[j], dU(eqNo), correction);
                 }   
             }
+            innertoc = std::chrono::high_resolution_clock::now();
+            tictoc = innertoc - innertic;
+            diagnostics().addUpdateTime(tictoc.count());
         }
     }
     
@@ -287,113 +342,114 @@ void NewtonRaphson::initializeSolvers()
 // ----------------------------------------------------------------------------
 void NewtonRaphson::readDataFromFile( FILE* fp )
 {    
-    std::string key, src = "NewtonRaphson (SolutionMethod)";
-    
     // Read number of DOF groups
-    verifyKeyword(fp, key = "DofGroups", src);
-    _nDofGroups = getIntegerInputFrom(fp, "Failed to read number of DOF groups from input file!", src);
-    _dofGrpNum.assign(_nDofGroups, 0);
-    
-    // Initialize solution control vectors
-    _ctrlParam.init(_nDofGroups,6);
-    
+    verifyKeyword(fp, "DofGroups", _name);
+    _nDofGroups = getIntegerInputFrom(fp, "Failed to read number of DOF groups from input file!", _name);
+    _dofGrpNum.assign(_nDofGroups, -1);
+
+    // Read convergence criterion and associated data
+    _convergenceCriterion.assign(_nDofGroups, nullptr);    
     for ( int i = 0; i < _nDofGroups; i++ )
     {
-        // Read DOF group number
-        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF group number from input file!", src);
-
-        // Read DOF group convergence parameters
-        verifyKeyword(fp, key = "Parameters", src);
-
-        // Correction tolerance
-        _ctrlParam(i,0) = getRealInputFrom(fp, "Failed to read correction tolerance from input file!", src);
-
-        // Residual tolerance
-        _ctrlParam(i,1) = getRealInputFrom(fp, "Failed to read residual tolerance from input file!", src);
-
-        // Absolute tolerance for corrections
-        _ctrlParam(i,2) = getRealInputFrom(fp, "Failed to read absolute correction tolerance from input file!", src);
-
-        // Absolute tolerance for residuals
-        _ctrlParam(i,3) = getRealInputFrom(fp, "Failed to read absolute residual tolerance from input file!", src);
+        _dofGrpNum[i] = getIntegerInputFrom(fp, "Failed to read DOF groupnumber from input file!", _name);
+        std::string convCritName = getStringInputFrom(fp, "Failed to read convergence criterion type from input file!", _name);
+        _convergenceCriterion[i] = objectFactory().instantiateConvergenceCriterion(convCritName);
+        _convergenceCriterion[i]->initialize(_dofGrpNum[i]);
+        _convergenceCriterion[i]->readDataFromFile(fp);
     }
-    _symmetry = false;
     
     // Read linear solver to be used
-    verifyKeyword(fp, "LinearSolver", src);
-    key = getStringInputFrom(fp, "Failed to read linear solver from input file!", src);
+    verifyKeyword(fp, "LinearSolver", _name);
+    std::string key = getStringInputFrom(fp, "Failed to read linear solver from input file!", _name);
     _solver = objectFactory().instantiateLinearSolver(key);
     _solver->readDataFrom(fp);
     _symmetry = _solver->giveSymmetryOption();
 
     // Read over-relaxation parameter
-    verifyKeyword(fp, key = "OverRelaxation", src);
-    _overRelaxation = getRealInputFrom(fp, "Failed to read over-relaxation parameter from input file!", src);
+    verifyKeyword(fp, "OverRelaxation", _name);
+    _overRelaxation = getRealInputFrom(fp, "Failed to read over-relaxation parameter from input file!", _name);
 
     // Create sparse matrices
     _spMatrix = objectFactory().instantiateSparseMatrix(_solver->giveRequiredMatrixFormat());
     _spMatrix->setSymmetryTo(_symmetry);
 
     // Maximum number of iterations
-    verifyKeyword(fp, key = "MaxIterations", src);
-    _maxIter = getIntegerInputFrom(fp, "Failed to read maximum number of iterations from input file!", src);
+    verifyKeyword(fp, key = "MaxIterations", _name);
+    _maxIter = getIntegerInputFrom(fp, "Failed to read maximum number of iterations from input file!", _name);
 }
 
 // Private methods
 // ----------------------------------------------------------------------------
 RealVector NewtonRaphson::assembleLeftHandSide( int stage, const TimeData& time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     RealVector lhs(_nUnknowns);
     
     // Assembly of global internal force vector for current subsystem
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     
-    // ...because OpenMP doesn't allow class members to be shared by parallel threads
-    RealMatrix ctrlParam = _ctrlParam;
-    
 #ifdef _OPENMP
-#pragma omp parallel for reduction ( + : ctrlParam )
+#pragma omp parallel
 #endif
-    for (int i = 0; i < nCells; i++)
     {
-        Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
-        Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
-        
-        std::vector<Dof*> rowDof;
-        RealVector localLhs;
-        
-        // Calculate cell internal forces
-        std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, UNASSIGNED, time);
-        
-        // Assembly
-        for ( int j = 0; j < (int)rowDof.size(); j++ )
+        int threadNum = 0;
+#ifdef _OPENMP
+        threadNum = omp_get_thread_num();
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+        for (int i = 0; i < nCells; i++)
         {
-            if ( rowDof[j] )
+            Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
+            Numerics* numerics = analysisModel().domainManager().giveNumericsFor(curCell);
+            
+            std::vector<Dof*> rowDof;
+            RealVector localLhs;
+            
+            // Calculate cell internal forces
+            std::tie(rowDof,localLhs) = numerics->giveStaticLeftHandSideAt(curCell, stage, UNASSIGNED, time);
+            
+            // Assembly
+            for ( int j = 0; j < (int)rowDof.size(); j++ )
             {
-                int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                if ( rowNum != UNASSIGNED )
+                if ( rowDof[j] )
                 {
-                    int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                    int dgIdx = this->giveIndexForDofGroup(dgNum);
-                    ctrlParam(dgIdx,4) += std::fabs(localLhs(j));
-                    ctrlParam(dgIdx,5) += 1.;
+                    int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                    int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                    int idx = this->giveIndexForDofGroup(dofGrp);
+                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j), threadNum);
+
+                    if ( rowNum != UNASSIGNED )
+                    {
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                    lhs(rowNum) += localLhs(j);
-                }
+                        lhs(rowNum) += localLhs(j);
+                    }
 
-                analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
+                    analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j));
+                }
             }
         }
     }
-    _ctrlParam = ctrlParam;
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addLhsAssemblyTime(tictoc.count());
     
     return lhs;
 }
 // ---------------------------------------------------------------------------
 void NewtonRaphson::assembleJacobian( int stage, const TimeData& time )
 {
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
 
 #ifdef _OPENMP
@@ -421,64 +477,78 @@ void NewtonRaphson::assembleJacobian( int stage, const TimeData& time )
             }
         }
     }
+
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addCoefMatAssemblyTime(tictoc.count());
 }
 // ---------------------------------------------------------------------------
 RealVector NewtonRaphson::assembleRightHandSide( int stage
                                                , const std::vector<BoundaryCondition>& bndCond
                                                , const std::vector<FieldCondition>& fldCond
                                                , const TimeData& time )
-{   
+{
+    std::chrono::time_point<std::chrono::system_clock> tic, toc;
+    std::chrono::duration<double> tictoc;
+    tic = std::chrono::high_resolution_clock::now();
+
     RealVector rhs(_nUnknowns);
     
     // Loop through all field conditions
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     
-    // ...because OpenMP doesn't allow class members to be shared by parallel threads
-    RealMatrix ctrlParam = _ctrlParam;
-    
 #ifdef _OPENMP
-#pragma omp parallel for reduction ( + : ctrlParam )
+#pragma omp parallel
 #endif
-    for ( int i = 0; i < nCells; i++ )
     {
-        Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
-        int label = analysisModel().domainManager().giveLabelOf(curCell);
-            
-        for ( int ifc = 0; ifc < (int)fldCond.size(); ifc++ )
+        int threadNum = 0;
+#ifdef _OPENMP
+        threadNum = omp_get_thread_num();
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+        for ( int i = 0; i < nCells; i++ )
         {
-            int fcLabel = analysisModel().domainManager().givePhysicalEntityNumberFor(fldCond[ifc].domainLabel());
-            if ( label == fcLabel )
+            Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
+            int label = analysisModel().domainManager().giveLabelOf(curCell);
+                
+            for ( int ifc = 0; ifc < (int)fldCond.size(); ifc++ )
             {
-                RealVector localRhs;
-                std::vector<Dof*> rowDof;
-
-                Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
-                std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, UNASSIGNED, fldCond[ifc], time);
-
-                for ( int j = 0; j < localRhs.dim(); j++)
+                int fcLabel = analysisModel().domainManager().givePhysicalEntityNumberFor(fldCond[ifc].domainLabel());
+                if ( label == fcLabel )
                 {
-                    if ( rowDof[j] )
+                    RealVector localRhs;
+                    std::vector<Dof*> rowDof;
+
+                    Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
+                    std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, UNASSIGNED, fldCond[ifc], time);
+
+                    for ( int j = 0; j < localRhs.dim(); j++)
                     {
-                        int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                        if ( rowNum != UNASSIGNED )
+                        if ( rowDof[j] )
                         {
-                            int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            int dgIdx = this->giveIndexForDofGroup(dgNum);
-                            ctrlParam(dgIdx,4) += std::fabs(localRhs(j));
-                            ctrlParam(dgIdx,5) += 1.;
+                            int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                            int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                            int idx = this->giveIndexForDofGroup(dofGrp);
+                            _convergenceCriterion[idx]->processLocalResidualContribution(localRhs(j), threadNum);
+
+                            if ( rowNum != UNASSIGNED )
+                            {
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                            rhs(rowNum) += localRhs(j);
-                        }
+                                rhs(rowNum) += localRhs(j);
+                            }
 
-                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                        }
                     }
                 }
             }
         }
     }
-    
+        
     // Loop through all natural boundary conditions
     for (int ibc = 0; ibc < (int)bndCond.size(); ibc++)
     {
@@ -486,157 +556,61 @@ RealVector NewtonRaphson::assembleRightHandSide( int stage
         Numerics* numerics = analysisModel().numericsManager().giveNumerics(bndCond[ibc].targetNumerics());
         
         int nBCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
+
 #ifdef _OPENMP
-#pragma omp parallel for reduction ( + : ctrlParam )
+#pragma omp parallel
 #endif
-        for ( int i = 0; i < nBCells; i++ ) 
         {
-            Cell* curCell = analysisModel().domainManager().giveBoundaryCell(i);
-            int label = analysisModel().domainManager().giveLabelOf(curCell);
-
-            if ( label == boundaryId )
+            int threadNum = 0;
+#ifdef _OPENMP
+            threadNum = omp_get_thread_num();
+#endif
+#ifdef _OPENMP
+#pragma omp for
+#endif
+            for ( int i = 0; i < nBCells; i++ ) 
             {
-                RealVector localRhs;
-                std::vector<Dof*> rowDof;
+                Cell* curCell = analysisModel().domainManager().giveBoundaryCell(i);
+                int label = analysisModel().domainManager().giveLabelOf(curCell);
 
-                // Specifics of BC imposition are handled by numerics
-                std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, UNASSIGNED, bndCond[ibc], time);
-                
-                for ( int j = 0; j < localRhs.dim(); j++)
+                if ( label == boundaryId )
                 {
-                    if ( rowDof[j] )
+                    RealVector localRhs;
+                    std::vector<Dof*> rowDof;
+
+                    // Specifics of BC imposition are handled by numerics
+                    std::tie(rowDof,localRhs) = numerics->giveStaticRightHandSideAt(curCell, stage, UNASSIGNED, bndCond[ibc], time);
+                    
+                    for ( int j = 0; j < localRhs.dim(); j++)
                     {
-                        int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
-                        if ( rowNum != UNASSIGNED )
+                        if ( rowDof[j] )
                         {
-                            int dgNum = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
-                            int dgIdx = this->giveIndexForDofGroup(dgNum);
-                            ctrlParam(dgIdx,4) += std::fabs(localRhs(j));
-                            ctrlParam(dgIdx,5) += 1.;
+                            int rowNum = analysisModel().dofManager().giveEquationNumberAt(rowDof[j]);
+                            int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
+                            int idx = this->giveIndexForDofGroup(dofGrp);
+                            _convergenceCriterion[idx]->processLocalResidualContribution(localRhs(j), threadNum);
+                            
+                            if ( rowNum != UNASSIGNED )
+                            {
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                            rhs(rowNum) += localRhs(j);
-                        }
+                                rhs(rowNum) += localRhs(j);
+                            }
 
-                        analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                            analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localRhs(j));
+                        }
                     }
                 }
             }
         }
     }
-    _ctrlParam = ctrlParam;
+    
+    toc = std::chrono::high_resolution_clock::now();
+    tictoc = toc - tic;
+    diagnostics().addRhsAssemblyTime(tictoc.count());
     
     return rhs;
-}
-// ---------------------------------------------------------------------------
-std::tuple<bool,RealMatrix>
-NewtonRaphson::computeConvergenceNormsFrom( const RealVector& dU
-                                          , const RealVector& resid
-                                          , const std::vector<Dof*>& dof )
-{    
-    /*********************************************** 
-     * Initialize matrix to store convergence data
-     *   col 0: norm
-     *   col 1: criterion
-     ***********************************************/
-    
-    RealMatrix normDat(2*_nDofGroups, 2);
-#ifdef _OPENMP
-#pragma omp parallel for
-#endif
-    for ( int i = 0; i < (int)dof.size(); i++ )
-    {
-        // Find group number of DOF
-        int grpNum = analysisModel().dofManager().giveGroupNumberFor(dof[i]);
-        int grpIdx = this->giveIndexForDofGroup(grpNum);
-        
-        if ( grpIdx >= 0 )
-        {
-            // Find equation number of DOF
-            int eqNo = analysisModel().dofManager().giveEquationNumberAt(dof[i]);
-
-            // Contribution to L2-norm of corrections
-            double corrVal = _overRelaxation*dU(eqNo);
-            
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-            normDat(2*grpIdx,0) += corrVal*corrVal;
-
-            // Contribution to L2-norm of incremental solution
-            double incVal = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], incremental_value);
-
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-            normDat(2*grpIdx,1) += incVal*incVal;
-
-            // Contribution to L2-norm of residual
-            double rVal = resid(eqNo);
-
-#ifdef _OPENMP
-#pragma omp atomic
-#endif
-            normDat(2*grpIdx+1,0) += rVal*rVal;
-        }
-    }
-    
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        double critR = _ctrlParam(i,1)*_ctrlParam(i,4);
-        if ( critR < _ctrlParam(i,3) )
-            critR = _ctrlParam(i,3);
-        normDat(2*i+1, 1) = critR;
-    }
-    
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        // Normalize entries
-        normDat(2*i,0) = std::sqrt(normDat(2*i,0)/_dofGrpCount(i));
-        normDat(2*i+1,0) = std::sqrt(normDat(2*i+1,0)/_dofGrpCount(i));
-        normDat(2*i,1) = std::sqrt(normDat(2*i,1)/_dofGrpCount(i));
-        
-        // Update max stored L2-norm for residuals
-        if ( normDat(2*i+1,0) > _ctrlParam(i,4) )
-            _ctrlParam(i,4) = normDat(2*i+1,0);
-        
-        // Calculate criteria using relative tolerances
-        normDat(2*i,1) *= _ctrlParam(i,0);
-        normDat(2*i+1,1) = _ctrlParam(i,1)*_ctrlParam(i,4);
-        
-        // Check against absolute tolerances
-        if ( normDat(2*i,1) < _ctrlParam(i,2) )
-            normDat(2*i,1) = _ctrlParam(i,2);
-        if ( normDat(2*i+1,1) < _ctrlParam(i,3) )
-            normDat(2*i+1,1) = _ctrlParam(i,3);
-    }
-    
-    // Report status
-    std::printf("\n\n    DOF Grp   L2-Norm         Criterion");
-    std::printf("\n   -------------------------------------------------------");
-    
-    bool isConverged = true;
-    for ( int i = 0; i < _nDofGroups; i++ )
-    {
-        // Convergence of corrections
-        std::printf("\n     C  %-6d%e   %e ", _dofGrpNum[i], normDat(2*i, 0), normDat(2*i, 1));
-        
-        if ( normDat(2*i,0) > normDat(2*i,1) )
-            isConverged = false;
-        else
-            std::printf(" << CONVERGED");
-        
-        // Convergence of residuals
-        std::printf("\n     R  %-6d%e   %e ", _dofGrpNum[i], normDat(2*i+1, 0), normDat(2*i+1, 1));
-        
-        if ( normDat(2*i+1,0) > normDat(2*i+1,1) )
-            isConverged = false;
-        else
-            std::printf(" << CONVERGED");
-    }
-    
-    return std::make_tuple(isConverged,normDat);
 }
 // ---------------------------------------------------------------------------
 int NewtonRaphson::giveIndexForDofGroup( int dofGroupNum )

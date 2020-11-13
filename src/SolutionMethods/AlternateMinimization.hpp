@@ -28,7 +28,6 @@
 #include <map>
 #include <tuple>
 #include <vector>
-//#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {

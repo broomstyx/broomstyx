@@ -25,11 +25,11 @@
 #define	LINEARSTATIC_HPP
 
 #include "SolutionMethod.hpp"
-#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {
     class LinearSolver;
+    class SparseMatrix;
     
     class LinearStatic : public SolutionMethod
     {

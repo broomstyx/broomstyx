@@ -28,12 +28,13 @@
 #include <map>
 #include <tuple>
 #include <vector>
-#include "SparseMatrix/SparseMatrix.hpp"
 
 namespace broomstyx
 {
+    class ConvergenceCriterion;
     class Dof;
     class LinearSolver;
+    class SparseMatrix;
     
     class NewtonRaphson : public SolutionMethod
     {
@@ -61,19 +62,10 @@ namespace broomstyx
         int           _nUnknowns;
         double        _overRelaxation;
         
-        /****************************************************
-            Solution control parameters
-            
-              0 : relative tolerance on corrections
-              1 : relative tolerance on residuals
-              2 : absolute tolerance on corrections
-              3 : absolute tolerance on residuals
-              4 : sum of absolute flux contributions
-              5 : number of flux contributions
-
-         ***************************************************/
-        RealMatrix _ctrlParam;
+        std::vector<ConvergenceCriterion*> _convergenceCriterion;
         int _maxIter;
+        int _substepCount;
+        bool _abortAtMaxIter;
         
         virtual RealVector assembleLeftHandSide( int stage, const TimeData& time );
         virtual void       assembleJacobian( int stage, const TimeData& time );
@@ -82,11 +74,6 @@ namespace broomstyx
                                                 , const std::vector<BoundaryCondition>& bndCond
                                                 , const std::vector<FieldCondition>&    fldCond
                                                 , const TimeData& time );
-        
-        std::tuple< bool,RealMatrix >
-                computeConvergenceNormsFrom( const RealVector& dU
-                                           , const RealVector& resid
-                                           , const std::vector<Dof*>& dof );
         
         int giveIndexForDofGroup( int dofGroupNum );
     };

@@ -37,6 +37,7 @@
 #include "LinearSolvers/LinearSolver.hpp"
 #include "MeshReaders/MeshReader.hpp"
 #include "Numerics/Numerics.hpp"
+#include "SparseMatrix/SparseMatrix.hpp"
 #include "Util/linearAlgebra.hpp"
 #include "Util/readOperations.hpp"
 
