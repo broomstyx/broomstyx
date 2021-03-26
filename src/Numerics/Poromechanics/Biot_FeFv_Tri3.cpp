@@ -1037,7 +1037,7 @@ void Biot_FeFv_Tri3::setDofStagesAt( Cell* targetCell )
     }
         
     // Cell DOF
-    Dof* dof_h = analysisModel().domainManager().giveCellDof(1, targetCell);
+    Dof* dof_h = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
     analysisModel().dofManager().setStageFor(dof_h, _stage[0]);
     analysisModel().dofManager().setSubsystemFor(dof_h, _subsystem[0]);
 }
