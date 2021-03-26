@@ -98,7 +98,7 @@ void SolutionManager::commenceSolution()
     TimeData time;
     time.start = 0.0;
     
-    analysisModel().outputManager().writeOutput(time.start);
+    // analysisModel().outputManager().writeOutput(time.start);
     analysisModel().outputManager().writeOutputQuantities(time.start);
     
     // Solve load steps
