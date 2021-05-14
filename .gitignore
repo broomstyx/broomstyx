@@ -6,3 +6,6 @@ CMakeFiles/*
 .vscode/*
 build-cmake/*
 src/.vscode/*
+.cproject
+.project
+.settings/*
