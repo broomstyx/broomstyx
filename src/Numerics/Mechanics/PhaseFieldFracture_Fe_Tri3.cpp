@@ -41,7 +41,9 @@ registerBroomstyxObject(Numerics, PhaseFieldFracture_Fe_Tri3)
 
 // Numerics status
 NumericsStatus_PhaseFieldFracture_Fe_Tri3::NumericsStatus_PhaseFieldFracture_Fe_Tri3()
-    : _strain(RealVector(4))
+    : _area(0)
+	, _phi(0)
+	, _strain(RealVector(4))
     , _stress(RealVector(4))
     , _gradU(RealMatrix(2,2))
     , _surfEgy(0)
@@ -62,6 +64,11 @@ PhaseFieldFracture_Fe_Tri3::PhaseFieldFracture_Fe_Tri3()
     _nSubsystems = 2;
     _name = "PhaseFieldFracture_Fe_Tri3";
     
+    // Initialize private variables
+    _Gc = 0.;
+    _lc = 0.;
+    _phiIrrev = 0.;
+
     // Lone Gauss point coordinate and weight
     _gpNatCoor = {1./3., 1./3.};
     _wt = 0.5;
