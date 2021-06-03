@@ -38,6 +38,10 @@ Legendre_2D_Tri::giveIntegrationPointsAndWeights()
     
     switch (_nIntegrationPoints)
     {
+    	case 1: // Degree of precision = 1
+    		gpLoc[0] = {0.333333333333333, 0.333333333333333};
+    		gpWt = {0.5};
+    		break;
         case 3: // Degree of precision = 2
             gpLoc[0] = {0.166666666666667, 0.166666666666667};
             gpLoc[1] = {0.666666666666667, 0.166666666666667};

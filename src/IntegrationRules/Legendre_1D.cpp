@@ -55,6 +55,10 @@ Legendre_1D::giveIntegrationPointsAndWeights()
     
     switch (_nIntegrationPoints)
     {
+    	case 1:
+    		gpLoc[0](0) = 0.;
+    		gpWt = {2.};
+    		break;
         case 2:
             gpLoc[0](0) = -loc_2;
             gpLoc[1](0) = loc_2;

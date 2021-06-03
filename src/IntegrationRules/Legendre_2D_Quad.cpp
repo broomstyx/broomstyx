@@ -42,6 +42,9 @@ Legendre_2D_Quad::giveIntegrationPointsAndWeights()
 
     switch (_nIntegrationPoints)
     {
+    	case 1:
+    		nIntegrationPoints_1d = 1;
+    		break;
         case 4:
             nIntegrationPoints_1d = 2;
             break;
