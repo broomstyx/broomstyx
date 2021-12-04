@@ -25,6 +25,7 @@
 #define OBJECTFACTORY_HPP
 
 #include <map>
+#include <string>
 
 #define registerBroomstyxObject(baseClass, derivedClass) static bool dummy_ ## derivedClass __attribute__((unused)) = objectFactory().register ## baseClass( # derivedClass, createDerivedObject<baseClass,derivedClass> );
 

@@ -22,6 +22,7 @@
 */
 
 #include "ObjectFactory.hpp"
+#include <stdexcept>
 
 #define VERBOSE_REGISTRATION false
 
