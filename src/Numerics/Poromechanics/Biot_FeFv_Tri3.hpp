@@ -131,7 +131,7 @@ namespace broomstyx
         
     private:
         double _alpha;
-        double _M;
+        double _S;
         double _gAccel;
         double _rhoF;
         double _mu;

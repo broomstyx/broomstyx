@@ -998,7 +998,7 @@ Biot_FeFv_Tri6::giveTransientCoefficientMatrixAt( Cell*           targetCell
         
         rowDof[12] = cellDof;
         colDof[12] = cellDof;
-        coefVal(12) = cns->_area*_rhoF*_gAccel/_M;
+        coefVal(12) = cns->_area*_rhoF*_gAccel*_S;
     }
     
     return std::make_tuple(std::move(rowDof), std::move(colDof), std::move(coefVal));
@@ -1043,7 +1043,7 @@ Biot_FeFv_Tri6::giveTransientLeftHandSideAt( Cell*           targetCell
             lhs(0) += _alpha*bmatDiv.dot(u)*((J*cns->_gp[i].weight));
         }
         
-        lhs(0) += cns->_area*(_rhoF*_gAccel*h/_M);
+        lhs(0) += cns->_area*(_rhoF*_gAccel*h*_S);
     }
     
     return std::make_tuple(std::move(rowDof), std::move(lhs));
@@ -1181,8 +1181,8 @@ void Biot_FeFv_Tri6::readAdditionalDataFrom( FILE* fp )
     verifyKeyword(fp, "BiotCoefficient", _name);
     _alpha = getRealInputFrom(fp, "Failed to read Biot coefficient from input file!", _name);
     
-    verifyKeyword(fp, "BiotModulus", _name);
-    _M = getRealInputFrom(fp, "Failed to read Biot modulus from input file!", _name);
+    verifyKeyword(fp, "StorageCoefficient", _name);
+    _S = getRealInputFrom(fp, "Failed to read Biot modulus from input file!", _name);
     
     verifyKeyword(fp, "FluidDensity", _name);
     _rhoF = getRealInputFrom(fp, "Failed to read fluid density from input file!", _name);
