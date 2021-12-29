@@ -115,8 +115,8 @@ void MKL_Pardiso::clearInternalMemory()
 {
     if ( _memoryIsAllocated )
     {
-        double ddum;
-        int idum;
+        double ddum = 0;
+        int idum = 0;
         int error = 0;
         // Memory release
         int phase = -1;
