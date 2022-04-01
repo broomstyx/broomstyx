@@ -8,7 +8,15 @@ endif()
 
 file (GLOB_RECURSE sourcefiles "${PROJECT_SOURCE_DIR}/src/*.cpp")
 file (GLOB_RECURSE testfiles "${PROJECT_SOURCE_DIR}/tests/*.cpp")
-add_executable (broomstyx ${sourcefiles} ${testfiles})
+
+if (DEFINED ENV{USER_SOURCE_DIR})
+    message(STATUS "USER_SOURCE_DIR=$ENV{USER_SOURCE_DIR}")
+    file (GLOB_RECURSE userfiles "$ENV{USER_SOURCE_DIR}/*.cpp")
+    add_executable (broomstyx ${sourcefiles} ${testfiles} ${userfiles})
+else()
+    message(STATUS "Environment variable USER_SOURCE_DIR is empty")
+    add_executable (broomstyx ${sourcefiles} ${testfiles})
+endif()
 
 include_directories (${PROJECT_SOURCE_DIR})
 include_directories (${PROJECT_SOURCE_DIR}/src)
