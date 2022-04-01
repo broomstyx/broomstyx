@@ -7,7 +7,8 @@ if(POLICY CMP0074)
 endif()
 
 file (GLOB_RECURSE sourcefiles "${PROJECT_SOURCE_DIR}/src/*.cpp")
-add_executable (broomstyx ${sourcefiles})
+file (GLOB_RECURSE testfiles "${PROJECT_SOURCE_DIR}/tests/*.cpp")
+add_executable (broomstyx ${sourcefiles} ${testfiles})
 
 include_directories (${PROJECT_SOURCE_DIR})
 include_directories (${PROJECT_SOURCE_DIR}/src)

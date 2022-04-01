@@ -293,7 +293,7 @@ namespace broomstyx
         }
 
         // NOTE: Storage of matrix components uses column-major format
-        // Matric component access as variableName(i,j)
+        // Matrix component address access as variableName(i,j)
         double& operator()( int idx1, int idx2 )
         {
 #ifndef NDEBUG
@@ -314,6 +314,7 @@ namespace broomstyx
             return _ptr[ idx2 * _dim1 + idx1 ];
         }
 
+        // Matrix component value address access as variableName.elem(i,j
         double operator()( int idx1, int idx2 ) const
         {
 #ifndef NDEBUG

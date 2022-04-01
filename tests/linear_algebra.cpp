@@ -1,3 +1,4 @@
+#if 0
 /*
   Copyright (c) 2014 - 2019 University of Bergen
   
@@ -384,3 +385,4 @@ int main(int argc, char** argv) {
 
     return (EXIT_SUCCESS);
 }
+#endif

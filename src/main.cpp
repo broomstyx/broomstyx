@@ -23,9 +23,13 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstring>
 #include "Core/AnalysisModel.hpp"
 #include "Core/Diagnostics.hpp"
 #include "Core/ObjectFactory.hpp"
+
+// Test source files
+#include "../tests/test.hpp"
 
 using namespace broomstyx;
 
@@ -38,34 +42,39 @@ int main( int argc, char **argv )
         return 0;
     }
     
-    if ( objectFactory().hasError() )
-    {
-        std::printf("\n\tRegistration error detected in class factory.\n\n");
-    }
+    if ( std::strcmp(argv[1],"--test") == 0 )
+    	perform_tests();
     else
     {
-        std::chrono::time_point<std::chrono::system_clock> tic, toc;
-        std::chrono::duration<double> tictoc;
-        tic = std::chrono::high_resolution_clock::now();
+		if ( objectFactory().hasError() )
+		{
+			std::printf("\n\tRegistration error detected in class factory.\n\n");
+		}
+		else
+		{
+			std::chrono::time_point<std::chrono::system_clock> tic, toc;
+			std::chrono::duration<double> tictoc;
+			tic = std::chrono::high_resolution_clock::now();
 
-        try 
-        {
-            analysisModel().initializeYourself(argv[1]);
-            analysisModel().solveYourself();
-            
-            std::printf("\n\nRun successful ---> program will now terminate.");
-        }
-        catch (std::exception& e)
-        {
-            std::printf("\n%s\nException caught in main.cpp\n\n", e.what());
-            std::fflush(stdout);
-        }
+			try
+			{
+				analysisModel().initializeYourself(argv[1]);
+				analysisModel().solveYourself();
 
-        toc = std::chrono::high_resolution_clock::now();
-        tictoc = toc - tic;
-        std::printf("\nTotal runtime = %f seconds.\n\n", tictoc.count());  
+				std::printf("\n\nRun successful ---> program will now terminate.");
+			}
+			catch (std::exception& e)
+			{
+				std::printf("\n%s\nException caught in main.cpp\n\n", e.what());
+				std::fflush(stdout);
+			}
 
-        diagnostics().outputDiagnostics();
+			toc = std::chrono::high_resolution_clock::now();
+			tictoc = toc - tic;
+			std::printf("\nTotal runtime = %f seconds.\n\n", tictoc.count());
+
+			diagnostics().outputDiagnostics();
+		}
     }
     return 0;
 }
