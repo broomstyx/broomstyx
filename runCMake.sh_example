@@ -1,0 +1,20 @@
+#!/bin/bash
+
+# ----------------------------------------------------------------------------
+# This is an example bash script for setting environment variables and calling
+# cmake for BROOMStyx.
+# ----------------------------------------------------------------------------
+
+# MKL root directory
+export MKL_ROOT=<PATH_TO_MKL_INSTALLATION>
+# ViennaCL root directory
+export VIENNACL_ROOT=<PATH_TO_VIENNACL_INSTALLATION>
+
+# Directory containing custom user source files (user-defined functions, etc.)
+export USER_SOURCE_DIR=<PATH_TO_USER_SOURCE_DIRECTORY>
+
+rm -rf build
+mkdir build
+cd build
+
+cmake -DENABLE_OPENMP=ON ..
