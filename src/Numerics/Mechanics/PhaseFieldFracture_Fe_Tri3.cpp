@@ -310,8 +310,7 @@ PhaseFieldFracture_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targe
             RealMatrix ddgPhi_Psi0 = material[1]->giveModulusFrom(conState, cns->_materialStatus[1], "PhaseField");
             
             // Calculate KmatPhiPhi
-            StackRealMatrix<3,3> kmatPhiPhi;
-            kmatPhiPhi = cns->_area*_Gc*_lc*trp(cns->_dPsi)*cns->_dPsi
+            StackRealMatrix<3,3> kmatPhiPhi = cns->_area*_Gc*_lc*trp(cns->_dPsi)*cns->_dPsi
                     + cns->_area*(_Gc/_lc + ddgPhi_Psi0(0,0))*_massMatrix;
             
             for ( int i = 0; i < 3; i++)
