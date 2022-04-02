@@ -65,6 +65,6 @@ else()
     message(STATUS "Compilation with OpenMP is disabled")
 endif()
 
-set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -m64 -std=c++11 -march=native ${OPENMP_CXX_FLAGS} -ffast-math -funroll-loops -Wall -fPIC")
+set (CMAKE_CXX_FLAGS  "${CMAKE_CXX_FLAGS} -O3 -m64 -std=c++17 -march=native ${OPENMP_CXX_FLAGS} -ffast-math -funroll-loops -Wall -fPIC")
 set (CMAKE_EXE_LINKER_FLAGS  "${CMAKE_EXE_LINKER_FLAGS} -Wl,--no-as-needed -lgomp -lpthread -lm -ldl")
 set (CMAKE_CUDA_FLAGS "${CMAKE_CUDA_FLAGS} -std=c++11 -arch=sm_30 -Xcompiler \"${OPENMP_CXX_FLAGS} -ffast-math -funroll-loops -fPIC\"")
