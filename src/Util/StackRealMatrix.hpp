@@ -53,6 +53,18 @@ namespace broomstyx
             std::copy(source._data, source._data + nrows*ncols, _data);
         }
 
+        // Constructor from RealVector
+        StackRealMatrix( const RealMatrix& source )
+        {
+            int dim1 = source.dim1();
+            int dim2 = source.dim2();
+
+            if ( dim1 != nrows || dim2 != ncols )
+            	throw std::runtime_error("Mismatch detected between StackRealMatrix and source dimensions!");
+
+            std::copy(source.ptr(), source.ptr() + nrows*ncols, _data);
+        }
+
         // Destructor
         virtual ~StackRealMatrix() {}
 
