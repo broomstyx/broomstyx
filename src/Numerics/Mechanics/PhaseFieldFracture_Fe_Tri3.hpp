@@ -73,6 +73,8 @@
 #include "Core/DofManager.hpp"
 #include "Core/NumericsManager.hpp"
 #include "BasisFunctions/Triangle_P1.hpp"
+#include "Util/StackRealMatrix.hpp"
+#include "Util/StackRealVector.hpp"
 
 namespace broomstyx
 {
@@ -89,12 +91,12 @@ namespace broomstyx
     private:
         double     _area;
         double     _phi;
-        RealVector _strain;
-        RealVector _stress;
-        RealMatrix _gradU;
+        StackRealVector<4> _strain;
+        StackRealVector<4> _stress;
+        StackRealMatrix<2,2> _gradU;
         double     _surfEgy;
         double     _bulkEgy;
-        RealMatrix _dPsi;
+        StackRealMatrix<2,3> _dPsi;
         
         MaterialStatus* _materialStatus[2];
     };
@@ -160,9 +162,9 @@ namespace broomstyx
         
     private:
         Triangle_P1 _basisFunction;
-        RealVector  _basisFunctionValues;
-        RealMatrix  _basisFunctionDerivatives;
-        RealMatrix  _massMatrix;
+        StackRealVector<3>   _basisFunctionValues;
+        StackRealMatrix<2,3> _basisFunctionDerivatives;
+        StackRealMatrix<3,3> _massMatrix;
         
         RealVector  _gpNatCoor;
         double      _wt;
@@ -174,12 +176,12 @@ namespace broomstyx
         std::string _crackLabel;
         
         NumericsStatus_PhaseFieldFracture_Fe_Tri3*
-                   getNumericsStatusAt( Cell* targetCell );
-        RealMatrix giveBmatUAt(Cell* targetCell);
-        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
-        std::tuple< RealVector, RealVector >
-                   giveLocalVariablesAt( std::vector<Dof*>& dof, ValueType valType );
-        std::vector<Dof*> giveNodalDofsAt( Cell* targetCell );
+                             getNumericsStatusAt( Cell* targetCell );
+        StackRealMatrix<4,6> giveBmatUAt(Cell* targetCell);
+        StackRealMatrix<2,2> giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
+        std::tuple< StackRealVector<6>, StackRealVector<3> >
+                             giveLocalVariablesAt( std::vector<Dof*>& dof, ValueType valType );
+        std::vector<Dof*>    giveNodalDofsAt( Cell* targetCell );
     };
 }
 
