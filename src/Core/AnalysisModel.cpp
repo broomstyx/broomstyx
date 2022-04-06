@@ -26,14 +26,7 @@
 #include <stdexcept>
 #include <string>
 #include "Diagnostics.hpp"
-#include "DofManager.hpp"
-#include "DomainManager.hpp"
-#include "MaterialManager.hpp"
-#include "NumericsManager.hpp"
 #include "ObjectFactory.hpp"
-#include "OutputManager.hpp"
-#include "SolutionManager.hpp"
-#include "MeshReaders/MeshReader.hpp"
 #include "Util/readOperations.hpp"
 
 using namespace broomstyx;

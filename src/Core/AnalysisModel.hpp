@@ -26,17 +26,16 @@
 
 #include <cstdio>
 #include <string>
+#include "DofManager.hpp"
+#include "DomainManager.hpp"
+#include "MaterialManager.hpp"
+#include "NumericsManager.hpp"
+#include "OutputManager.hpp"
+#include "SolutionManager.hpp"
+#include "MeshReaders/MeshReader.hpp"
 
 namespace broomstyx
 {
-    class DofManager;
-    class DomainManager;
-    class MaterialManager;
-    class MeshReader;
-    class NumericsManager;
-    class OutputManager;
-    class SolutionManager;
-
     class AnalysisModel final
     {
         friend AnalysisModel& analysisModel();

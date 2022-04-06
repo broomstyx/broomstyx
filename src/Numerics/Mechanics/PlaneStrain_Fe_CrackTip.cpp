@@ -119,7 +119,7 @@ void PlaneStrain_Fe_CrackTip::deleteNumericsAt( Cell* targetCell )
     delete cns;
 }
 // ----------------------------------------------------------------------------
-void PlaneStrain_Fe_CrackTip::finalizeDataAt( Cell* targetCell )
+void PlaneStrain_Fe_CrackTip::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Retrieve nodal DOFs local to element
     std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);

@@ -28,6 +28,7 @@
 #include <vector>
 #include "BoundaryCondition.hpp"
 #include "FieldCondition.hpp"
+#include "TimeData.hpp"
 #include "Util/RealMatrix.hpp"
 #include "Util/RealVector.hpp"
 
@@ -61,9 +62,12 @@ namespace broomstyx
         int    _loadStepNum;
         int    _nStages;
         int    _maxSubsteps;
-        double _startTime;
-        double _endTime;
-        double _dtime;
+
+        TimeData _time;
+
+//         double _startTime;
+//         double _endTime;
+//         double _dtime;
         
         int _writeInterval;
 

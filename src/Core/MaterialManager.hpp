@@ -25,6 +25,7 @@
 #define	MATERIALMANAGER_HPP
 
 #include <cstdio>
+#include <string>
 #include <map>
 
 namespace broomstyx
@@ -45,8 +46,9 @@ namespace broomstyx
         void readMaterialsFrom(FILE* fp);
 
     private:
+        std::string _name;
         std::map<int,Material*> _material;
-        
+
         MaterialManager();
         virtual ~MaterialManager();
     };

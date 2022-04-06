@@ -24,15 +24,74 @@
 #ifndef TIMEDATA_HPP
 #define	TIMEDATA_HPP
 
+#include <cmath>
+
 namespace broomstyx
 {
-    struct TimeData
+    class TimeData final
     {
-        double start;
-        double end;
-        double current;
-        double target;
-        double increment;
+    public:
+        TimeData()
+            : _start(0.)
+            , _end(0.)
+            , _current(0.)
+            , _increment(0.)
+            , _target(0.)
+        {}
+
+        void advanceTime()
+        {
+            _current = _target;
+            _target += _increment;
+
+            if ( _target > _end )
+                _target = _end;
+        }
+
+        double giveCurrentTime() const { return _current; }
+        double giveEndTime() const { return _end; }
+        double giveStartTime() const { return _start; }
+        double giveTargetTime() const { return _target; }
+        double giveTimeIncrement() const { return _increment; }
+
+        bool   hasReachedEnd() const
+        {
+            if ( std::fabs(_current - _end) < 1.0e-13 )
+                return true;
+            else
+                return false;
+        }
+
+        // Note: modifying the current time or the time increment
+        // causes a recalculation of the target time
+        void setCurrentTimeTo( double val )
+        {
+            _current = val;
+            _target = _current + _increment;
+        }
+
+        void setEndTimeTo( double val )
+        {
+            _end = val;
+        }
+
+        void setStartTimeTo( double val )
+        {
+            _start = val;
+        }
+
+        void setTimeIncrementTo( double val )
+        {
+            _increment = val;
+            _target = _current + _increment;
+        }
+
+    private:
+        double _start;
+        double _end;
+        double _current;
+        double _increment;
+        double _target;
     };
 }
 

@@ -76,7 +76,7 @@ void DarcyFlow_2D_1Phase_Fv_Tri::deleteNumericsAt( Cell* targetCell )
     delete cns;
 }
 // -------------------------------------------------------------------------
-void DarcyFlow_2D_1Phase_Fv_Tri::finalizeDataAt( Cell* targetCell )
+void DarcyFlow_2D_1Phase_Fv_Tri::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
 //    double area = this->giveAreaOf(targetCell);
     auto cns = this->getNumericsStatusAt(targetCell);

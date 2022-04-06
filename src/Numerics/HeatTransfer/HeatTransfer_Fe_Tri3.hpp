@@ -58,7 +58,7 @@ namespace broomstyx
         virtual ~HeatTransfer_Fe_Tri3();
 
         void   deleteNumericsAt( Cell* targetCell ) override;
-        void   finalizeDataAt( Cell* targetCell ) override;
+        void   finalizeDataAt( Cell* targetCell, const TimeData& time ) override;
         double giveCellFieldValueAt( Cell* targetCell, int fieldNum ) override;
         
         RealVector 

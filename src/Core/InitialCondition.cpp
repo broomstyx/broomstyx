@@ -78,7 +78,7 @@ double InitialCondition::valueAt( const RealVector& coor ) const
         return _val;
     else // has to be user function
     {
-        TimeData time = {0, 0, 0, 0, 0};
+        TimeData time; // Is automatically initialized to zero
         return _usrFcn->at(coor, time);
     }
 }

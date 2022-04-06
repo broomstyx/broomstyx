@@ -134,7 +134,7 @@ void Biot_FeFv_Tri6::deleteNumericsAt( Cell* targetCell )
     delete cns;
 }
 // ----------------------------------------------------------------------------
-void Biot_FeFv_Tri6::finalizeDataAt( Cell* targetCell )
+void Biot_FeFv_Tri6::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Pointer to numerics status
     auto cns = this->getNumericsStatusAt(targetCell);

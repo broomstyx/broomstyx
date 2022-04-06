@@ -54,7 +54,7 @@ namespace broomstyx
         virtual int  computeSolutionFor( int stage
                                        , const std::vector<BoundaryCondition>& bndCond
                                        , const std::vector<FieldCondition>& fldCond
-                                       , const TimeData& time ) = 0;
+                                       , TimeData& time ) = 0;
         
         virtual void formSparsityProfileForStage ( int stage ) = 0;
         virtual void initializeSolvers() = 0;

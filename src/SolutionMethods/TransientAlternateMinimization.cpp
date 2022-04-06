@@ -305,17 +305,17 @@ RealVector TransientAlternateMinimization::assembleLeftHandSide( int stage
 
                     int dofGrp = analysisModel().dofManager().giveGroupNumberFor(rowDof[j]);
                     int idx = this->giveIndexForDofGroup(dofGrp);
-                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j)/time.increment, threadNum);
+                    _convergenceCriterion[idx]->processLocalResidualContribution(localLhs(j)/time.giveTimeIncrement(), threadNum);
 
                     if ( rowNum != UNASSIGNED && ssNum == subsys )
                     {
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
-                        lhs(rowNum) += localLhs(j)/time.increment;
+                        lhs(rowNum) += localLhs(j)/time.giveTimeIncrement();
                     }
 
-                    analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j)/time.increment);
+                    analysisModel().dofManager().addToSecondaryVariableAt(rowDof[j], localLhs(j)/time.giveTimeIncrement());
                 }
             }
         }
@@ -381,7 +381,7 @@ void TransientAlternateMinimization::assembleJacobian( int stage
                 if ( rowNum != UNASSIGNED && rssNum == subsys && colNum != UNASSIGNED && cssNum == subsys )
                 {
                     int idx = this->giveIndexForSubsystem(subsys);
-                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)/time.increment);
+                    _spMatrix[idx]->atomicAddToComponent(rowNum, colNum, coefVal(j)/time.giveTimeIncrement());
                 }
             }
         }

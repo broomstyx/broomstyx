@@ -92,7 +92,7 @@ void Mech_Fe_Tet4::deleteNumericsAt(Cell* targetCell)
     delete cns;
 }
 // ----------------------------------------------------------------------------
-void Mech_Fe_Tet4::finalizeDataAt( Cell* targetCell )
+void Mech_Fe_Tet4::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Retrieve numerics status at cell
     auto cns = this->getNumericsStatusAt(targetCell);

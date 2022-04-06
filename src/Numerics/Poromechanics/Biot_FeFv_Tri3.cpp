@@ -101,7 +101,7 @@ void Biot_FeFv_Tri3::deleteNumericsAt( Cell* targetCell )
     material[2]->destroy(cns->_materialStatus[2]);
 }
 // ----------------------------------------------------------------------------
-void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
+void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Pointer to numerics status
     auto cns = this->getNumericsStatusAt(targetCell);
@@ -115,15 +115,10 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     cns->_head = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof1, converged_value);
     
     // Permeability tensor for cell
-    double k_xx, k_yy, k_xy;
     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
-    k_xx = material[2]->giveParameter("Permeability_xx");
-    k_yy = material[2]->giveParameter("Permeability_yy");
-    k_xy = material[2]->giveParameter("Permeability_xy");
+    RealMatrix kmat;
+    kmat = material[2]->giveModulusFrom(RealVector({_rhoF*_gAccel*cns->_head}), cns->_materialStatus[2]);
     
-    RealMatrix kmat_cell({{k_xx, k_xy},
-                          {k_xy, k_yy}});
-
     // Get cell neighbors
     std::vector<Cell*> neighbor = analysisModel().domainManager().giveNeighborsOf(targetCell);
     
@@ -143,14 +138,14 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
             double d1 = this->giveDistanceToMidpointOf(face[i], cellCoor);
 
             RealVector kvec;
-            kvec = kmat_cell*nhat;
+            kvec = kmat*nhat;
             double K1 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
 
             normalFlux = K1*(cns->_head - cns->_headOnFace[i])/d1;
         }
         else if ( cns->_fluxIsPrescribedOnFace[i] )
             normalFlux = cns->_fluxOnFace[i];
-        else 
+        else
         {
             // Hydraulic potential at neighbor cell
             Dof* dof2 = analysisModel().domainManager().giveCellDof(_cellDof[0], neighbor[i]);
@@ -192,7 +187,6 @@ void Biot_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
     RealVector uVec = this->giveLocalDisplacementsAt(dof, converged_value);
     
     // Compute shape functions gradients
-    // RealMatrix bmatGrad = this->giveGradBmatAt(targetCell);
     
     // Compute displacement gradient
     RealMatrix uMat({{uVec(0), uVec(1)},
@@ -248,7 +242,6 @@ std::vector<RealVector> Biot_FeFv_Tri3::giveEvaluationPointsFor( Cell *targetCel
     
     return coor;
 }
-// ----------------------------------------------------------------------------
 // ----------------------------------------------------------------------------
 std::tuple< RealVector, RealVector >
 Biot_FeFv_Tri3::giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag  )
@@ -351,7 +344,7 @@ Biot_FeFv_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
         
         // Retrieve DOFs local to element
         std::vector<Dof*> nodalDof = this->giveNodalDofsAt(targetCell);
-        Dof* cellDof = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
+        Dof* dof_h = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
         
         // Retrieve material set for element
         std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
@@ -383,7 +376,7 @@ Biot_FeFv_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
         for ( int i = 0; i < 6; i++ )
         {
             rowDof[counter] = nodalDof[i];
-            colDof[counter] = cellDof;
+            colDof[counter] = dof_h;
             coefVal(counter) = kmatUP(i);
             ++counter;
         }
@@ -393,8 +386,8 @@ Biot_FeFv_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
         
         std::vector<std::vector<Node*> > face = this->giveFaceNodesOf(targetCell);
 
-        rowDof[42] = cellDof;
-        colDof[42] = cellDof;
+        rowDof[42] = dof_h;
+        colDof[42] = dof_h;
         
         // Cycle through faces
         for ( int i = 0; i < 3; i++ )
@@ -415,16 +408,11 @@ Biot_FeFv_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
                 double d1 = this->giveDistanceToMidpointOf(face[i], cellCoor);
 
                 // Permeability tensor for cell
-                // Permeability tensor for cell
                 std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
-                double k_xx, k_yy, k_xy;
-                k_xx = material[2]->giveParameter("Permeability_xx");
-                k_yy = material[2]->giveParameter("Permeability_yy");
-                k_xy = material[2]->giveParameter("Permeability_xy");
+                RealMatrix kmat;
+                double head = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof_h, current_value);
+                kmat = material[2]->giveModulusFrom(RealVector({_rhoF*_gAccel*head}), cns->_materialStatus[2]);
 
-                RealMatrix kmat({{k_xx, k_xy},
-                                 {k_xy, k_yy}});
-                        
                 // Hydraulic conductivity
                 RealVector kvec;
                 kvec = kmat*nhat;
@@ -489,19 +477,11 @@ Biot_FeFv_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
         std::vector<std::vector<Node*> > face = this->giveFaceNodesOf(targetCell);
 
         // Permeability tensor for cell
-        // Cell permeability tensor
-        double k_xx, k_yy, k_xy;
-        k_xx = material[2]->giveParameter("Permeability_xx");
-        k_yy = material[2]->giveParameter("Permeability_yy");
-        k_xy = material[2]->giveParameter("Permeability_xy");
-
-        RealMatrix kmat_cell({{k_xx, k_xy},
-                              {k_xy, k_yy}});
-
-        // Hydraulic potential at cell
         Dof* dof1 = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
         double h1 = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof1, current_value);
-
+        RealMatrix kmat;
+        kmat = material[2]->giveModulusFrom(RealVector({_rhoF*_gAccel*h1}), cns->_materialStatus[2]);
+        
         // Get cell neighbors
         std::vector<Cell*> neighbor = analysisModel().domainManager().giveNeighborsOf(targetCell);
 
@@ -522,7 +502,7 @@ Biot_FeFv_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
 
                 // Hydraulic conductivity
                 RealVector kvec;
-                kvec = kmat_cell*nhat;
+                kvec = kmat*nhat;
                 double K1 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
 
                 outflow(i) = length*K1*h1/d1;
@@ -715,16 +695,11 @@ Biot_FeFv_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
                                 double d = this->giveDistanceToMidpointOf(face[i], epCoor[0]);
                                 
                                 std::vector<Material*> material = this->giveMaterialSetFor(curDomCell);
-                                double k_xx, k_yy, k_xy;
-                                k_xx = material[2]->giveParameter("Permeability_xx");
-                                k_yy = material[2]->giveParameter("Permeability_yy");
-                                k_xy = material[2]->giveParameter("Permeability_xy");
-
-                                RealMatrix kmat_cell({{k_xx, k_xy},
-                                                      {k_xy, k_yy}});
-                                                      
+                                RealMatrix kmat;
+                                kmat = material[2]->giveModulusFrom(RealVector({_rhoF*_gAccel*bcVal}), cns->_materialStatus[2]);
+                                
                                 RealVector kvec;
-                                kvec = kmat_cell*nhat;
+                                kvec = kmat*nhat;
                                 double K = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
 
                                 rhs = {length*K*(cns->_headOnFace[i])/d};
@@ -734,7 +709,6 @@ Biot_FeFv_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
                                 cns->_fluxOnFace[i] = bcVal;
                                 rhs = {-bcVal*length};
                             }
-                            
                         }
                     }
                 }
@@ -955,7 +929,7 @@ void Biot_FeFv_Tri3::imposeInitialConditionAt( Cell*                   targetCel
         analysisModel().dofManager().updatePrimaryVariableAt(cellDof, val, converged_value);
     }
     else
-        throw std::runtime_error("ERROR: Unrecognized initial condition type '" + condType + "' encountered! Source: CPEF3VBiot");
+        throw std::runtime_error("ERROR: Unrecognized initial condition type '" + condType + "' encountered! Source: " + _name);
 }
 // ----------------------------------------------------------------------------
 void Biot_FeFv_Tri3::initializeMaterialsAt( Cell* targetCell )
@@ -1180,7 +1154,6 @@ double Biot_FeFv_Tri3::giveTransmissibilityCoefficientAt
     // Unit outward normal of face
     RealVector nhat;
     nhat = this->giveOutwardUnitNormalOf(face);
-    
     double length = this->giveLengthOf(face);
 
     // A. Target cell
@@ -1192,16 +1165,15 @@ double Biot_FeFv_Tri3::giveTransmissibilityCoefficientAt
     double d1 = this->giveDistanceToMidpointOf(face, coor1);
     
     // Permeability tensor for cell
+    auto cns = this->getNumericsStatusAt(targetCell);
     std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
-    double k_xx, k_yy, k_xy;
-    k_xx = material[2]->giveParameter("Permeability_xx");
-    k_yy = material[2]->giveParameter("Permeability_yy");
-    k_xy = material[2]->giveParameter("Permeability_xy");
-
-    RealMatrix kmat({{k_xx, k_xy},
-                     {k_xy, k_yy}});
-                                 
+    
+    Dof* dof_h = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
+    double head = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof_h, current_value);
+    
+    RealMatrix kmat;
     RealVector kvec;
+    kmat = material[2]->giveModulusFrom(RealVector({_rhoF*_gAccel*head}), cns->_materialStatus[2]);
     kvec = kmat*nhat;
     double K1 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
     
@@ -1214,14 +1186,13 @@ double Biot_FeFv_Tri3::giveTransmissibilityCoefficientAt
     double d2 = this->giveDistanceToMidpointOf(face, coor2);
     
     // Permeability tensor for neigbor cell
+    cns = this->getNumericsStatusAt(neighborCell);
     material = this->giveMaterialSetFor(neighborCell);
-    k_xx = material[2]->giveParameter("Permeability_xx");
-    k_yy = material[2]->giveParameter("Permeability_yy");
-    k_xy = material[2]->giveParameter("Permeability_xy");
 
-    kmat = {{k_xx, k_xy},
-            {k_xy, k_yy}};
-                     
+    dof_h = analysisModel().domainManager().giveCellDof(_cellDof[0], neighborCell);
+    head = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof_h, current_value);
+
+    kmat = material[2]->giveModulusFrom(RealVector({_rhoF*_gAccel*head}), cns->_materialStatus[2]);
     kvec = kmat*nhat;
     double K2 = std::sqrt(kvec.dot(kvec))*_rhoF*_gAccel/_mu;
     

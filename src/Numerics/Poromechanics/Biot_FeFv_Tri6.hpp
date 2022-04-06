@@ -87,7 +87,7 @@ namespace broomstyx
         virtual ~Biot_FeFv_Tri6();
 
         void   deleteNumericsAt( Cell* targetCell ) override;
-        void   finalizeDataAt( Cell* targetCell ) override;
+        void   finalizeDataAt( Cell* targetCell, const TimeData& time ) override;
         double giveCellFieldValueAt( Cell* targetCell, int fieldNum ) override;
         RealVector giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum );
         

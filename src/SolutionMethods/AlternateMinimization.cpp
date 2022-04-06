@@ -74,7 +74,7 @@ AlternateMinimization::~AlternateMinimization()
 int AlternateMinimization::computeSolutionFor( int stage
                                              , const std::vector<BoundaryCondition>& bndCond
                                              , const std::vector<FieldCondition>& fldCond
-                                             , const TimeData& time )
+                                             , TimeData& time )
 {
     std::chrono::time_point<std::chrono::system_clock> tic, toc, innertic, innertoc;
     std::chrono::duration<double> tictoc;
@@ -204,7 +204,7 @@ int AlternateMinimization::computeSolutionFor( int stage
                 _solver[i]->clearInternalMemory();
             
             innertic = std::chrono::high_resolution_clock::now();
-            _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            _loadStep->writeIterationDataForStage(stage, time.giveTargetTime(), iterCount);
             innertoc = std::chrono::high_resolution_clock::now();
             tictoc = innertoc - innertic;
             diagnostics().addOutputWriteTime(tictoc.count());
@@ -216,7 +216,7 @@ int AlternateMinimization::computeSolutionFor( int stage
                 _solver[i]->clearInternalMemory();
             
             innertic = std::chrono::high_resolution_clock::now();
-            _loadStep->writeIterationDataForStage(stage, time.target, iterCount);
+            _loadStep->writeIterationDataForStage(stage, time.giveTargetTime(), iterCount);
             innertoc = std::chrono::high_resolution_clock::now();
             tictoc = innertoc - innertic;
             diagnostics().addOutputWriteTime(tictoc.count());

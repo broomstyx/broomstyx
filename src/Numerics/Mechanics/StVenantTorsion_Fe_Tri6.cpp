@@ -107,7 +107,7 @@ void StVenantTorsion_Fe_Tri6::deleteNumericsAt( Cell* targetCell )
     delete targetCell->numericsStatus;
 }
 // ----------------------------------------------------------------------------
-void StVenantTorsion_Fe_Tri6::finalizeDataAt( Cell* targetCell )
+void StVenantTorsion_Fe_Tri6::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     double az = analysisModel().dofManager().giveValueOfPrimaryVariableAt(_az, converged_value);
     double xc = analysisModel().dofManager().giveValueOfPrimaryVariableAt(_kx, converged_value);

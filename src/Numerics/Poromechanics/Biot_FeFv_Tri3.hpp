@@ -66,7 +66,7 @@ namespace broomstyx
         virtual ~Biot_FeFv_Tri3();
 
         void   deleteNumericsAt( Cell* targetCell ) override;
-        void   finalizeDataAt( Cell* targetCell ) override;
+        void   finalizeDataAt( Cell* targetCell, const TimeData& time ) override;
         double giveCellFieldValueAt( Cell* targetCell, int fieldNum ) override;
         
         std::vector<RealVector> giveEvaluationPointsFor( Cell* targetCell ) override;
@@ -108,7 +108,7 @@ namespace broomstyx
                                             , int             subsys
                                             , const TimeData& time ) override;
         
-        virtual std::tuple< std::vector<Dof*>, RealVector >
+        std::tuple< std::vector<Dof*>, RealVector >
             giveTransientLeftHandSideAt( Cell*           targetCell
                                        , int             stage
                                        , int             subsys

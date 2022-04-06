@@ -67,7 +67,7 @@ void HeatTransfer_Fe_Tri3::deleteNumericsAt(Cell* targetCell)
     delete cns;
 }
 // ----------------------------------------------------------------------------
-void HeatTransfer_Fe_Tri3::finalizeDataAt( Cell* targetCell )
+void HeatTransfer_Fe_Tri3::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Retrieve numerics status at cell
     auto cns = this->getNumericsStatusAt(targetCell);

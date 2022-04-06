@@ -94,12 +94,8 @@ void SolutionManager::commenceSolution()
     std::printf("done (time = %f sec.)\n", tictoc.count());
     diagnostics().addSetupTime(tictoc.count());
     
-    // Write output corresponding to initial state
-    TimeData time;
-    time.start = 0.0;
-    
-    // analysisModel().outputManager().writeOutput(time.start);
-    analysisModel().outputManager().writeOutputQuantities(time.start);
+    // Output initial (assimed current time is t = 0)
+    analysisModel().outputManager().writeOutputQuantities(0.);
     
     // Solve load steps
     for (int i = 0; i < (int)_loadStep.size(); i++)
@@ -134,7 +130,7 @@ void SolutionManager::imposeInitialConditions()
             int nNodes = analysisModel().domainManager().giveNumberOfNodes();
             std::vector<bool> nodeIsInitialized(nNodes, false);
 
-            for ( int j = 0; j < nCells; i++ )
+            for ( int j = 0; j < nCells; j++ )
             {
                 Cell* curCell = analysisModel().domainManager().giveDomainCell(j);
                 int cellLabel = analysisModel().domainManager().giveLabelOf(curCell);

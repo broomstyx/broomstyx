@@ -115,7 +115,7 @@ void PlaneStrain_Fe_Tri6::deleteNumericsAt( Cell* targetCell )
     delete cns;
 }
 // ----------------------------------------------------------------------------
-void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell )
+void PlaneStrain_Fe_Tri6::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Retrieve nodal DOFs local to element
     std::vector<Dof*> dof = this->giveNodalDofsAt(targetCell);

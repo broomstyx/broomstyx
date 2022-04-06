@@ -83,7 +83,7 @@ void Poisson_Fe_Tri3::deleteNumericsAt(Cell* targetCell)
     delete cns;
 }
 // ----------------------------------------------------------------------------
-void Poisson_Fe_Tri3::finalizeDataAt( Cell* targetCell )
+void Poisson_Fe_Tri3::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Retrieve numerics status at cell
     auto cns = this->getNumericsStatusAt(targetCell);

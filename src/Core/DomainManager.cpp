@@ -448,7 +448,7 @@ void DomainManager::countFaces()
     }
 }
 // ----------------------------------------------------------------------------
-void DomainManager::finalizeCellData()
+void DomainManager::finalizeCellDataAt( const TimeData& time )
 {
 #ifdef _OPENMP
 #pragma omp parallel for
@@ -456,7 +456,7 @@ void DomainManager::finalizeCellData()
     for (int i = 0; i < (int)_domCell.size(); i++)
     {
         Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(_domCell[i]->_label);
-        numerics->finalizeDataAt(_domCell[i]);
+        numerics->finalizeDataAt(_domCell[i], time);
     }
 }
 // ----------------------------------------------------------------------------

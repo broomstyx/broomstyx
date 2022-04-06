@@ -113,7 +113,7 @@ namespace broomstyx
         virtual ~PlaneStrain_Fe_CrackTip();
 
         void deleteNumericsAt( Cell* targetCell ) override;
-        void finalizeDataAt( Cell* targetCell ) override;
+        void finalizeDataAt( Cell* targetCell, const TimeData& time ) override;
         
         RealVector 
             giveCellNodeFieldValuesAt( Cell* targetCell, int fieldNum ) override;

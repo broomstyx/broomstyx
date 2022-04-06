@@ -42,7 +42,7 @@ namespace broomstyx
                               , const std::vector<BoundaryCondition>& bndCond
                               , const std::vector<FieldCondition>& fldCond
                               , const TimeData& time
-                              , RealVector& rhs );
+                              , RealVector& rhs ) override;
         
         void assembleLeftHandSide( int stage, const TimeData& time );
 
@@ -50,7 +50,7 @@ namespace broomstyx
                                   , const std::vector<BoundaryCondition>& bndCond
                                   , const std::vector<FieldCondition>& fldCond
                                   , const TimeData& time
-                                  , RealVector& rhs );
+                                  , RealVector& rhs ) override;
     };    
 }
 

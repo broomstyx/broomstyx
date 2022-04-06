@@ -211,13 +211,13 @@ void LinearTransient::assembleEquations( int stage
 
                 // Assembly to global coefficient matrix
                 if ( rowNum != UNASSIGNED && colNum != UNASSIGNED )
-                    _spMatrix->atomicAddToComponent(rowNum, colNum, coefVal(i)/time.increment);
+                    _spMatrix->atomicAddToComponent(rowNum, colNum, coefVal(i)/time.giveTimeIncrement());
 
                 // Right hand side contribution arising from constraints
                 if ( colNum == UNASSIGNED && rowNum != UNASSIGNED )
                 {
                     double constraintVal = analysisModel().dofManager().giveValueOfConstraintAt(colDof[i], current_value);
-                    double fmatVal = coefVal(i)*constraintVal/time.increment;
+                    double fmatVal = coefVal(i)*constraintVal/time.giveTimeIncrement();
 #ifdef _OPENMP
 #pragma omp atomic
 #endif
@@ -241,7 +241,7 @@ void LinearTransient::assembleEquations( int stage
     #ifdef _OPENMP
     #pragma omp atomic
     #endif
-                    rhs(rowNum) += localRhs(i)/time.increment;
+                    rhs(rowNum) += localRhs(i)/time.giveTimeIncrement();
             }
         }
     }
@@ -285,7 +285,7 @@ void LinearTransient::assembleLeftHandSide( int stage, const TimeData& time )
         std::tie(rowDof, localLhsOld) = numerics->giveTransientLeftHandSideAt(curCell, stage, UNASSIGNED, time, converged_value);
         for ( int i = 0; i < localLhs.dim(); i++ )
             if ( rowDof[i] )
-                analysisModel().dofManager().addToSecondaryVariableAt( rowDof[i], (localLhs(i) - localLhsOld(i))/time.increment);
+                analysisModel().dofManager().addToSecondaryVariableAt( rowDof[i], (localLhs(i) - localLhsOld(i))/time.giveTimeIncrement());
     }
 }
 // ----------------------------------------------------------------------------

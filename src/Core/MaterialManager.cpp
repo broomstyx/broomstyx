@@ -32,7 +32,10 @@
 
 using namespace broomstyx;
 
-MaterialManager::MaterialManager() {}
+MaterialManager::MaterialManager()
+{
+    _name = "MaterialManager";
+}
 
 MaterialManager::~MaterialManager()
 {
@@ -61,10 +64,9 @@ Material* MaterialManager::giveMaterial( int label )
         target = (*it).second;
     else
     {
-        std::string errmsg = "Error: There is no material corresponding to" +
-                std::string(" label '") + std::to_string(label)
-                + std::string("'!\nSource: MaterialManager");
-        throw std::runtime_error(errmsg);
+        throw std::runtime_error("Error: There is no material corresponding to"
+                + std::string(" label '") + std::to_string(label)
+                + std::string("'!\nSource: ") + _name);
     }
     
     return target;
@@ -89,26 +91,21 @@ void MaterialManager::initializeMaterials()
 // ----------------------------------------------------------------------------
 void MaterialManager::readMaterialsFrom( FILE* fp )
 {
-    std::string errmsg, src = "MaterialsLibrary";
-    int nMat = getIntegerInputFrom(fp,
-        errmsg = "Failed to read number of materials from input file!", src);
+    int nMat = getIntegerInputFrom(fp, "Failed to read number of materials from input file!", _name);
     
     for ( int i = 0; i < nMat; i++)
     {
-        int label = getIntegerInputFrom(fp,
-                errmsg = "Failed reading material label from input file!", src);
-        std::string materialName = getStringInputFrom(fp,
-                errmsg = "Failed reading material type from input file!", src);
+        int label = getIntegerInputFrom(fp, "Failed reading material label from input file!", _name);
+        std::string materialName = getStringInputFrom(fp, "Failed reading material type from input file!", _name);
         
         Material* newMat = objectFactory().instantiateMaterial(materialName);
         
         std::pair< std::map<int,Material*>::iterator, bool> entry;
         entry = _material.insert(std::pair<int,Material*>(label, newMat));
         if ( !entry.second )
-            throw std::runtime_error(
-                    errmsg = "Multiple declaration of materials for label '"
-                    + std::to_string(label) 
-                    + std::string("' detected in input file!\nSource: ") + src);
+            throw std::runtime_error("Multiple declaration of materials for label '"
+                    + std::to_string(label)
+                    + std::string("' detected in input file!\nSource: ") + _name);
                 
         _material[label]->readParamatersFrom(fp);
     }

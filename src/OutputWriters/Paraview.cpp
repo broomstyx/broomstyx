@@ -44,6 +44,9 @@ Paraview::Paraview()
 {
     _pvdFile = nullptr;
     
+    _nPointData = 0;
+	_nCellData = 0;
+
     // Initialize counters
     _vtuFileCount = 0;
     _writeCounter = 0;
@@ -260,7 +263,9 @@ void Paraview::writeOutput( double time )
             cellType = 5;
         else if ( dim == 3 && nCellNodes == 4 )
             cellType = 10;
-        else
+        else if ( dim == 2 && nCellNodes == 6 )
+			cellType = 22;
+		else
             throw std::runtime_error("Cells of dim = " + std::to_string(dim) + " and nNodes = " + std::to_string(nCellNodes) + " not yet programmed in Paraview output writer!");
         
         std::fprintf(vtuFile, "\t\t\t\t\t%d\n", cellType);

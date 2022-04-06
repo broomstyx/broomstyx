@@ -89,7 +89,7 @@ namespace broomstyx
         virtual ~DarcyFlow_2D_1Phase_Fv_Tri();
 
         void   deleteNumericsAt( Cell* targetCell ) override;
-        void   finalizeDataAt( Cell* targetCell ) override;
+        void   finalizeDataAt( Cell* targetCell, const TimeData& time ) override;
         double giveCellFieldValueAt( Cell* targetCell, int fieldNum ) override;
         
         std::vector<RealVector> giveEvaluationPointsFor( Cell* targetCell ) override;

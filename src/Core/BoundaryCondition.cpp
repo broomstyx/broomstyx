@@ -110,7 +110,8 @@ double BoundaryCondition::valueAt( const RealVector& coor, const TimeData& time 
     if ( _specType == "Constant" )
         return _startVal;
     else if ( _specType == "Linear" )
-        return _startVal + (_endVal - _startVal)*(time.target - time.start)/(time.end - time.start);
+        return _startVal + (_endVal - _startVal)*
+        (time.giveTargetTime() - time.giveStartTime())/(time.giveEndTime() - time.giveStartTime());
     else if ( _specType == "UserFunction" )
         return _usrFcn->at(coor,time);
     

@@ -91,7 +91,7 @@ void PlaneStrain_Fe_Tri3::deleteNumericsAt(Cell* targetCell)
     delete cns;
 }
 // ----------------------------------------------------------------------------
-void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell )
+void PlaneStrain_Fe_Tri3::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Retrieve numerics status at cell
     auto cns = this->getNumericsStatusAt(targetCell);

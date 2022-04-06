@@ -112,6 +112,8 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
         _dofCount += _threadDofCount(i);
         _contribCount += _threadContribCount(i);
     }
+    if ( _contribCount < 1.0 )
+        _contribCount = 1.0;
 
     // Normalize values
     _corrNorm = std::sqrt(_corrNorm/_dofCount);

@@ -93,7 +93,7 @@ double FieldCondition::valueAt( const RealVector& coor, const TimeData& time ) c
     if ( _specType == "Constant" )
         return _startVal;
     else if ( _specType == "Linear" )
-        return _startVal + (_endVal - _startVal)*(time.target - time.start)/(time.end - time.start);
+        return _startVal + (_endVal - _startVal)*(time.giveTargetTime() - time.giveStartTime())/(time.giveEndTime() - time.giveStartTime());
     else // has to be user function
         return _usrFcn->at(coor,time);
 }

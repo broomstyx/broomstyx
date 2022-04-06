@@ -83,7 +83,7 @@ namespace broomstyx
         virtual void readAdditionalDataFrom( FILE* fp );
         virtual void removeConstraintsOn( Cell* targetCell );
 
-        virtual void finalizeDataAt( Cell* targetCell ) = 0;
+        virtual void finalizeDataAt( Cell* targetCell, const TimeData& time ) = 0;
         virtual void deleteNumericsAt( Cell* targetCell ) = 0;
         virtual void initializeNumericsAt( Cell* targetCell ) = 0;
         

@@ -39,7 +39,7 @@ namespace broomstyx
         int  computeSolutionFor( int stage
                                , const std::vector<BoundaryCondition>& bndCond
                                , const std::vector<FieldCondition>& fldCond
-                               , const TimeData& time ) override;
+                               , TimeData& time ) override;
         
         virtual void readDataFromFile( FILE* fp ) override;
 

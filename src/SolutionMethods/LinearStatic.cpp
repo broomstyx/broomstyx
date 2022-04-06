@@ -63,7 +63,7 @@ LinearStatic::~LinearStatic()
 int LinearStatic::computeSolutionFor( int stage
                                     , const std::vector<BoundaryCondition>& bndCond
                                     , const std::vector<FieldCondition>& fldCond
-                                    , const TimeData& time )
+                                    , TimeData& time )
 {
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;

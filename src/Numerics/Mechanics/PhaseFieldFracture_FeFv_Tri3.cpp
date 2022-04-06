@@ -98,7 +98,7 @@ void PhaseFieldFracture_FeFv_Tri3::deleteNumericsAt( Cell* targetCell )
     material[1]->destroy(cns->_materialStatus[1]);
 }
 // ----------------------------------------------------------------------------
-void PhaseFieldFracture_FeFv_Tri3::finalizeDataAt( Cell* targetCell )
+void PhaseFieldFracture_FeFv_Tri3::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     // Pointer to numerics status
     auto cns = this->getNumericsStatusAt(targetCell);

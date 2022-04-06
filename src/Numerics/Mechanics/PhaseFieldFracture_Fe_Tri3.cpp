@@ -48,7 +48,8 @@ NumericsStatus_PhaseFieldFracture_Fe_Tri3::NumericsStatus_PhaseFieldFracture_Fe_
     , _gradU(RealMatrix(2,2))
     , _surfEgy(0)
     , _bulkEgy(0)
-    , _materialStatus {nullptr, nullptr}
+    , _Gc(0)
+    , _materialStatus {nullptr, nullptr, nullptr}
 {}
 
 NumericsStatus_PhaseFieldFracture_Fe_Tri3::~NumericsStatus_PhaseFieldFracture_Fe_Tri3() {}
@@ -59,13 +60,13 @@ PhaseFieldFracture_Fe_Tri3::PhaseFieldFracture_Fe_Tri3()
     _dim = 2;
     _dofPerNode = 3;
     _nNodes = 3;
-    _nMaterials = 2;
+    _nMaterials = 3;
     _nStages = 1;
     _nSubsystems = 2;
     _name = "PhaseFieldFracture_Fe_Tri3";
     
     // Initialize private variables
-    _Gc = 0.;
+//     _Gc = 0.;
     _lc = 0.;
     _phiIrrev = 0.;
 
@@ -101,9 +102,10 @@ void PhaseFieldFracture_Fe_Tri3::deleteNumericsAt( Cell* targetCell )
     
     material[0]->destroy(cns->_materialStatus[0]);
     material[1]->destroy(cns->_materialStatus[1]);
+    material[2]->destroy(cns->_materialStatus[2]);
 }
 // ----------------------------------------------------------------------------
-void PhaseFieldFracture_Fe_Tri3::finalizeDataAt( Cell* targetCell )
+void PhaseFieldFracture_Fe_Tri3::finalizeDataAt( Cell* targetCell, const TimeData& time )
 {
     auto cns = this->getNumericsStatusAt(targetCell);
     
@@ -142,7 +144,13 @@ void PhaseFieldFracture_Fe_Tri3::finalizeDataAt( Cell* targetCell )
     material[1]->updateStatusFrom(conState, cns->_materialStatus[1], "FinalizeHistoryField");
     cns->_stress = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "Mechanics");
     cns->_bulkEgy = material[1]->givePotentialFrom(conState, cns->_materialStatus[1]);
-    cns->_surfEgy = _Gc/2.0*(_lc*dphi.dot(dphi) + phiVec.dot(_massMatrix*phiVec)/_lc);
+
+    RealVector dgPhi_Psi0 = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "PhaseField");
+    RealVector conState2({_lc*dgPhi_Psi0(0)});
+    material[2]->updateStatusFrom(_lc*dgPhi_Psi0, cns->_materialStatus[2]);
+    RealMatrix Gc = material[2]->giveModulusFrom(conState2, cns->_materialStatus[2]);
+    cns->_Gc = Gc(0,0);
+    cns->_surfEgy = cns->_Gc/2.0*(_lc*dphi.dot(dphi) + phiVec.dot(_massMatrix*phiVec)/_lc);
 }
 // ----------------------------------------------------------------------------
 double PhaseFieldFracture_Fe_Tri3::giveCellFieldValueAt( Cell* targetCell, int fieldNum )
@@ -233,7 +241,7 @@ PhaseFieldFracture_Fe_Tri3::giveFieldOutputAt( Cell* targetCell, const std::stri
     else if ( fieldTag == "cr_len" )
     {
         if ( cns->_phi < CRACKLENGTH_CUTOFF )
-            fieldVal(0) = cns->_surfEgy/_Gc;
+            fieldVal(0) = cns->_surfEgy/cns->_Gc;
         else
             fieldVal(0) = 0.;
     }
@@ -250,9 +258,9 @@ std::tuple< std::vector<Dof*>
           , std::vector<Dof*>
           , RealVector >
 PhaseFieldFracture_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targetCell
-                                                       , int             stage
-                                                       , int             subsys
-                                                       , const TimeData& time )
+                                                         , int             stage
+                                                         , int             subsys
+                                                         , const TimeData& time )
 {
     std::vector<Dof*> rowDof, colDof;
     RealVector coefVal;
@@ -310,8 +318,7 @@ PhaseFieldFracture_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targe
             RealMatrix ddgPhi_Psi0 = material[1]->giveModulusFrom(conState, cns->_materialStatus[1], "PhaseField");
             
             // Calculate KmatPhiPhi
-            RealMatrix kmatPhiPhi = cns->_area*_Gc*_lc*trp(cns->_dPsi)*cns->_dPsi
-                    + cns->_area*(_Gc/_lc + ddgPhi_Psi0(0,0))*_massMatrix;
+            RealMatrix kmatPhiPhi = cns->_area*cns->_Gc*_lc*trp(cns->_dPsi)*cns->_dPsi + cns->_area*(cns->_Gc/_lc + ddgPhi_Psi0(0,0))*_massMatrix;
             
             for ( int i = 0; i < 3; i++)
                 for ( int j = 0; j < 3; j++)
@@ -330,9 +337,9 @@ PhaseFieldFracture_Fe_Tri3::giveStaticCoefficientMatrixAt( Cell*           targe
 std::tuple< std::vector<Dof*>
           , RealVector >
 PhaseFieldFracture_Fe_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
-                                                  , int             stage
-                                                  , int             subsys
-                                                  , const TimeData& time )
+                                                    , int             stage
+                                                    , int             subsys
+                                                    , const TimeData& time )
 {
     std::vector<Dof*> rowDof;
     RealVector lhs;
@@ -376,7 +383,7 @@ PhaseFieldFracture_Fe_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
         std::vector<Material*> material = this->giveMaterialSetFor(targetCell);
         
         material[1]->updateStatusFrom(conState, cns->_materialStatus[1]);
-            
+
         int offset = 0;
         if ( subsys == _subsystem[0] || subsys == UNASSIGNED )
         {
@@ -418,11 +425,15 @@ PhaseFieldFracture_Fe_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
             
             // Update material state and calculate g'(phi)*elasticEnergy
             RealVector dgPhi_Psi0 = material[1]->giveForceFrom(conState, cns->_materialStatus[1], "PhaseField");
+            RealVector conState2({_lc*dgPhi_Psi0(0)});
+            material[2]->updateStatusFrom(_lc*dgPhi_Psi0, cns->_materialStatus[2]);
+            RealMatrix Gc = material[2]->giveModulusFrom(conState2, cns->_materialStatus[2]);
+            cns->_Gc = Gc(0,0);
             
             // Calculate FmatPhi
             RealVector fmatPhi1, fmatPhi2, fmatPhi3;
-            fmatPhi1 = cns->_area*(_Gc/_lc*cns->_phi)*_basisFunctionValues;
-            fmatPhi2 = cns->_area*_Gc*_lc*trp(cns->_dPsi)*dphi;
+            fmatPhi1 = cns->_area*(cns->_Gc/_lc*cns->_phi)*_basisFunctionValues;
+            fmatPhi2 = cns->_area*cns->_Gc*_lc*trp(cns->_dPsi)*dphi;
             fmatPhi3 = cns->_area*dgPhi_Psi0(0)*_basisFunctionValues;
             
             lhs(offset + 0) = fmatPhi1(0);
@@ -443,10 +454,10 @@ PhaseFieldFracture_Fe_Tri3::giveStaticLeftHandSideAt( Cell*           targetCell
 std::tuple< std::vector<Dof*>
           , RealVector >
 PhaseFieldFracture_Fe_Tri3::giveStaticRightHandSideAt( Cell*                    targetCell
-                                                   , int                      stage
-                                                   , int                      subsys
-                                                   , const BoundaryCondition& bndCond
-                                                   , const TimeData&          time )
+                                                     , int                      stage
+                                                     , int                      subsys
+                                                     , const BoundaryCondition& bndCond
+                                                     , const TimeData&          time )
 {   
     std::vector<Dof*> rowDof;
     RealVector rhs;
@@ -521,10 +532,10 @@ PhaseFieldFracture_Fe_Tri3::giveStaticRightHandSideAt( Cell*                    
 std::tuple< std::vector<Dof*>
           , RealVector >
 PhaseFieldFracture_Fe_Tri3::giveStaticRightHandSideAt( Cell*                 targetCell
-                                                   , int                   stage
-                                                   , int                   subsys
-                                                   , const FieldCondition& fldCond
-                                                   , const TimeData&       time )
+                                                     , int                   stage
+                                                     , int                   subsys
+                                                     , const FieldCondition& fldCond
+                                                     , const TimeData&       time )
 {
     std::vector<Dof*> rowDof;
     RealVector rhs;
@@ -571,9 +582,9 @@ PhaseFieldFracture_Fe_Tri3::giveStaticRightHandSideAt( Cell*                 tar
 }
 // ----------------------------------------------------------------------------
 void PhaseFieldFracture_Fe_Tri3::imposeConstraintAt( Cell*                    targetCell
-                                                 , int                      stage
-                                                 , const BoundaryCondition& bndCond
-                                                 , const TimeData&          time )
+                                                   , int                      stage
+                                                   , const BoundaryCondition& bndCond
+                                                   , const TimeData&          time )
 {
     // Only for essential BCs on nodal DOFs
     if ( bndCond.conditionType() == "NodalConstraint" )
@@ -721,8 +732,8 @@ void PhaseFieldFracture_Fe_Tri3::readAdditionalDataFrom( FILE *fp )
     verifyKeyword(fp, "CharacteristicLength", _name);
     _lc = getRealInputFrom(fp, "Failed to read characteristic length from input file!", _name);
     
-    verifyKeyword(fp, "CriticalEnergyReleaseRate", _name);
-    _Gc = getRealInputFrom(fp, "Failed to read critical energy release rate from input file!", _name);
+//     verifyKeyword(fp, "CriticalEnergyReleaseRate", _name);
+//     _Gc = getRealInputFrom(fp, "Failed to read critical energy release rate from input file!", _name);
     
     verifyKeyword(fp, "CrackInitialization", _name);
     std::string str = getStringInputFrom(fp, "Failed to read crack initialization option from input file!", _name);
@@ -819,9 +830,12 @@ PhaseFieldFracture_Fe_Tri3::giveLocalVariablesAt( std::vector<Dof*>& dof, ValueT
 {
     // Displacements
     RealVector u(6);
-#pragma GCC ivdep
-    for ( int i = 0; i < 6; i++ )
-        u(i) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[i], valType);
+    u(0) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[0], valType);
+    u(1) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[1], valType);
+    u(2) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[2], valType);
+    u(3) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[3], valType);
+    u(4) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[4], valType);
+    u(5) = analysisModel().dofManager().giveValueOfPrimaryVariableAt(dof[5], valType);
     
     // Phase-field
     RealVector phi(3);
@@ -837,16 +851,15 @@ std::vector<Dof*> PhaseFieldFracture_Fe_Tri3::giveNodalDofsAt( Cell* targetCell 
     std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(targetCell);
     std::vector<Dof*> dof(9, nullptr);
     
-#pragma GCC ivdep
-    for ( int i = 0; i < 3; i++ )
-    {
-        dof[2*i] = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[i]);
-        dof[2*i+1] = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[i]);
-    }
-    
-#pragma GCC ivdep
-    for ( int i = 0; i < 3; i++ )
-        dof[6+i] = analysisModel().domainManager().giveNodalDof(_nodalDof[2], node[i]);
-    
+    dof[0] = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[0]);
+    dof[1] = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[0]);
+    dof[2] = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[1]);
+    dof[3] = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[1]);
+    dof[4] = analysisModel().domainManager().giveNodalDof(_nodalDof[0], node[2]);
+    dof[5] = analysisModel().domainManager().giveNodalDof(_nodalDof[1], node[2]);
+    dof[6] = analysisModel().domainManager().giveNodalDof(_nodalDof[2], node[0]);
+    dof[7] = analysisModel().domainManager().giveNodalDof(_nodalDof[2], node[1]);
+    dof[8] = analysisModel().domainManager().giveNodalDof(_nodalDof[2], node[2]);
+
     return dof;
 }

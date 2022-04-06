@@ -113,18 +113,23 @@ void LoadStep::readDataFrom( FILE *fp )
         _preProcess[i].directive = getStringInputFrom(fp, "Failed to read directive for pre-processing in load step # " + std::to_string(_loadStepNum), _name);
     }
     
+    double val;
+
     // Time at start of load step
     verifyDeclaration(fp, "START_TIME", _name);
-    _startTime = getRealInputFrom(fp, "Failed to read start time for load step # " + std::to_string(_loadStepNum) + " from input file!", _name);
+    val = getRealInputFrom(fp, "Failed to read start time for load step # " + std::to_string(_loadStepNum) + " from input file!", _name);
+    _time.setStartTimeTo(val);
     
     // Time at end of load step
     verifyDeclaration(fp, "END_TIME", _name);
-    _endTime = getRealInputFrom(fp, "Failed to read end time for load step # " + std::to_string(_loadStepNum) + " from input file!", _name);
+    val = getRealInputFrom(fp, "Failed to read end time for load step # " + std::to_string(_loadStepNum) + " from input file!", _name);
+    _time.setEndTimeTo(val);
     
     // Initial time increment
     verifyDeclaration(fp, "INITIAL_TIME_INCREMENT", _name);
-    _dtime = getRealInputFrom(fp, "Failed to read initial time increment for load step # " + std::to_string(_loadStepNum) + " from input file!", _name);
-    
+    val = getRealInputFrom(fp, "Failed to read initial time increment for load step # " + std::to_string(_loadStepNum) + " from input file!", _name);
+    _time.setTimeIncrementTo(val);
+
     // Maximum number of substeps
     verifyDeclaration(fp, "MAX_SUBSTEPS", _name);
     _maxSubsteps = getIntegerInputFrom(fp, "Failed to read maximum number of substeps for load step # " + std::to_string(_loadStepNum) + " from input file!", _name);
@@ -182,16 +187,8 @@ void LoadStep::solveYourself()
     std::chrono::time_point<std::chrono::system_clock> tic, toc, setupTic, setupToc;
     std::chrono::duration<double> tictoc;
     
-//    // HACK MESSAGES
-//    FILE* fp = fopen("./HackMessages.txt","a");
-    
     // Time data for immediate substep
-    TimeData time;
-    time.start = _startTime;
-    time.end = _endTime;
-    time.current = _startTime;
-    time.target = _startTime + _dtime;
-    time.increment = _dtime;
+    _time.setCurrentTimeTo(_time.giveStartTime());
     // Note: time.increment can be used to implement adaptive time-stepping
     
     // Initialize solvers
@@ -272,7 +269,7 @@ void LoadStep::solveYourself()
     for (int i = 1; i <= _nStages; i++ )
     {
         // First impose constraints to allow numerics to set proper flags for cells where needed
-        _solutionMethod[i]->imposeConstraintsAt(i, _boundaryCondition, time);
+        _solutionMethod[i]->imposeConstraintsAt(i, _boundaryCondition, _time);
         _solutionMethod[i]->formSparsityProfileForStage(i);    
     }
 
@@ -291,15 +288,9 @@ void LoadStep::solveYourself()
     int skipCount = 0;
     bool forceBreak = false;
     
-    while (!endOfLoadStep)
+    while ( !endOfLoadStep )
     {
-//        if ( forceBreak )
-//        {
-//            analysisModel->dofManager->resetDofCurrentPrimaryValues();
-//            forceBreak = false;
-//        }
-//        else
-            curSubstep++;
+        curSubstep++;
         
         if ( curSubstep > _maxSubsteps )
             throw std::runtime_error("Maximum number of substeps exceeded!");
@@ -310,7 +301,7 @@ void LoadStep::solveYourself()
         std::printf("\n    LOADSTEP # %d, Substep # %d", _loadStepNum, curSubstep);
         std::printf("\n  -----------------------------------------");
         
-        std::printf("\n    Target time: %.14E\n", time.target);        
+        std::printf("\n    Target time: %.14E\n", _time.giveTargetTime());
         
         int nStage = analysisModel().solutionManager().giveNumberOfSolutionStages();
         
@@ -332,7 +323,7 @@ void LoadStep::solveYourself()
                 std::printf("\n    Stage # %d", curStage);
                 std::printf("\n  -------------------\n");
 
-                int error = _solutionMethod[curStage]->computeSolutionFor(curStage, _boundaryCondition, _fieldCondition, time);
+                int error = _solutionMethod[curStage]->computeSolutionFor(curStage, _boundaryCondition, _fieldCondition, _time);
                 
                 if ( error  == 0 )
                     stageConverged[curStage] = true;
@@ -353,18 +344,12 @@ void LoadStep::solveYourself()
             }
             
             substepConverged = true;
-            for (int curStage = 1; curStage <= nStage; curStage++) {
+            for ( int curStage = 1; curStage <= nStage; curStage++ ) {
                 if ( !stageConverged[curStage] )
                     substepConverged = false;
             }
             
         } while ( !substepConverged && !forceBreak );
-        
-//        if ( forceBreak )
-//        {
-//            std::fprintf(fp, "Substep %d did not converge.\n", curSubstep);
-//            std::fflush(fp);
-//        }
         
         if ( forceBreak )
         {
@@ -380,7 +365,7 @@ void LoadStep::solveYourself()
             tictoc = innertoc - innertic;
             diagnostics().addUpdateTime(tictoc.count());
             
-            analysisModel().domainManager().finalizeCellData();
+            analysisModel().domainManager().finalizeCellDataAt( _time );
             
             // Perform post-processing for nodal field values
             innertic = std::chrono::high_resolution_clock::now();
@@ -390,7 +375,7 @@ void LoadStep::solveYourself()
             diagnostics().addPostprocessingTime(tictoc.count());
             
             // Write unconverged results and then terminate program
-            analysisModel().outputManager().writeOutput(time.target);
+            analysisModel().outputManager().writeOutput(_time.giveTargetTime());
             std::printf("IMPORTANT: Above output contains non-converged results!!!\n\n");
             throw std::runtime_error("");
         }
@@ -409,7 +394,7 @@ void LoadStep::solveYourself()
             diagnostics().addUpdateTime(tictoc.count());
             
             innertic = std::chrono::high_resolution_clock::now();
-            analysisModel().domainManager().finalizeCellData();
+            analysisModel().domainManager().finalizeCellDataAt(_time);
             
             // Perform post-processing for nodal field values
             analysisModel().domainManager().performNodalPostProcessing();
@@ -418,12 +403,9 @@ void LoadStep::solveYourself()
             diagnostics().addPostprocessingTime(tictoc.count());
             
             // Update time and target time for next substep
-            time.current = time.target;
-            time.target += time.increment;
-            if (time.target > time.end)
-                time.target = time.end;
+            _time.advanceTime();
 
-            if ( std::fabs(time.current - time.end ) < 1.0e-13)
+            if ( _time.hasReachedEnd() )
                 endOfLoadStep = true;
 
             toc = std::chrono::high_resolution_clock::now();
@@ -434,13 +416,13 @@ void LoadStep::solveYourself()
             ++skipCount;
             if ( skipCount == _writeInterval )
             {
-                analysisModel().outputManager().writeOutput(time.current);
+                analysisModel().outputManager().writeOutput(_time.giveCurrentTime());
                 skipCount = 0;
             }
             else if ( endOfLoadStep )
-                analysisModel().outputManager().writeOutput(time.current);
+                analysisModel().outputManager().writeOutput(_time.giveCurrentTime());
 
-            analysisModel().outputManager().writeOutputQuantities(time.current); 
+            analysisModel().outputManager().writeOutputQuantities(_time.giveCurrentTime());
         }
     }
     
@@ -474,9 +456,6 @@ void LoadStep::solveYourself()
 
     setupToc = std::chrono::high_resolution_clock::now();
     tictoc = setupToc - setupTic;
-
-//    // HACK MESSAGES
-//    std::fclose(fp);
 }
 // -----------------------------------------------------------------------------
 void LoadStep::writeConvergenceDataForStage( int stg, RealMatrix& convDat)

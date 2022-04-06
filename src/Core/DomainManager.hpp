@@ -30,6 +30,7 @@
 #include <vector>
 #include <list>
 
+#include "TimeData.hpp"
 #include "Util/RealVector.hpp"
 
 namespace broomstyx
@@ -87,7 +88,7 @@ namespace broomstyx
         void   countBoundaryCells();
         void   countDomainCells();
         void   countFaces();
-        void   finalizeCellData();
+        void   finalizeCellDataAt( const TimeData& time );
         void   findBoundaryAssociations();
         void   findDomainCellNeighbors();
         void   findDomainCellsAssociatedWith( Cell* targetCell );

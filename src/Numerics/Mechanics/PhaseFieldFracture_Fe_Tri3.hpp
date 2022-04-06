@@ -95,8 +95,9 @@ namespace broomstyx
         double     _surfEgy;
         double     _bulkEgy;
         RealMatrix _dPsi;
+        double     _Gc;
         
-        MaterialStatus* _materialStatus[2];
+        MaterialStatus* _materialStatus[3];
     };
     
     class PhaseFieldFracture_Fe_Tri3 final : public Numerics
@@ -106,7 +107,7 @@ namespace broomstyx
         virtual ~PhaseFieldFracture_Fe_Tri3();
         
         void   deleteNumericsAt( Cell* targetCell ) override;
-        void   finalizeDataAt( Cell* targetCell ) override;
+        void   finalizeDataAt( Cell* targetCell, const TimeData& time ) override;
         double giveCellFieldValueAt( Cell* targetCell, int fieldNum ) override;
         
         RealVector 
@@ -168,7 +169,7 @@ namespace broomstyx
         double      _wt;
         
         double _lc;
-        double _Gc;
+//         double _Gc;
         double _phiIrrev;
         
         std::string _crackLabel;
