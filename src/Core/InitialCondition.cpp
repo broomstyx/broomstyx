@@ -49,9 +49,12 @@ void InitialCondition::readDataFrom( FILE* fp )
     // Target DOF type
     _conditionType = getStringInputFrom(fp, "Failed to read target DOF type for initial condition from input file!", src);
     
-    // Target DOF number
+    // Target DOF label
     if ( _conditionType == "NodalDof" || _conditionType == "CellDof" )
-        _dofNumber = getIntegerInputFrom(fp, "Failed to read target DOF number for initial condition from input file!", src);
+    {
+        str = getStringInputFrom(fp, "Failed to read target DOF label for initial condition from input file!", src);
+        _dofNumber = analysisModel().dofManager().giveIndexForNodalDof(str);
+    }
     
     // Specification Type
     _specType = getStringInputFrom(fp, "Failed to read specification type for initial condition from input file!", src);
