@@ -165,6 +165,8 @@ namespace broomstyx
                                , const BoundaryCondition& bndCond
                                , const TimeData&          time ) override;
         
+        void imposeInitialConditionAt( Cell*                   targetCell
+                                     , const InitialCondition& initCond ) override;
         void initializeMaterialsAt( Cell* targetCell ) override;
         void initializeNumericsAt( Cell* targetCell ) override;
         void performPostprocessingAt( Cell* targetCell, std::string tag ) override;

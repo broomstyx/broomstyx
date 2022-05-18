@@ -847,6 +847,22 @@ void PhaseFieldFracture_FeFv_Tri3::imposeConstraintAt
     }
 }
 // ----------------------------------------------------------------------------
+void PhaseFieldFracture_FeFv_Tri3::imposeInitialConditionAt( Cell*                   targetCell
+                                                           , const InitialCondition& initCond )
+{
+    if ( _cellDof[0] != initCond.targetDofNumber() )
+        throw std::runtime_error("Error imposing initial condition! Specified DOF in initial condition \
+            does not correspond to the cell phase-field DOF.\nSource: " + _name);
+    else
+    {
+        std::vector<RealVector> epCoor = this->giveEvaluationPointsFor(targetCell);
+        double initVal = initCond.valueAt(epCoor[0]);
+
+        Dof* pfDof = analysisModel().domainManager().giveCellDof(_cellDof[0], targetCell);
+        analysisModel().dofManager().updatePrimaryVariableAt(pfDof, initVal, converged_value);
+    }
+}
+// ----------------------------------------------------------------------------
 void PhaseFieldFracture_FeFv_Tri3::initializeMaterialsAt( Cell* targetCell )
 {
     auto cns = this->getNumericsStatusAt(targetCell);
