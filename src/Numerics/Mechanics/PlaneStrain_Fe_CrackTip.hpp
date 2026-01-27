@@ -76,36 +76,6 @@ namespace broomstyx
     class MaterialStatus;
     class ScalarBasisFunction;
     
-    // Cell numerics status
-    class CellNumericsStatus_PlaneStrain_Fe_CrackTip final : public NumericsStatus
-    {
-        friend class PlaneStrain_Fe_CrackTip;
-        
-    public:
-        CellNumericsStatus_PlaneStrain_Fe_CrackTip( int nGausspts );
-        virtual ~CellNumericsStatus_PlaneStrain_Fe_CrackTip();
-        
-    private:
-        std::vector<EvalPoint> _gp;
-        int _nGaussPts;
-    };
-    
-    // Integration point numerics status
-    class EvalPtNumericsStatus_PlaneStrain_Fe_CrackTip final : public NumericsStatus
-    {
-        friend class PlaneStrain_Fe_CrackTip;
-        
-    public:
-        EvalPtNumericsStatus_PlaneStrain_Fe_CrackTip();
-        ~EvalPtNumericsStatus_PlaneStrain_Fe_CrackTip();
-        
-    private:
-        RealVector _strain;
-        RealVector _stress;
-        RealMatrix _gradU;
-        MaterialStatus* _materialStatus[2];
-    };
-    
     class PlaneStrain_Fe_CrackTip final : public Numerics
     {
     public:
@@ -163,6 +133,30 @@ namespace broomstyx
         void setDofStagesAt( Cell* targetCell ) override;
 
     private:
+        // Cell numerics status
+        class CellNumericsStatus final : public NumericsStatus
+        {
+        public:
+            CellNumericsStatus( int nGausspts );
+            virtual ~CellNumericsStatus();
+
+            std::vector<EvalPoint> _gp;
+            int _nGaussPts;
+        };
+
+        // Integration point numerics status
+        class EvalPtNumericsStatus final : public NumericsStatus
+        {
+        public:
+            EvalPtNumericsStatus();
+            ~EvalPtNumericsStatus();
+
+            RealVector _strain;
+            RealVector _stress;
+            RealMatrix _gradU;
+            MaterialStatus* _materialStatus[2];
+        };
+
         ScalarBasisFunction* _basisFunction;
         ScalarBasisFunction* _edgeBasisFunction;
         
@@ -173,18 +167,14 @@ namespace broomstyx
         RealMatrix _extrapolationMatrix;
         
         void formExtrapolationMatrix();
-        CellNumericsStatus_PlaneStrain_Fe_CrackTip*
-                   getNumericsStatusAt( Cell* targetCell );
-        EvalPtNumericsStatus_PlaneStrain_Fe_CrackTip*
-                   getNumericsStatusAt( EvalPoint& gp );
-        RealVector giveBasisFunctionsAt( const RealVector& natCoor );
-        std::vector<RealVector>
-                   giveBasisFunctionDerivativesAt( const RealVector& natCoor );
-        RealMatrix giveBmatAt( Cell* targetCell, const RealVector& natCoor );
-        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
-        RealVector giveLocalDisplacementsAt( Cell* targetCell, ValueType valType );
-        std::vector<Dof*>  giveNodalDofsAt( Cell* targetCell );
-        // std::vector<Node*> giveNodesOf( Cell* targetCell );
+        CellNumericsStatus*     getNumericsStatusAt( Cell* targetCell );
+        EvalPtNumericsStatus*   getNumericsStatusAt( EvalPoint& gp );
+        RealVector              giveBasisFunctionsAt( const RealVector& natCoor );
+        std::vector<RealVector> giveBasisFunctionDerivativesAt( const RealVector& natCoor );
+        RealMatrix              giveBmatAt( Cell* targetCell, const RealVector& natCoor );
+        RealMatrix              giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
+        RealVector              giveLocalDisplacementsAt( Cell* targetCell, ValueType valType );
+        std::vector<Dof*>       giveNodalDofsAt( Cell* targetCell );
     };
 }
 

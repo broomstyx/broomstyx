@@ -25,6 +25,7 @@
 #define AMORDAMAGEMODEL_HPP
 
 #include "Materials/Material.hpp"
+#include <tuple>
 
 namespace broomstyx
 {
@@ -34,23 +35,24 @@ namespace broomstyx
         
     public:
         MaterialStatus_AmorDamageModel();
-        virtual ~MaterialStatus_AmorDamageModel();
+        ~MaterialStatus_AmorDamageModel() override = default;
         
     private:
-        MaterialStatus* _materialStatus[2];
-        double _historyField;
-        double _elasticEnergy;
+        MaterialStatus* _materialStatus[ 2 ];
+        double _volElasticEnergy;
+        double _devElasticEnergy;
     };
     
     class AmorDamageModel final : public Material
     {
     public:
         AmorDamageModel();
-        virtual ~AmorDamageModel();
+        ~AmorDamageModel() override = default;
         
         MaterialStatus* createMaterialStatus() override;
         void       destroy( MaterialStatus*& matStatus ) override;
         double     givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus ) override;
+        double     givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label ) override;
         RealVector giveForceFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label ) override;
         RealMatrix giveModulusFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label ) override;
         void       readParamatersFrom( FILE* fp ) override;
@@ -58,16 +60,29 @@ namespace broomstyx
         void       updateStatusFrom( const RealVector& conState, MaterialStatus* matStatus, const std::string& label ) override;
         
     private:
-        Material*  _elasticityModel;
-        Material*  _degradationFunction;
-        double     _phiIrrev;
-        RealMatrix _I;
-        RealMatrix _P;
-        
+        enum AnalysisMode
+        {
+            TwoDimensional,
+            PlaneStress,
+            PlaneStrain,
+            Axisymmetric,
+            ThreeDimensional
+        };
+
+        AnalysisMode _analysisMode;
+        Material*    _elasticityModel;
+        Material*    _degradationFunction;
+        double       _kT;
+        double       _kC;
+        RealMatrix   _I;
+        RealMatrix   _Pvol;
+
         MaterialStatus_AmorDamageModel* 
                    accessMaterialStatus( MaterialStatus* matStatus );
         const MaterialStatus_AmorDamageModel* 
                    accessConstMaterialStatus( const MaterialStatus* matStatus );
+
+        std::tuple< RealVector, RealVector > retrieveStrainAndPhasefieldFrom( const RealVector& conState );
     };
 }
 

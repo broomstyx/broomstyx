@@ -28,57 +28,50 @@
 
 using namespace broomstyx;
 
-registerBroomstyxObject(Material, BourdinDamageModel)
+registerBroomstyxObject( Material, BourdinDamageModel )
 
 // Material status
 MaterialStatus_BourdinDamageModel::MaterialStatus_BourdinDamageModel()
-    : _materialStatus {nullptr, nullptr}
-    , _historyField(0.)
+    : _materialStatus { nullptr, nullptr }
     , _elasticEnergy(0.)
 {}
 
-MaterialStatus_BourdinDamageModel::~MaterialStatus_BourdinDamageModel() {}
-
 // Constructor
 BourdinDamageModel::BourdinDamageModel()
-    : _elasticityModel(nullptr)
-    , _degradationFunction(nullptr)
-    , _phiIrrev(0.)
+    : _elasticityModel( nullptr )
+    , _degradationFunction( nullptr )
 {}
-
-// Destructor
-BourdinDamageModel::~BourdinDamageModel() {}
 
 // Public methods
 // ----------------------------------------------------------------------------
 MaterialStatus* BourdinDamageModel::createMaterialStatus()
 {
     MaterialStatus* matStatus = new MaterialStatus_BourdinDamageModel();
-    auto mst = this->accessMaterialStatus(matStatus);
+    auto mst = this->accessMaterialStatus( matStatus );
     
-    mst->_materialStatus[0] = _elasticityModel->createMaterialStatus();
-    mst->_materialStatus[1] = _degradationFunction->createMaterialStatus();
+    mst->_materialStatus[ 0 ] = _elasticityModel->createMaterialStatus();
+    mst->_materialStatus[ 1 ] = _degradationFunction->createMaterialStatus();
     
     return matStatus;
 }
 // ----------------------------------------------------------------------------
 void BourdinDamageModel::destroy( MaterialStatus*& matStatus )
 {
-    auto mst = this->accessMaterialStatus(matStatus);
-    delete mst->_materialStatus[0];
-    delete mst->_materialStatus[1];
+    auto mst = this->accessMaterialStatus( matStatus );
+    delete mst->_materialStatus[ 0 ];
+    delete mst->_materialStatus[ 1 ];
 }
 // ----------------------------------------------------------------------------
 double BourdinDamageModel::givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus )
 {
-    auto mst = this->accessConstMaterialStatus(matStatus);
+    auto mst = this->accessConstMaterialStatus( matStatus );
     
     // Split constitutive state
-    RealVector strain({conState(0), conState(1), conState(2), conState(3)});
-    RealVector phi({conState(4)});
+    RealVector strain( { conState( 0 ), conState( 1 ), conState( 2 ), conState( 3 ) } );
+    RealVector phi( { conState( 4 ) } );
     
-    double energy = _elasticityModel->givePotentialFrom(strain, mst->_materialStatus[0]);
-    double degFcn = _degradationFunction->givePotentialFrom(phi, mst->_materialStatus[1]);
+    double energy = _elasticityModel->givePotentialFrom( strain, mst->_materialStatus[ 0 ] );
+    double degFcn = _degradationFunction->givePotentialFrom( phi, mst->_materialStatus[ 1 ] );
     
     return degFcn*energy;
 }
@@ -89,27 +82,27 @@ RealVector BourdinDamageModel::giveForceFrom( const RealVector&     conState
 {
     RealVector conForce;
     
-    auto mst = this->accessConstMaterialStatus(matStatus);
+    auto mst = this->accessConstMaterialStatus( matStatus );
     
     // Split constitutive state
-    RealVector strain({conState(0), conState(1), conState(2), conState(3)});
-    RealVector phi({conState(4)});
+    RealVector strain( { conState( 0 ), conState( 1 ), conState( 2 ), conState( 3 ) } );
+    RealVector phi( { conState( 4 ) } );
     
     if ( label == "Mechanics" )
     {
-        RealVector stress = _elasticityModel->giveForceFrom(strain, mst->_materialStatus[0]);
-        double degFcn = _degradationFunction->givePotentialFrom(phi, mst->_materialStatus[1]);
+        RealVector stress = _elasticityModel->giveForceFrom( strain, mst->_materialStatus[ 0 ] );
+        double degFcn = _degradationFunction->givePotentialFrom( phi, mst->_materialStatus[ 1 ] );
         
-        conForce = degFcn*stress;
+        conForce = degFcn * stress;
     }
     else if ( label == "PhaseField" )
     {
-        RealVector DdegFcn = _degradationFunction->giveForceFrom(phi, mst->_materialStatus[1]);
-        conForce = DdegFcn*mst->_elasticEnergy;
+        RealVector DdegFcn = _degradationFunction->giveForceFrom( phi, mst->_materialStatus[ 1 ] );
+        conForce = { DdegFcn( 0 ), mst->_elasticEnergy };
     }
     else
-        throw std::runtime_error("Error: Invalid subsytem label '" + label +
-                "' encountered in constitutive force calculation!\nSource: " + _name);
+        throw std::runtime_error( "Error: Invalid subsytem label '" + label +
+                "' encountered in constitutive force calculation!\nSource: " + _name );
     
     return conForce;
 }
@@ -123,115 +116,77 @@ RealMatrix BourdinDamageModel::giveModulusFrom( const RealVector&     conState
     auto mst = this->accessConstMaterialStatus(matStatus);
     
     // Split constitutive state
-    RealVector strain({conState(0), conState(1), conState(2), conState(3)});
-    RealVector phi({conState(4)});
+    RealVector strain( { conState( 0 ), conState( 1 ), conState( 2 ), conState( 3 ) } );
+    RealVector phi( { conState( 4 ) } );
     
     if ( label == "Mechanics" )
     {
-        RealMatrix modulus = _elasticityModel->giveModulusFrom(strain, mst->_materialStatus[0]);
-        double degFcn = _degradationFunction->givePotentialFrom(phi, mst->_materialStatus[1]);
+        RealMatrix modulus = _elasticityModel->giveModulusFrom( strain, mst->_materialStatus[ 0 ] );
+        double degFcn = _degradationFunction->givePotentialFrom( phi, mst->_materialStatus[ 1 ] );
         
-        conMod = degFcn*modulus;
+        conMod = degFcn * modulus;
     }
     else if ( label == "PhaseField" )
     {
-        RealMatrix DDdegFcn = _degradationFunction->giveModulusFrom(phi, mst->_materialStatus[1]);
+        RealMatrix DDdegFcn = _degradationFunction->giveModulusFrom( phi, mst->_materialStatus[ 1 ] );
         
-        conMod = DDdegFcn*mst->_elasticEnergy;
+        conMod = { { DDdegFcn( 0,0 ), 0. },
+                   { 0., mst->_elasticEnergy } };
     }
     else
-        throw std::runtime_error("Error: Invalid subsytem label '" + label +
-                "' encountered in constitutive force calculation!\nSource: " + _name);
+        throw std::runtime_error( "Error: Invalid subsytem label '" + label +
+                "' encountered in constitutive force calculation!\nSource: " + _name );
     
     return conMod;
 }
 // ----------------------------------------------------------------------------
 void BourdinDamageModel::readParamatersFrom( FILE* fp )
 {
-    std::string elasticityModel = getStringInputFrom(fp, "Failed to read elasticity model from input file!", _name);
-    _elasticityModel = objectFactory().instantiateMaterial(elasticityModel);
-    _elasticityModel->readParamatersFrom(fp);
+    std::string elasticityModel = getStringInputFrom( fp, "Failed to read elasticity model from input file!", _name );
+    _elasticityModel = objectFactory().instantiateMaterial( elasticityModel );
+    _elasticityModel->readParamatersFrom( fp );
     
-    std::string degFcn = getStringInputFrom(fp, "Failed to read degradation function model from input file!", _name);
-    _degradationFunction = objectFactory().instantiateMaterial(degFcn);
-    _degradationFunction->readParamatersFrom(fp);
-    
-    verifyKeyword(fp, "IrreversibilityThreshold", _name);
-    _phiIrrev = getRealInputFrom(fp, "Failed to read irreversibility threshold from input file!", _name);
+    std::string degFcn = getStringInputFrom( fp, "Failed to read degradation function model from input file!", _name );
+    _degradationFunction = objectFactory().instantiateMaterial( degFcn );
+    _degradationFunction->readParamatersFrom( fp );
 }
 // ----------------------------------------------------------------------------
 void BourdinDamageModel::updateStatusFrom( const RealVector& conState, MaterialStatus* matStatus )
 {
     if ( conState.dim() == 5 )
     {
-        RealVector strain({conState(0), conState(1), conState(2), conState(3)});
-        RealVector phi({conState(4)});
+        RealVector strain( { conState( 0 ), conState( 1 ), conState( 2 ), conState( 3 ) } );
+        RealVector phi( { conState( 4 ) } );
         
-        auto mst = this->accessMaterialStatus(matStatus);
-        _elasticityModel->updateStatusFrom(strain, mst->_materialStatus[0]);
-        _degradationFunction->updateStatusFrom(phi, mst->_materialStatus[1]);
+        auto mst = this->accessMaterialStatus( matStatus );
+        _elasticityModel->updateStatusFrom( strain, mst->_materialStatus[ 0 ] );
+        _degradationFunction->updateStatusFrom( phi, mst->_materialStatus[ 1 ] );
         
-        mst->_elasticEnergy = _elasticityModel->givePotentialFrom(strain, mst->_materialStatus[0]);
-        
-        // Enforce irreversibility
-        if ( mst->_elasticEnergy < mst->_historyField && phi(0) > _phiIrrev )
-            mst->_elasticEnergy = mst->_historyField;
+        mst->_elasticEnergy = _elasticityModel->givePotentialFrom( strain, mst->_materialStatus[ 0 ] );
     }
     else
-        throw std::runtime_error("Error: Invalid size for constitutive state vector used for material status update!\nSource: " + _name);
+        throw std::runtime_error( "Error: Invalid size for constitutive state vector used for material status update!\nSource: " + _name );
 }
 // ----------------------------------------------------------------------------
 void BourdinDamageModel::updateStatusFrom( const RealVector& conState, MaterialStatus* matStatus, const std::string& label )
 {
-    auto mst = this->accessMaterialStatus(matStatus);
+    auto mst = this->accessMaterialStatus( matStatus );
     
     if ( label == "Mechanics" )
     {
-        RealVector strain({conState(0), conState(1), conState(2), conState(3)});
-        _elasticityModel->updateStatusFrom(strain, mst->_materialStatus[0]);
+        RealVector strain( { conState( 0 ), conState( 1 ), conState( 2 ), conState( 3 ) } );
+        _elasticityModel->updateStatusFrom( strain, mst->_materialStatus[ 0 ] );
     }
     else if ( label == "PhaseField" )
     {
-        RealVector strain({conState(0), conState(1), conState(2), conState(3)});
-        RealVector phi({conState(4)});
-        _degradationFunction->updateStatusFrom(phi, mst->_materialStatus[1]);
+        RealVector strain( { conState( 0 ), conState( 1 ), conState( 2 ), conState( 3 ) } );
+        RealVector phi( { conState( 4 ) } );
+        _degradationFunction->updateStatusFrom( phi, mst->_materialStatus[ 1 ] );
         
-        mst->_elasticEnergy = _elasticityModel->givePotentialFrom(strain, mst->_materialStatus[0]);
-        
-        // Enforce irreversibility
-        if ( mst->_elasticEnergy < mst->_historyField && phi(0) > _phiIrrev )
-            mst->_elasticEnergy = mst->_historyField;
-    }
-    else if ( label == "InitializeHistoryField" )
-    {
-        /***********************************
-         *
-         *  conState(0) = phi
-         *  conState(1) = g'(phi)*Psi0
-         * 
-         ***********************************/
-        
-        auto mst = this->accessMaterialStatus(matStatus);
-        RealVector phi({conState(0)});
-        RealVector Dgphi = _degradationFunction->giveForceFrom(phi, mst->_materialStatus[1]);
-        
-        // Set history field
-        mst->_historyField = conState(1)/Dgphi(0);
-    }
-    else if ( label == "FinalizeHistoryField" )
-    {
-        RealVector strain({conState(0), conState(1), conState(2), conState(3)});
-        RealVector phi({conState(4)});
-        
-        auto mst = this->accessMaterialStatus(matStatus);
-        _elasticityModel->updateStatusFrom(strain, mst->_materialStatus[0]);
-        _degradationFunction->updateStatusFrom(phi, mst->_materialStatus[1]);
-        mst->_elasticEnergy = _elasticityModel->givePotentialFrom(strain, mst->_materialStatus[0]);
-        if ( mst->_elasticEnergy > mst->_historyField && phi(0) > _phiIrrev )
-            mst->_historyField = mst->_elasticEnergy;
+        mst->_elasticEnergy = _elasticityModel->givePotentialFrom( strain, mst->_materialStatus[ 0 ] );
     }
     else
-        throw std::runtime_error("Error: Invalid size for constitutive state vector used for material status update!\nSource: " + _name);
+        throw std::runtime_error( "Error: Invalid size for constitutive state vector used for material status update!\nSource: " + _name );
 }
 
 // Private methods
@@ -239,9 +194,9 @@ void BourdinDamageModel::updateStatusFrom( const RealVector& conState, MaterialS
 MaterialStatus_BourdinDamageModel*
 BourdinDamageModel::accessMaterialStatus( MaterialStatus* matStatus )
 {
-    auto mst = dynamic_cast<MaterialStatus_BourdinDamageModel*>(matStatus);
+    auto mst = dynamic_cast<MaterialStatus_BourdinDamageModel*>( matStatus );
     if ( !mst )
-        throw std::runtime_error("Error: Unable to access material status!\nSource: " + _name);
+        throw std::runtime_error( "Error: Unable to access material status!\nSource: " + _name );
     
     return mst;
 }
@@ -249,9 +204,9 @@ BourdinDamageModel::accessMaterialStatus( MaterialStatus* matStatus )
 const MaterialStatus_BourdinDamageModel*
 BourdinDamageModel::accessConstMaterialStatus( const MaterialStatus* matStatus )
 {
-    auto mst = dynamic_cast<const MaterialStatus_BourdinDamageModel*>(matStatus);
+    auto mst = dynamic_cast<const MaterialStatus_BourdinDamageModel*>( matStatus );
     if ( !mst )
-        throw std::runtime_error("Error: Unable to access material status!\nSource: " + _name);
+        throw std::runtime_error( "Error: Unable to access material status!\nSource: " + _name );
     
     return mst;
 }

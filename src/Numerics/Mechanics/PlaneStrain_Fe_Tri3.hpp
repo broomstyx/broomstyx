@@ -85,7 +85,7 @@ namespace broomstyx
         RealMatrix _gradU;
         RealMatrix _JmatInv;
         double     _Jdet;
-        MaterialStatus* _materialStatus[2];
+        MaterialStatus* _materialStatus[ 2 ];
     };
     
     class PlaneStrain_Fe_Tri3 final : public Numerics 
@@ -156,8 +156,8 @@ namespace broomstyx
                    getNumericsStatusAt( Cell* targetCell );
         RealMatrix giveBmatAt( Cell* targetCell );
         RealMatrix giveGradBmatAt( Cell* targetCell );
-        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
-        RealVector giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType );
+        RealMatrix giveJacobianMatrixAt( Cell* targetCell );
+        static RealVector giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType );
         std::vector<Dof*> giveNodalDofsAt( Cell* targetCell );
     };
 }

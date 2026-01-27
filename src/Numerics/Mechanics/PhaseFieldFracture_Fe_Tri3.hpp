@@ -89,6 +89,7 @@ namespace broomstyx
     private:
         double     _area;
         double     _phi;
+        double     _phiOld;
         RealVector _strain;
         RealVector _stress;
         RealMatrix _gradU;
@@ -96,6 +97,7 @@ namespace broomstyx
         double     _bulkEgy;
         RealMatrix _dPsi;
         double     _Gc;
+        double     _histFld;
         
         MaterialStatus* _materialStatus[3];
     };
@@ -154,22 +156,28 @@ namespace broomstyx
         
         void initializeMaterialsAt( Cell* targetCell ) override;
         void initializeNumericsAt( Cell* targetCell ) override;
-        void performPreprocessingAt( Cell* targetCell, std::string directive ) override;
         void printPostIterationMessage( int stage ) override;
         void readAdditionalDataFrom( FILE* fp ) override;
         void setDofStagesAt( Cell* targetCell ) override;
         
     private:
-        Triangle_P1 _basisFunction;
-        RealVector  _basisFunctionValues;
-        RealMatrix  _basisFunctionDerivatives;
-        RealMatrix  _massMatrix;
+        enum AnalysisMode
+        {
+            Unset,
+            PlaneStress,
+            PlaneStrain,
+        };
+
+        AnalysisMode _analysisMode;
+        Triangle_P1  _basisFunction;
+        RealVector   _basisFunctionValues;
+        RealMatrix   _basisFunctionDerivatives;
+        RealMatrix   _massMatrix;
         
-        RealVector  _gpNatCoor;
-        double      _wt;
+        RealVector _gpNatCoor;
+        double     _wt;
         
         double _lc;
-//         double _Gc;
         double _phiIrrev;
         
         std::string _crackLabel;
@@ -177,8 +185,8 @@ namespace broomstyx
         NumericsStatus_PhaseFieldFracture_Fe_Tri3*
                    getNumericsStatusAt( Cell* targetCell );
         RealMatrix giveBmatUAt(Cell* targetCell);
-        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
-        std::tuple< RealVector, RealVector >
+        RealMatrix giveJacobianMatrixAt( Cell* targetCell );
+        static std::tuple< RealVector, RealVector >
                    giveLocalVariablesAt( std::vector<Dof*>& dof, ValueType valType );
         std::vector<Dof*> giveNodalDofsAt( Cell* targetCell );
     };

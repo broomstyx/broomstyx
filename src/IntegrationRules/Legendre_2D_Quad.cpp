@@ -27,7 +27,7 @@
 
 using namespace broomstyx;
 
-Legendre_2D_Quad::Legendre_2D_Quad( int nPoints ) : IntegrationRule(nPoints) {}
+Legendre_2D_Quad::Legendre_2D_Quad( int nPoints ) : IntegrationRule( nPoints ) {}
 
 Legendre_2D_Quad::~Legendre_2D_Quad() {}
 

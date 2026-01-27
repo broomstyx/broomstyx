@@ -507,12 +507,12 @@ void DomainManager::findDomainCellsAssociatedWith( Cell *targetCell )
     if ( targetCell->_isPartOfDomain )
         throw std::runtime_error("ERROR: Search request made for associated domain cell of a cell\nthat is already part of the domain!\nSource: DomainManager");
     
-    // Form set of all elements attached to all the nodes of the 
+    // Form set of all elements attached to all the nodes of the
     // current boundary element
     std::set<Cell*> candCell;
     int nNodes = targetCell->_node.size();
     
-    for (  int i = 0; i < nNodes; i++ )
+    for ( int i = 0; i < nNodes; i++ )
     {
         std::set<Cell*> temp = targetCell->_node[i]->_attachedDomCell;
         

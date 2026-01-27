@@ -58,6 +58,14 @@ double Material::givePotentialFrom(const RealVector& conState, const MaterialSta
     return 0.;
 }
 // ----------------------------------------------------------------------------
+double Material::givePotentialFrom(const RealVector& conState, const MaterialStatus* matStatus, const std::string& label )
+{
+    this->error_unimplemented("givePotentialFrom(...)");
+
+    // Return statement is only for suppressing compilation warnings
+    return 0.;
+}
+// ----------------------------------------------------------------------------
 RealVector Material::giveForceFrom( const RealVector& conState, const MaterialStatus* matStatus )
 {
     this->error_unimplemented("giveForceFrom( ... )");

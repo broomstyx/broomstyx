@@ -64,7 +64,7 @@ namespace broomstyx
         LoadStep* _loadStep;
         std::string _name;
         
-        bool checkConvergenceOfNumericsAt( int stage );
+        static bool checkConvergenceOfNumericsAt( int stage, const TimeData& time );
     };
 }
 

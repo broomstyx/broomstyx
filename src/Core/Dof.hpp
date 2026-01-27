@@ -35,19 +35,23 @@ namespace broomstyx
 
     public:
         Dof( int grp )
-            : _group(grp)
-            , _stage(UNASSIGNED)
-            , _subsystem(UNASSIGNED)
-            , _eqNo(UNASSIGNED)
-            , _isConstrained(false)
-            , _primVarConverged(0.)
-            , _primVarCurrent(0.)
-            , _secVar(0.)
-            , _residual(0.)
-            , _isSlave(false)
+            : _group( grp )
+            , _stage( UNASSIGNED )
+            , _subsystem( UNASSIGNED )
+            , _eqNo( UNASSIGNED )
+            , _isConstrained( false )
+            , _primVarConverged( 0. )
+            , _primVarCurrent( 0. )
+            , _primVarCorrection( 0. )
+            , _primVarRestart( 0. )
+            , _secVar( 0. )
+            , _secVarOld( 0. )
+            , _residual( 0. )
+            , _isSlave( false )
+            , _masterDof( nullptr )
         {}
 
-        virtual ~Dof() {}
+        virtual ~Dof() = default;
         
         // Disable copy constructor and assignment operator
         Dof( const Dof& ) = delete;
@@ -64,13 +68,14 @@ namespace broomstyx
         double _primVarConverged;
         double _primVarCurrent;
         double _primVarCorrection;
+        double _primVarRestart;
         double _secVar;
+        double _secVarOld;
         double _residual;
 
         bool   _isSlave;
         Dof*   _masterDof;
     };
-
 }
 
 #endif	/* DOF_HPP */

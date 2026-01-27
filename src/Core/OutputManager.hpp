@@ -42,7 +42,8 @@ namespace broomstyx
         // Disable copy constructor and assignment operator
         OutputManager( const OutputManager& ) = delete;
         OutputManager& operator=( const OutputManager& ) = delete;
-        
+
+        static void createCsvOutputDirectory();
         void initializeOutputWriter();
         void initializeCSVOutput();
         void readOutputWriterFromFile( FILE* fp );

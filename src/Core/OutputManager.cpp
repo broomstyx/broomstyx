@@ -23,7 +23,7 @@
 
 #include "OutputManager.hpp"
 #include <chrono>
-#include <stdexcept>
+#include <filesystem>
 #include <string>
 
 #include "ObjectFactory.hpp"
@@ -36,9 +36,9 @@ using namespace broomstyx;
 
 // Constructor
 OutputManager::OutputManager()
-    : _outputWriter(nullptr)
-    , _nCsvOutput(0)
-    , _csvFile(nullptr)
+    : _outputWriter( nullptr )
+    , _nCsvOutput( 0 )
+    , _csvFile( nullptr )
 {}
 
 // Destructor
@@ -52,8 +52,8 @@ OutputManager::~OutputManager()
     if ( _csvFile )
         std::fclose( _csvFile );
     for ( int i = 0; i < _nCsvOutput; i++)
-        if ( _csvOutput[i] )
-            delete _csvOutput[i];
+        if ( _csvOutput[ i ] )
+            delete _csvOutput[ i ];
     
     if ( _outputWriter )
         delete _outputWriter;
@@ -62,34 +62,36 @@ OutputManager::~OutputManager()
     std::printf("done.");
     std::fflush(stdout);
 #endif
-
 }
 
 // Public methods
+void OutputManager::createCsvOutputDirectory()
+{
+    std::filesystem::create_directory( "Output_CSV" );
+}
+
 void OutputManager::initializeCSVOutput()
 {
     if ( _nCsvOutput > 0 )
     {
         // Create directory
-        int dir_err = system("mkdir -p Output_CSV");
-        if ( dir_err == -1 )
-            throw std::runtime_error("Error creating directory 'Output_CSV'!\n");
+        OutputManager::createCsvOutputDirectory();
         
         // Create CSV File
-        _csvFile = std::fopen(_csvFilename.c_str(), "w");
+        _csvFile = std::fopen( _csvFilename.c_str(), "w" );
         
         // Initialize output quantities and write column labels to CSV file
-        std::fprintf(_csvFile, "Time, ");
-        for ( int i = 0; i < (int)_csvOutput.size(); i++)
+        std::fprintf( _csvFile, "Time, " );
+        for ( int i = 0; i < _nCsvOutput; i++ )
         {
-            _csvOutput[i]->initialize();
+            _csvOutput[ i ]->initialize();
             
-            std::string quantityLabel = _csvOutput[i]->giveLabel();
-            std::fprintf(_csvFile, "%s", quantityLabel.c_str());
-            if ( i < (int)_csvOutput.size() - 1 )
-                std::fprintf(_csvFile, ", ");
+            std::string quantityLabel = _csvOutput[ i ]->giveLabel();
+            std::fprintf( _csvFile, "%s", quantityLabel.c_str() );
+            if ( i < _nCsvOutput - 1 )
+                std::fprintf( _csvFile, ", " );
             else
-                std::fprintf(_csvFile, "\n");
+                std::fprintf( _csvFile, "\n" );
         }
     }
 }
@@ -103,38 +105,33 @@ void OutputManager::readOutputWriterFromFile( FILE* fp )
 {
     std::string str, src = "OutputManager";
     
-    str = getStringInputFrom(fp, "Failed to read output format from input file!", src);
-    _outputWriter = objectFactory().instantiateOutputWriter(str);
-    _outputWriter->readDataFrom(fp);
+    str = getStringInputFrom( fp, "Failed to read output format from input file!", src );
+    _outputWriter = objectFactory().instantiateOutputWriter( str );
+    _outputWriter->readDataFrom( fp );
 }
 
 void OutputManager::readDataForCSVOutputFrom( FILE* fp )
 {
     std::string label, str, src = "OutputManager";
     
-    _nCsvOutput = getIntegerInputFrom(fp, "Failed to read number of CSV output from input file!", src);
+    _nCsvOutput = getIntegerInputFrom( fp, "Failed to read number of CSV output from input file!", src );
     
     if ( _nCsvOutput > 0 )
     {
-        // Create directory
-        int dir_err = system("mkdir -p Output_CSV");
-        if ( dir_err == -1 )
-            throw std::runtime_error("Error creating directory 'Output_CSV'!\n");
-        
-        _csvOutput.assign(_nCsvOutput, nullptr);
-        for ( int i = 0; i < _nCsvOutput; i++)
+        _csvOutput.assign( _nCsvOutput, nullptr );
+        for ( int i = 0; i < _nCsvOutput; i++ )
         {
-            label = getStringInputFrom(fp, "Failed to read CSV output quantity label from input file!", "OutputManager");
-            str = getStringInputFrom(fp, "Failed to read CSV output type from input file!", src);
-            _csvOutput[i] = objectFactory().instantiateOutputQuantity(str);
-            _csvOutput[i]->setOutputLabelTo(label);
-            _csvOutput[i]->readDataFrom(fp);
+            label = getStringInputFrom( fp, "Failed to read CSV output quantity label from input file!", "OutputManager" );
+            str = getStringInputFrom( fp, "Failed to read CSV output type from input file!", src );
+            _csvOutput[ i ] = objectFactory().instantiateOutputQuantity( str );
+            _csvOutput[ i ]->setOutputLabelTo( label );
+            _csvOutput[ i ]->readDataFrom( fp );
         }
 
-        verifyDeclaration(fp, "CSV_FILE", src);
-        str = getStringInputFrom(fp, "Failed to read CSV output filename from input file!", src);
+        verifyDeclaration( fp, "CSV_FILE", src );
+        str = getStringInputFrom( fp, "Failed to read CSV output filename from input file!", src );
 
-        _csvFilename = "./Output_CSV/" + std::string(str) + ".csv";
+        _csvFilename = "./Output_CSV/" + std::string( str ) + ".csv";
     }
 }
 
@@ -144,10 +141,10 @@ void OutputManager::writeOutput( double time )
     std::chrono::duration<double> tictoc;
     
     tic = std::chrono::high_resolution_clock::now();
-    _outputWriter->writeOutput(time);
+    _outputWriter->writeOutput( time );
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
-    diagnostics().addOutputWriteTime(tictoc.count());
+    diagnostics().addOutputWriteTime( tictoc.count() );
 }
 
 void OutputManager::writeOutputQuantities( double time )
@@ -159,21 +156,21 @@ void OutputManager::writeOutputQuantities( double time )
 
     if ( _nCsvOutput > 0 )
     {
-        std::fprintf( _csvFile, "%.15e, ", time);
-        for ( int i = 0; i < (int)_csvOutput.size(); i++)
+        std::fprintf( _csvFile, "%.15e, ", time );
+        for ( int i = 0; i < _nCsvOutput; i++ )
         {
-            double result = _csvOutput[i]->computeOutput();
-            std::fprintf(_csvFile, "%.15e", result);
-            if (i < (int)_csvOutput.size() - 1)
-                std::fprintf(_csvFile, ", ");
+            double result = _csvOutput[ i ]->computeOutput();
+            std::fprintf( _csvFile, "%.15e", result );
+            if ( i < _nCsvOutput - 1 )
+                std::fprintf( _csvFile, ", " );
             else
-                std::fprintf(_csvFile, "\n");
+                std::fprintf( _csvFile, "\n" );
         }
-        std::fflush(_csvFile);
-        std::printf("  --> %s\n", _csvFilename.c_str());
+        std::fflush( _csvFile );
+        std::printf( "  --> %s\n", _csvFilename.c_str() );
     }
 
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
-    diagnostics().addOutputWriteTime(tictoc.count());
+    diagnostics().addOutputWriteTime( tictoc.count() );
 }

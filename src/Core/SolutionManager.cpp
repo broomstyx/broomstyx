@@ -96,6 +96,7 @@ void SolutionManager::commenceSolution()
     
     // Output initial (assimed current time is t = 0)
     analysisModel().outputManager().writeOutputQuantities(0.);
+    analysisModel().outputManager().writeOutput(0.);
     
     // Solve load steps
     for (int i = 0; i < (int)_loadStep.size(); i++)

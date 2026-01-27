@@ -45,7 +45,7 @@ namespace broomstyx
         AnalysisModel( const AnalysisModel& ) = delete;
         AnalysisModel& operator=( const AnalysisModel& ) = delete;
         
-        void initializeYourself( std::string filename );
+        void initializeYourself( const std::string& filename );
         void solveYourself();
         
         DofManager&      dofManager();

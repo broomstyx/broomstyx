@@ -36,7 +36,13 @@ typedef std::chrono::duration<double> TimeDuration;
 typedef std::chrono::high_resolution_clock Timer;
 
 AnalysisModel::AnalysisModel()
-    : _meshReader(nullptr)
+    : _meshReader( nullptr )
+    , _dofManager( nullptr )
+    , _domainManager( nullptr )
+    , _materialManager( nullptr )
+    , _numericsManager( nullptr )
+    , _outputManager( nullptr )
+    , _solutionManager( nullptr )
 {}
 
 AnalysisModel::~AnalysisModel()
@@ -45,10 +51,7 @@ AnalysisModel::~AnalysisModel()
     std::printf("\nDestroying AnalysisModel... ");
     std::fflush(stdout);
 #endif
-    
-    if ( _meshReader )
-        delete _meshReader;
-    
+    delete _meshReader;
     delete _outputManager;
     delete _solutionManager;
     delete _domainManager;
@@ -63,7 +66,7 @@ AnalysisModel::~AnalysisModel()
 }
 
 // Public methods
-void AnalysisModel::initializeYourself( std::string filename )
+void AnalysisModel::initializeYourself( const std::string& filename )
 {
     TimePoint tic, toc;
     TimeDuration tictoc;
@@ -173,7 +176,7 @@ void AnalysisModel::readMeshReaderFrom( FILE* fp )
 
 void AnalysisModel::readInputFile()
 {
-    FILE* fp = nullptr;
+    FILE* fp;
     TimePoint tic, toc;
     TimeDuration tictoc;
     std::string src = "AnalysisModel";

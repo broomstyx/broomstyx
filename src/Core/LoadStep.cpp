@@ -360,7 +360,7 @@ void LoadStep::solveYourself()
             this->performPrefinalCalculationsAtCells();
             
             // Finalize data (unconverged results)
-            analysisModel().dofManager().finalizeDofPrimaryValues();
+            analysisModel().dofManager().finalizeDofValues();
             innertoc = std::chrono::high_resolution_clock::now();
             tictoc = innertoc - innertic;
             diagnostics().addUpdateTime(tictoc.count());
@@ -388,7 +388,7 @@ void LoadStep::solveYourself()
             this->performPrefinalCalculationsAtCells();
             
             // Finalize data
-            analysisModel().dofManager().finalizeDofPrimaryValues();
+            analysisModel().dofManager().finalizeDofValues();
             innertoc = std::chrono::high_resolution_clock::now();
             tictoc = innertoc - innertic;
             diagnostics().addUpdateTime(tictoc.count());

@@ -34,12 +34,13 @@ namespace broomstyx
     class UserFunction
     {
     public:
-        UserFunction() {}
-        virtual ~UserFunction() {}
+        UserFunction() = default;
+        virtual ~UserFunction() = default;
         
         // Disable copy constructor and assignment operator
         UserFunction( const UserFunction& ) = delete;
-        UserFunction& operator=( const UserFunction& ) = delete;
+
+        virtual UserFunction& operator=( const UserFunction& ) = delete;
 
         virtual double at( const RealVector& coor, const TimeData& time ) = 0;
         virtual void readDataFrom( FILE* fp ) {}

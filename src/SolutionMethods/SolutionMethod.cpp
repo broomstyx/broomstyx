@@ -96,12 +96,22 @@ void SolutionMethod::imposeConstraintsAt( int stage
     diagnostics().addSetupTime(tictoc.count());
 }
 // ---------------------------------------------------------------------------
-bool broomstyx::SolutionMethod::checkConvergenceOfNumericsAt( int stage )
+bool broomstyx::SolutionMethod::checkConvergenceOfNumericsAt( int stage, const TimeData& time )
 {
+    bool isConverged = true;
+
     std::chrono::time_point<std::chrono::system_clock> tic, toc;
     std::chrono::duration<double> tictoc;
 
     tic = std::chrono::high_resolution_clock::now();
+
+    std::vector<Numerics*> numerics = analysisModel().numericsManager().giveAllNumerics();
+    for ( int i = 0; i < (int)numerics.size(); i++ )
+    {
+        bool numericsConverged = numerics[ i ]->performAdditionalConvergenceCheckAt( stage, time );
+        if ( !numericsConverged )
+            isConverged = false;
+    }
 
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     int nUnconvergedCells = 0;
@@ -116,7 +126,7 @@ bool broomstyx::SolutionMethod::checkConvergenceOfNumericsAt( int stage )
         Numerics* numerics = analysisModel().domainManager().giveNumericsForDomain(label);
 
         bool cellConvergence = numerics->performAdditionalConvergenceCheckAt(curCell, stage);
-        if ( cellConvergence == false )
+        if ( !cellConvergence )
             nUnconvergedCells += 1;
     }
     
@@ -125,7 +135,7 @@ bool broomstyx::SolutionMethod::checkConvergenceOfNumericsAt( int stage )
     diagnostics().addConvergenceCheckTime(tictoc.count());
 
     if ( nUnconvergedCells > 0 )
-        return false;
-    else
-        return true;
+        isConverged = false;
+
+    return isConverged;
 }

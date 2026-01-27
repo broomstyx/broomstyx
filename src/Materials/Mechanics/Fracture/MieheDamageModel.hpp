@@ -35,21 +35,22 @@ namespace broomstyx
         
     public:
         MaterialStatus_MieheDamageModel();
-        virtual ~MaterialStatus_MieheDamageModel();
+        ~MaterialStatus_MieheDamageModel() override = default;
         
     private:
         MaterialStatus* _materialStatus;
         RealVector      _prinStrain;
         RealMatrix      _M;
-        double          _historyField;
         double          _drivingForce;
+        double          _eta;
+        double          _eps3;
     };
     
     class MieheDamageModel final : public Material
     {
     public:
         MieheDamageModel();
-        virtual ~MieheDamageModel();
+        ~MieheDamageModel() override = default;
         
         MaterialStatus* createMaterialStatus() override;
         void       destroy( MaterialStatus*& matStatus ) override;
@@ -59,50 +60,26 @@ namespace broomstyx
         RealMatrix giveModulusFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label ) override;
         void       readParamatersFrom( FILE* fp ) override;
         void       updateStatusFrom( const RealVector& conState, MaterialStatus* matStatus ) override;
-        void       updateStatusFrom( const RealVector& conState, MaterialStatus* matStatus, const std::string& label ) override;
-        
+
     private:
-        int       _analysisMode;
+        enum AnalysisMode
+        {
+            Unset,
+            PlaneStress,
+            PlaneStrain
+        };
+
+        AnalysisMode _analysisMode;
         double    _E;
         double    _nu;
         double    _lambda;
         double    _G;
         Material* _degradationFunction;
-        double    _phiIrrev;
-        
-        MaterialStatus_MieheDamageModel* accessMaterialStatus( MaterialStatus* matStatus )
-        {
-            auto mst = dynamic_cast<MaterialStatus_MieheDamageModel*>(matStatus);
-            if ( !mst )
-                throw std::runtime_error("Error: Unable to access material status!\nSource: " + _name);
-            
-            return mst;
-        }
+        int       _maxIdx;
 
-        const MaterialStatus_MieheDamageModel* accessConstMaterialStatus( const MaterialStatus* matStatus )
-        {
-            auto mst = dynamic_cast<const MaterialStatus_MieheDamageModel*>(matStatus);
-            if ( !mst )
-                throw std::runtime_error("Error: Unable to access material status!\nSource: " + _name);
-            
-            return mst;
-        }
-        
-        std::tuple< RealVector, RealVector > getStrainAndPhaseFieldFrom( const RealVector& conState )
-        {
-            RealVector strain;
-            RealVector phi(1);
-
-            if ( _analysisMode == 2 /* Plane strain */)
-            {
-                strain = {conState(0), conState(1), conState(2), conState(3)};
-                phi(0) = conState(4);
-            }
-            else
-                throw std::runtime_error("Error: Cannot resolve constitutive state for current analysis mode!\nSource: " + _name);
-
-            return std::make_tuple(std::move(strain), std::move(phi));
-        }
+        MaterialStatus_MieheDamageModel* accessMaterialStatus( MaterialStatus* matStatus );
+        const MaterialStatus_MieheDamageModel* accessConstMaterialStatus( const MaterialStatus* matStatus );
+        std::tuple< RealVector, RealVector > getStrainAndPhaseFieldFrom( const RealVector& conState );
     };
 }
 

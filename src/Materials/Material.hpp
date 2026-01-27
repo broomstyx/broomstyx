@@ -59,6 +59,9 @@ namespace broomstyx
         // Error-generating virtual methods
         virtual double
             givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus );
+
+        virtual double
+            givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label );
         
         virtual RealVector 
             giveForceFrom( const RealVector& conState, const MaterialStatus* matStatus );

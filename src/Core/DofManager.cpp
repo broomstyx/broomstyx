@@ -1,6 +1,4 @@
 /*
-  Copyright (c) 2014 - 2019 University of Bergen
-  
   This file is part of the BROOMStyx project.
 
   BROOMStyx is free software: you can redistribute it and/or modify
@@ -70,9 +68,9 @@ void DofManager::addToSecondaryVariableAt( Dof* targetDof, double val )
 void DofManager::createCellDofsAt( Cell* targetCell )
 {
     int dofsPerCell = _cellDofInfo.size();
-    targetCell->_dof.assign(dofsPerCell, nullptr);
+    targetCell->_dof.assign( dofsPerCell, nullptr );
     for ( int i = 0; i < dofsPerCell; i++ )
-        targetCell->_dof[i] = new Dof(_cellDofInfo[i].group);
+        targetCell->_dof[ i ] = new Dof( _cellDofInfo[ i ].group );
 }
 // ----------------------------------------------------------------------------
 void DofManager::createFaceDofsAt( Cell* targetFace )
@@ -86,46 +84,46 @@ void DofManager::createFaceDofsAt( Cell* targetFace )
 void DofManager::createNodalDofsAt( Node* targetNode )
 {
     int dofsPerNode = _nodalDofInfo.size();
-    targetNode->_dof.assign(dofsPerNode, nullptr);
+    targetNode->_dof.assign( dofsPerNode, nullptr );
     for ( int i = 0; i < dofsPerNode; i++ )
-        targetNode->_dof[i] = new Dof(_nodalDofInfo[i].group);
+        targetNode->_dof[ i ] = new Dof( _nodalDofInfo[ i ].group );
 }
 // ----------------------------------------------------------------------------
 Dof* DofManager::createNumericsDofWithGroup( int grp )
 {
-    Dof* newDof = new Dof(grp);
-    _numericsDof.push_back(newDof);
+    Dof* newDof = new Dof( grp );
+    _numericsDof.push_back( newDof );
     
     return newDof;
 }
 // ----------------------------------------------------------------------------
 void DofManager::destroyCellDofsAt( Cell* targetCell )
 {
-    for ( int i = 0; i < (int)_cellDofInfo.size(); i++ )
-        if ( targetCell->_dof[i] )
+    for ( int i = 0; i < ( int )_cellDofInfo.size(); i++ )
+        if ( targetCell->_dof[ i ] )
         {
-            delete targetCell->_dof[i];
-            targetCell->_dof[i] = nullptr;
+            delete targetCell->_dof[ i ];
+            targetCell->_dof[ i ] = nullptr;
         }
 }
 // ----------------------------------------------------------------------------
 void DofManager::destroyFaceDofsAt( Cell* targetFace )
 {
     for ( int i = 0; i < (int)_faceDofInfo.size(); i++ )
-        if ( targetFace->_dof[i] )
+        if ( targetFace->_dof[ i ] )
         {
-            delete targetFace->_dof[i];
-            targetFace->_dof[i] = nullptr;
+            delete targetFace->_dof[ i ];
+            targetFace->_dof[ i ] = nullptr;
         }
 }
 // ----------------------------------------------------------------------------
 void DofManager::destroyNodalDofsAt( Node* targetNode )
 {
     for ( int i = 0; i < (int)_nodalDofInfo.size(); i++ )
-        if ( targetNode->_dof[i] )
+        if ( targetNode->_dof[ i ] )
         {
-            delete targetNode->_dof[i];
-            targetNode->_dof[i] = nullptr;
+            delete targetNode->_dof[ i ];
+            targetNode->_dof[ i ] = nullptr;
         }
 }
 // ----------------------------------------------------------------------------
@@ -141,19 +139,19 @@ void DofManager::enslave( Dof* targetDof, Dof* masterDof )
     targetDof->_masterDof = masterDof;
 }
 // ----------------------------------------------------------------------------
-void DofManager::finalizeDofPrimaryValues()
+void DofManager::finalizeDofValues()
 {
     int nNodes = analysisModel().domainManager().giveNumberOfNodes();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < nNodes; i++)
+    for ( int i = 0; i < nNodes; i++ )
     {
-        Node* targetNode = analysisModel().domainManager().giveNode(i);
+        Node* targetNode = analysisModel().domainManager().giveNode( i );
         
-        for ( int j = 0; j < (int)_nodalDofInfo.size(); j++)
+        for ( int j = 0; j < (int)_nodalDofInfo.size(); j++ )
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(j, targetNode);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof( j, targetNode );
             if ( targetDof->_isSlave )
             {
                 targetDof->_primVarConverged = targetDof->_masterDof->_primVarCurrent;
@@ -161,6 +159,8 @@ void DofManager::finalizeDofPrimaryValues()
             }
             else
                 targetDof->_primVarConverged = targetDof->_primVarCurrent;
+
+            targetDof->_secVarOld = targetDof->_secVar;
         }
     }
 
@@ -168,12 +168,12 @@ void DofManager::finalizeDofPrimaryValues()
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < nCells; i++)
+    for ( int i = 0; i < nCells; i++ )
     {
-        Cell* targetCell = analysisModel().domainManager().giveDomainCell(i);
-        for ( int j = 0; j < (int)_cellDofInfo.size(); j++)
+        Cell* targetCell = analysisModel().domainManager().giveDomainCell( i );
+        for ( int j = 0; j < (int)_cellDofInfo.size(); j++ )
         {
-            Dof* targetDof = analysisModel().domainManager().giveCellDof(j, targetCell);
+            Dof* targetDof = analysisModel().domainManager().giveCellDof( j, targetCell );
             if ( targetDof->_isSlave )
             {
                 targetDof->_primVarConverged = targetDof->_masterDof->_primVarConverged;
@@ -181,12 +181,15 @@ void DofManager::finalizeDofPrimaryValues()
             }
             else
                 targetDof->_primVarConverged = targetDof->_primVarCurrent;
+
+            targetDof->_secVarOld = targetDof->_secVar;
         }        
     }
     
     for ( int i = 0; i < (int)_numericsDof.size(); i++ )
     {
-        _numericsDof[i]->_primVarConverged = _numericsDof[i]->_primVarCurrent;
+        _numericsDof[ i ]->_primVarConverged = _numericsDof[ i ]->_primVarCurrent;
+        _numericsDof[ i ]->_secVarOld = _numericsDof[ i ]->_secVar;
     }
 }
 // ----------------------------------------------------------------------------
@@ -195,13 +198,13 @@ void DofManager::findActiveDofs()
     auto registeredStages = analysisModel().solutionManager().giveRegisteredSolutionStages();
     
     // First pass: determine number of active dofs at each stage
-    _nActiveDof.erase(_nActiveDof.begin(), _nActiveDof.end());
-    _nInactiveDof.erase(_nInactiveDof.begin(), _nInactiveDof.end());
+    _nActiveDof.erase( _nActiveDof.begin(), _nActiveDof.end() );
+    _nInactiveDof.erase( _nInactiveDof.begin(), _nInactiveDof.end() );
 
     for ( auto curStage : registeredStages )
     {
-        _nActiveDof.insert({curStage, 0});
-        _nInactiveDof.insert({curStage, 0});
+        _nActiveDof.insert( { curStage, 0 } );
+        _nInactiveDof.insert( { curStage, 0 } );
     }
     
     int nNodes = analysisModel().domainManager().giveNumberOfNodes();
@@ -209,10 +212,10 @@ void DofManager::findActiveDofs()
     
     for ( int i = 0; i < nNodes; i++ )
     {
-        Node* curNode = analysisModel().domainManager().giveNode(i);
+        Node* curNode = analysisModel().domainManager().giveNode( i );
         for ( int j = 0; j < (int)_nodalDofInfo.size(); j++ )
         {
-            Dof* curDof = analysisModel().domainManager().giveNodalDof(j, curNode);
+            Dof* curDof = analysisModel().domainManager().giveNodalDof( j, curNode );
             if ( !curDof->_isConstrained && !curDof->_isSlave && curDof->_stage != UNASSIGNED )
                 _nActiveDof[ curDof->_stage ]++;
             else if ( curDof->_stage != UNASSIGNED )
@@ -220,12 +223,12 @@ void DofManager::findActiveDofs()
         }
     }
     
-    for ( int i = 0; i < nCells; i++)
+    for ( int i = 0; i < nCells; i++ )
     {
-        Cell* curCell = analysisModel().domainManager().giveDomainCell(i);
+        Cell* curCell = analysisModel().domainManager().giveDomainCell( i );
         for ( int j = 0; j < (int)_cellDofInfo.size(); j++ )
         {
-            Dof* curDof = analysisModel().domainManager().giveCellDof(j, curCell);
+            Dof* curDof = analysisModel().domainManager().giveCellDof( j, curCell );
             if ( !curDof->_isConstrained && !curDof->_isSlave && curDof->_stage != UNASSIGNED )
                 _nActiveDof[ curDof->_stage ]++;
             else if ( curDof->_stage != UNASSIGNED )
@@ -237,7 +240,7 @@ void DofManager::findActiveDofs()
     
     for ( int i = 0; i < (int)_numericsDof.size(); i++ )
     {
-        Dof* curDof = _numericsDof[i];
+        Dof* curDof = _numericsDof[ i ];
         if ( !curDof->_isConstrained && !curDof->_isSlave && curDof->_stage != UNASSIGNED )
             _nActiveDof[ curDof->_stage ]++;
         else if ( curDof->_stage != UNASSIGNED )
@@ -245,12 +248,12 @@ void DofManager::findActiveDofs()
     }
     
     // 2nd pass: for vectors of Dof pointers
-    _activeDof.erase(_activeDof.begin(), _activeDof.end());
-    _inactiveDof.erase(_inactiveDof.begin(), _inactiveDof.end());
+    _activeDof.erase( _activeDof.begin(), _activeDof.end() );
+    _inactiveDof.erase( _inactiveDof.begin(), _inactiveDof.end() );
     for ( auto curStage : registeredStages )
     {
-        _activeDof.insert({curStage, std::vector<Dof*>(_nActiveDof[curStage])});
-        _inactiveDof.insert({curStage, std::vector<Dof*>(_nInactiveDof[curStage])});
+        _activeDof.insert( { curStage, std::vector<Dof*>( _nActiveDof[ curStage ] ) } );
+        _inactiveDof.insert( { curStage, std::vector<Dof*>( _nInactiveDof[ curStage ] ) } );
     }
     
     for ( auto curStage : registeredStages )
@@ -259,29 +262,29 @@ void DofManager::findActiveDofs()
         int curInactiveIdx = 0;
         for ( int i = 0; i < nNodes; i++ )
         {
-            Node* targetNode = analysisModel().domainManager().giveNode(i);
+            Node* targetNode = analysisModel().domainManager().giveNode( i );
         
-            for ( int j = 0; j < (int)_nodalDofInfo.size(); j++)
+            for ( int j = 0; j < (int)_nodalDofInfo.size(); j++ )
             {
-                Dof* targetDof = analysisModel().domainManager().giveNodalDof(j, targetNode);
+                Dof* targetDof = analysisModel().domainManager().giveNodalDof( j, targetNode );
                 if ( targetDof->_stage == curStage && !targetDof->_isConstrained && !targetDof->_isSlave )
-                    _activeDof[curStage][curActiveIdx++] = targetDof;
+                    _activeDof[ curStage ][ curActiveIdx++ ] = targetDof;
                 else if ( targetDof->_stage == curStage )
-                    _inactiveDof[curStage][curInactiveIdx++] = targetDof;
+                    _inactiveDof[ curStage ][ curInactiveIdx++ ] = targetDof;
             }
         }
 
-        for ( int i = 0; i < nCells; i++)
+        for ( int i = 0; i < nCells; i++ )
         {
-            Cell* targetCell = analysisModel().domainManager().giveDomainCell(i);
+            Cell* targetCell = analysisModel().domainManager().giveDomainCell( i );
 
-            for ( int j = 0; j < (int)_cellDofInfo.size(); j++)
+            for ( int j = 0; j < (int)_cellDofInfo.size(); j++ )
             {
-                Dof* targetDof = analysisModel().domainManager().giveCellDof(j, targetCell);
+                Dof* targetDof = analysisModel().domainManager().giveCellDof( j, targetCell );
                 if ( targetDof->_stage == curStage && !targetDof->_isConstrained && !targetDof->_isSlave )
-                    _activeDof[curStage][curActiveIdx++] = targetDof;
+                    _activeDof[ curStage ][ curActiveIdx++ ] = targetDof;
                 else if ( targetDof->_stage == curStage )
-                    _inactiveDof[curStage][curInactiveIdx++] = targetDof;
+                    _inactiveDof[ curStage ][ curInactiveIdx++ ] = targetDof;
             }
         }
         
@@ -289,23 +292,23 @@ void DofManager::findActiveDofs()
         
         for ( int i = 0; i < (int)_numericsDof.size(); i++ )
         {
-            Dof* targetDof = _numericsDof[i];
+            Dof* targetDof = _numericsDof[ i ];
             if ( targetDof->_stage == curStage && !targetDof->_isConstrained && !targetDof->_isSlave )
-                _activeDof[curStage][curActiveIdx++] = targetDof;
+                _activeDof[ curStage ][ curActiveIdx++ ] = targetDof;
             else if ( targetDof->_stage == curStage )
-                    _inactiveDof[curStage][curInactiveIdx++] = targetDof;
+                    _inactiveDof[ curStage ][ curInactiveIdx++ ] = targetDof;
         }
     }
 }
 // ----------------------------------------------------------------------------
 std::vector<Dof*> DofManager::giveActiveDofsAtStage( int stg )
 {
-    return _activeDof[stg];
+    return _activeDof[ stg ];
 }
 // ----------------------------------------------------------------------------
 int DofManager::giveGroupNumberFor( Dof* targetDof )
 {
-    if ( targetDof->_isSlave)
+    if ( targetDof->_isSlave )
         targetDof = targetDof->_masterDof;
     
     return targetDof->_group;
@@ -316,11 +319,11 @@ int DofManager::giveIndexForCellDof( const std::string& name )
     int index = -1;
     for ( int i = 0; i < (int)_cellDofInfo.size(); i++ )
     {
-        if ( _cellDofInfo[i].tag == name )
+        if ( _cellDofInfo[ i ].tag == name )
             index = i;
     }
     if ( index < 0 )
-        throw std::runtime_error("ERROR: Cannot give DOF index. Cell DOF '" + name + "' not recognized!\n");
+        throw std::runtime_error( "ERROR: Cannot give DOF index. Cell DOF '" + name + "' not recognized!\n" );
     
     return index;
 }
@@ -330,12 +333,12 @@ int DofManager::giveIndexForFaceDof( const std::string& name )
     int index = -1;
     for ( int i = 0; i < (int)_faceDofInfo.size(); i++ )
     {
-        if ( _faceDofInfo[i].tag == name )
+        if ( _faceDofInfo[ i ].tag == name )
             index = i;
     }
     if ( index < 0 )
-        throw std::runtime_error("ERROR: Cannot give DOF index. Face DOF '" + name + "' not recognized!\n");
-    
+        throw std::runtime_error( "ERROR: Cannot give DOF index. Face DOF '" + name + "' not recognized!\n" );
+
     return index;
 }
 // ----------------------------------------------------------------------------
@@ -344,11 +347,11 @@ int DofManager::giveIndexForNodalDof( const std::string& name )
     int index = -1;
     for ( int i = 0; i < (int)_nodalDofInfo.size(); i++ )
     {
-        if ( _nodalDofInfo[i].tag == name )
+        if ( _nodalDofInfo[ i ].tag == name )
             index = i;
     }
     if ( index < 0 )
-        throw std::runtime_error("ERROR: Cannot give DOF index. Nodal DOF '" + name + "' not recognized!\n");
+        throw std::runtime_error( "ERROR: Cannot give DOF index. Nodal DOF '" + name + "' not recognized!\n" );
     
     return index;
 }
@@ -364,6 +367,11 @@ int DofManager::giveEquationNumberAt ( Dof* targetDof )
 int DofManager::giveNumberOfActiveDofsAtStage( int stgNum )
 {
     return _nActiveDof[ stgNum ];
+}
+// ----------------------------------------------------------------------------
+double DofManager::giveOldValueOfSecondaryVariableAt( Dof* targetDof )
+{
+    return targetDof->_secVarOld;
 }
 // ----------------------------------------------------------------------------
 int DofManager::giveSubsystemNumberFor( Dof* targetDof )
@@ -403,7 +411,7 @@ double DofManager::giveValueOfPrimaryVariableAt( Dof* targetDof, ValueType valTy
     else if ( valType == correction )
         val = targetDof->_primVarCorrection;
     else
-        throw std::runtime_error("ERROR: Cannot request value of replacement correction of primary variable at DOF!");
+        throw std::runtime_error( "ERROR: Cannot request value of replacement correction of primary variable at DOF!" );
     
     return val;
 }
@@ -425,9 +433,10 @@ void DofManager::imposeMultiFreedomConstraints()
 {
     for ( int i = 0; i < (int)_multiFreedomConstraint.size(); i++)
     {
-        if ( _multiFreedomConstraint[i].type == "NodalDofSlaveConstraint" )
-            this->imposeNodalDofSlaveConstraint(_multiFreedomConstraint[i]);
+        if ( _multiFreedomConstraint[ i ].type == "NodalDofSlaveConstraint" )
+            this->imposeNodalDofSlaveConstraint( _multiFreedomConstraint[ i ] );
     }
+    // TODO: Implement normal displacement constraint in 2D
 }
 // ----------------------------------------------------------------------------
 void DofManager::putDirichletConstraintOn( Dof* targetDof )
@@ -438,48 +447,47 @@ void DofManager::putDirichletConstraintOn( Dof* targetDof )
 // ----------------------------------------------------------------------------
 void DofManager::readCellDofsFrom( FILE* fp )
 {
-    std::string key, src = "DofManager";
-    
+    std::string src = "DofManager";
     // Read number of elemental DOFs
-    int nDofsPerCell = getIntegerInputFrom(fp, "\nFailed to read number of DOF per cell from input file!", src);
+    int nDofsPerCell = getIntegerInputFrom( fp, "\nFailed to read number of DOF per cell from input file!", src );
     
     // Setup cell DOF info
-    _cellDofInfo.assign(nDofsPerCell, DofInfo());
+    _cellDofInfo.assign( nDofsPerCell, DofInfo() );
     
     for ( int i = 0; i < nDofsPerCell; i++ )
     {
         // Cell DOF tag
-        _cellDofInfo[i].tag = getStringInputFrom(fp, "Failed to read cell DOF tag from input file!", src);
+        _cellDofInfo[ i ].tag = getStringInputFrom( fp, "Failed to read cell DOF tag from input file!", src );
         
         // Cell DOF group
-        verifyKeyword(fp, key = "DofGroup", src);
-        _cellDofInfo[i].group = getIntegerInputFrom(fp, "Failed to read cell DOF group from input file!", src);
+        verifyKeyword( fp, "DofGroup", src );
+        _cellDofInfo[ i ].group = getIntegerInputFrom( fp, "Failed to read cell DOF group from input file!", src );
     }
 }
 // ----------------------------------------------------------------------------
 void DofManager::readFaceDofsFrom( FILE* fp )
 {
-    std::string key, src = "DofManager";
+    std::string src = "DofManager";
     
     // Read number of face DOFs
-    int nDofsPerFace = getIntegerInputFrom(fp, "\nFailed to read number of DOF per face from input file!", src);
+    int nDofsPerFace = getIntegerInputFrom( fp, "\nFailed to read number of DOF per face from input file!", src );
     
     // Setup cell DOF info
-    _faceDofInfo.assign(nDofsPerFace, DofInfo());
+    _faceDofInfo.assign( nDofsPerFace, DofInfo() );
     
     for ( int i = 0; i < nDofsPerFace; i++ )
     {
         // Face DOF tag
-        _faceDofInfo[i].tag = getStringInputFrom(fp, "\nFailed to read face DOF tag from input file!", src);
+        _faceDofInfo[ i ].tag = getStringInputFrom( fp, "\nFailed to read face DOF tag from input file!", src );
         
         // Face DOF group
-        verifyKeyword(fp, key = "DofGroup", src);
-        _faceDofInfo[i].group = getIntegerInputFrom(fp, "\nFailed to read face DOF group from input file!", src);
+        verifyKeyword( fp, "DofGroup", src );
+        _faceDofInfo[ i ].group = getIntegerInputFrom( fp, "\nFailed to read face DOF group from input file!", src );
         
         // Nodal dof primary and secondary field assignment
-        verifyKeyword(fp, key = "FaceField", src);
-        _faceDofInfo[i].primField = getIntegerInputFrom(fp, "\nFailed to read primary field assignment for face DOF from input file!", src);        
-        _faceDofInfo[i].secField = getIntegerInputFrom(fp, "\nFailed reading secondary field assignment for face DOF from input file!", src);
+        verifyKeyword( fp, "FaceField", src );
+        _faceDofInfo[ i ].primField = getIntegerInputFrom( fp, "\nFailed to read primary field assignment for face DOF from input file!", src );
+        _faceDofInfo[ i ].secField = getIntegerInputFrom( fp, "\nFailed reading secondary field assignment for face DOF from input file!", src );
     }
     
     if ( nDofsPerFace > 0 )
@@ -490,42 +498,42 @@ void DofManager::readMultiFreedomConstraintsFrom( FILE* fp )
 {
     std::string src = "DofManager";
     
-    int nMFConstraints = getIntegerInputFrom(fp, "Failed to read number of multi-freedom constraints from input file!", src);
-    _multiFreedomConstraint.assign(nMFConstraints, MultiFreedomConstraint());
-    for ( int i = 0; i < nMFConstraints; i++)
+    int nMFConstraints = getIntegerInputFrom( fp, "Failed to read number of multi-freedom constraints from input file!", src );
+    _multiFreedomConstraint.assign( nMFConstraints, MultiFreedomConstraint() );
+    for ( int i = 0; i < nMFConstraints; i++ )
     {
-        _multiFreedomConstraint[i].type = getStringInputFrom(fp, "Failed to read multi-freedom constraint type from input file!", src);
+        _multiFreedomConstraint[ i ].type = getStringInputFrom( fp, "Failed to read multi-freedom constraint type from input file!", src );
 
-        if ( _multiFreedomConstraint[i].type == "NodalDofSlaveConstraint" )
-            this->readNodalDofSlaveConstraintDataFrom(fp, _multiFreedomConstraint[i]);
+        if ( _multiFreedomConstraint[ i ].type == "NodalDofSlaveConstraint" )
+            this->readNodalDofSlaveConstraintDataFrom( fp, _multiFreedomConstraint[ i ] );
         else
-            throw std::runtime_error("Unrecognized multi-freedom constraint type encountered!\nSource: DofManager");
+            throw std::runtime_error( "Unrecognized multi-freedom constraint type encountered!\nSource: DofManager" );
     }
 }
 // ----------------------------------------------------------------------------
 void DofManager::readNodalDofsFrom( FILE* fp )
 {
-    std::string key, errmsg, src = "DofManager";
+    std::string src = "DofManager";
     
     // Read number of DOF per node
-    int nDofsPerNode = getIntegerInputFrom(fp, "\nFailed to read number of DOF per node from input file!", src);
+    int nDofsPerNode = getIntegerInputFrom( fp, "\nFailed to read number of DOF per node from input file!", src );
     
     // Setup nodal DOF info
-    _nodalDofInfo.assign(nDofsPerNode, DofInfo());
+    _nodalDofInfo.assign( nDofsPerNode, DofInfo() );
     
     for (  int i = 0; i < nDofsPerNode; i++ )
     {
         // Nodal DOF tag
-        _nodalDofInfo[i].tag = getStringInputFrom(fp, "\nFailed to read nodal DOF tag from input file!", src);
+        _nodalDofInfo[ i ].tag = getStringInputFrom( fp, "\nFailed to read nodal DOF tag from input file!", src );
         
         // Nodal DOF group
-        verifyKeyword(fp, key = "DofGroup", src);
-        _nodalDofInfo[i].group = getIntegerInputFrom(fp, "\nFailed to read nodal DOF group from input file!", src);
+        verifyKeyword( fp, "DofGroup", src );
+        _nodalDofInfo[ i ].group = getIntegerInputFrom( fp, "\nFailed to read nodal DOF group from input file!", src );
         
         // Nodal dof primary and secondary field assignment
-        verifyKeyword(fp, key = "NodalField", src);
-        _nodalDofInfo[i].primField = getIntegerInputFrom(fp, "\nFailed to read primary field assignment for\nnodal DOF from input file!", src);        
-        _nodalDofInfo[i].secField = getIntegerInputFrom(fp, "Failed reading secondary field assignment for\nnodal DOF from input file!", src);
+        verifyKeyword( fp, "NodalField", src );
+        _nodalDofInfo[ i ].primField = getIntegerInputFrom( fp, "\nFailed to read primary field assignment for\nnodal DOF from input file!", src );
+        _nodalDofInfo[ i ].secField = getIntegerInputFrom( fp, "Failed reading secondary field assignment for\nnodal DOF from input file!", src );
     }
 }
 // ----------------------------------------------------------------------------
@@ -534,13 +542,13 @@ void DofManager::removeAllDofConstraints()
     // Cycle through all nodal DOFs
     int nNodes = analysisModel().domainManager().giveNumberOfNodes();
     
-    for ( int i = 0; i < nNodes; i++)
+    for ( int i = 0; i < nNodes; i++ )
     {
-        Node* targetNode = analysisModel().domainManager().giveNode(i);
+        Node* targetNode = analysisModel().domainManager().giveNode( i );
         
-        for ( int j = 0; j < (int)_nodalDofInfo.size(); j++)
+        for ( int j = 0; j < (int)_nodalDofInfo.size(); j++ )
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(j, targetNode);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof( j, targetNode );
             targetDof->_isConstrained = false;
         }
     }
@@ -548,13 +556,13 @@ void DofManager::removeAllDofConstraints()
     // Cycle through all cell DOFs
     int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
     
-    for ( int i = 0; i < nCells; i++)
+    for ( int i = 0; i < nCells; i++ )
     {
-        Cell* targetCell = analysisModel().domainManager().giveDomainCell(i);
+        Cell* targetCell = analysisModel().domainManager().giveDomainCell( i );
         
-        for ( int j = 0; j < (int)_cellDofInfo.size(); j++)
+        for ( int j = 0; j < (int)_cellDofInfo.size(); j++ )
         {
-            Dof* targetDof = analysisModel().domainManager().giveCellDof(j, targetCell);
+            Dof* targetDof = analysisModel().domainManager().giveCellDof( j, targetCell );
             targetDof->_isConstrained = false;
         }
     }
@@ -562,31 +570,65 @@ void DofManager::removeAllDofConstraints()
 // ----------------------------------------------------------------------------
 void DofManager::reportNumberOfActiveDofs()
 {
-    std::printf("\n    Stage    Active DOFs");
-    std::printf("\n    -----------------------");
+    std::printf( "\n    Stage    Active DOFs" );
+    std::printf( "\n    -----------------------" );
     for ( auto it = _nActiveDof.begin(); it != _nActiveDof.end(); ++it )
     {
         int stg = (*it).first;
         int nActiveDofs = (*it).second;
-        std::printf("\n    %-9d%d\n", stg, nActiveDofs);
+        std::printf( "\n    %-9d%d\n", stg, nActiveDofs );
     }
-    std::printf("\n");
+    std::printf( "\n" );
 }
 // ----------------------------------------------------------------------------
-void DofManager::resetDofCurrentPrimaryValues()
+void DofManager::resetDofPrimaryVariablesToConvergedValues()
 {
     int nNodes = analysisModel().domainManager().giveNumberOfNodes();
 #ifdef _OPENMP
 #pragma omp parallel for
 #endif
-    for (int i = 0; i < nNodes; i++)
+    for ( int i = 0; i < nNodes; i++ )
     {
-        Node* targetNode = analysisModel().domainManager().giveNode(i);
+        Node* targetNode = analysisModel().domainManager().giveNode( i );
         
-        for ( int j = 1; j <= (int)_nodalDofInfo.size(); j++)
+        for ( int j = 0; j < (int)_nodalDofInfo.size(); j++ )
         {
-            Dof* targetDof = analysisModel().domainManager().giveNodalDof(j, targetNode);
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof( j, targetNode );
             targetDof->_primVarCurrent = targetDof->_primVarConverged;
+            targetDof->_secVar = 0.0;
+        }
+    }
+
+    int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for ( int i = 0; i < nCells; i++ )
+    {
+        Cell* targetCell = analysisModel().domainManager().giveDomainCell( i );
+        for ( int j = 0; j < (int)_cellDofInfo.size(); j++ )
+        {
+            Dof* targetDof = analysisModel().domainManager().giveCellDof( j, targetCell );
+            targetDof->_primVarCurrent = targetDof->_primVarConverged;
+            targetDof->_secVar = 0.0;
+        }        
+    }
+}
+// ----------------------------------------------------------------------------
+void DofManager::resetDofPrimaryVariablesToRestartValues()
+{
+    int nNodes = analysisModel().domainManager().giveNumberOfNodes();
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for ( int i = 0; i < nNodes; i++ )
+    {
+        Node* targetNode = analysisModel().domainManager().giveNode( i );
+
+        for ( int j = 0; j < (int)_nodalDofInfo.size(); j++ )
+        {
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof( j, targetNode );
+            targetDof->_primVarCurrent = targetDof->_primVarRestart;
             targetDof->_secVar = 0.0;
         }
     }
@@ -597,29 +639,61 @@ void DofManager::resetDofCurrentPrimaryValues()
 #endif
     for (int i = 0; i < nCells; i++)
     {
-        Cell* targetCell = analysisModel().domainManager().giveDomainCell(i);
-        for ( int j = 1; j <= (int)_cellDofInfo.size(); j++)
+        Cell* targetCell = analysisModel().domainManager().giveDomainCell( i );
+        for ( int j = 0; j < (int)_cellDofInfo.size(); j++ )
         {
-            Dof* targetDof = analysisModel().domainManager().giveCellDof(j, targetCell);
-            targetDof->_primVarCurrent = targetDof->_primVarConverged;
+            Dof* targetDof = analysisModel().domainManager().giveCellDof( j, targetCell );
+            targetDof->_primVarCurrent = targetDof->_primVarRestart;
             targetDof->_secVar = 0.0;
-        }        
+        }
     }
 }
 // ----------------------------------------------------------------------------
 void DofManager::resetSecondaryVariablesAtStage( int stage )
 {
-    for ( int i = 0; i < (int)_activeDof[stage].size(); i++ )
-        _activeDof[stage][i]->_secVar = 0.;
+    for ( int i = 0; i < (int)_activeDof[ stage ].size(); i++ )
+        _activeDof[ stage ][ i ]->_secVar = 0.;
     
-    for ( int i = 0; i < (int)_inactiveDof[stage].size(); i++ )
-        _inactiveDof[stage][i]->_secVar = 0.;
+    for ( int i = 0; i < (int)_inactiveDof[ stage ].size(); i++ )
+        _inactiveDof[ stage ][ i ]->_secVar = 0.;
 }
 // ----------------------------------------------------------------------------
 void DofManager::setConstraintValueAt( Dof* targetDof, double val )
 {
     targetDof->_constraintValue = val;
     targetDof->_primVarCurrent = val;
+}
+// ----------------------------------------------------------------------------
+void DofManager::setRestartValuesForDofPrimaryVariables()
+{
+    int nNodes = analysisModel().domainManager().giveNumberOfNodes();
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for ( int i = 0; i < nNodes; i++ )
+    {
+        Node* targetNode = analysisModel().domainManager().giveNode( i );
+
+        for ( int j = 0; j < (int)_nodalDofInfo.size(); j++ )
+        {
+            Dof* targetDof = analysisModel().domainManager().giveNodalDof( j, targetNode );
+            targetDof->_primVarRestart = targetDof->_primVarCurrent;
+        }
+    }
+
+    int nCells = analysisModel().domainManager().giveNumberOfDomainCells();
+#ifdef _OPENMP
+#pragma omp parallel for
+#endif
+    for ( int i = 0; i < nCells; i++ )
+    {
+        Cell* targetCell = analysisModel().domainManager().giveDomainCell( i );
+        for ( int j = 1; j <= (int)_cellDofInfo.size(); j++ )
+        {
+            Dof* targetDof = analysisModel().domainManager().giveCellDof( j, targetCell );
+            targetDof->_primVarRestart = targetDof->_primVarCurrent;
+        }
+    }
 }
 // ----------------------------------------------------------------------------
 void DofManager::setEquationNumberFor( Dof* targetDof, int eqNo )
@@ -630,9 +704,9 @@ void DofManager::setEquationNumberFor( Dof* targetDof, int eqNo )
 void DofManager::setStageFor( Dof* targetDof, int stgNum )
 {
     if ( targetDof->_stage != UNASSIGNED && targetDof->_stage != stgNum )
-        throw std::runtime_error("ERROR: Detected conflict in DOF stage assignment! DOF with previously assigned stage number of '"
-                + std::to_string(targetDof->_stage) + "' is being reassigned a stage number of '" + std::to_string(stgNum)
-                + std::string("'.\nSource: DofManager"));
+        throw std::runtime_error( "ERROR: Detected conflict in DOF stage assignment! DOF with previously assigned stage number of '"
+                + std::to_string( targetDof->_stage ) + "' is being reassigned a stage number of '" + std::to_string( stgNum )
+                + std::string( "'.\nSource: DofManager" ) );
     else
         targetDof->_stage = stgNum;
 }
@@ -640,9 +714,9 @@ void DofManager::setStageFor( Dof* targetDof, int stgNum )
 void DofManager::setSubsystemFor( Dof* targetDof, int subsysNum )
 {
     if ( targetDof->_subsystem != UNASSIGNED && targetDof->_subsystem != subsysNum )
-        throw std::runtime_error("ERROR: Detected conflict in subsystem assignment! DOF with assigned subsystem number of '"
-                + std::to_string(targetDof->_subsystem) + "' is being reassigned a subsystem number of '" + std::to_string(subsysNum) 
-                + std::string("'.\nSource: DofManager"));
+        throw std::runtime_error( "ERROR: Detected conflict in subsystem assignment! DOF with assigned subsystem number of '"
+                + std::to_string( targetDof->_subsystem ) + "' is being reassigned a subsystem number of '" + std::to_string( subsysNum )
+                + std::string( "'.\nSource: DofManager" ) );
     
     targetDof->_subsystem = subsysNum;
 }
@@ -686,12 +760,12 @@ void DofManager::updateResidualAt( Dof* targetDof, double val )
 // ----------------------------------------------------------------------------
 void DofManager::writeConvergedDofValuesTo( Node* targetNode )
 {
-    for ( int i = 0; i < (int)_nodalDofInfo.size(); i++)
+    for ( int i = 0; i < (int)_nodalDofInfo.size(); i++ )
     {
-        Dof* curDof = targetNode->_dof[i];
+        Dof* curDof = targetNode->_dof[ i ];
         
-        analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[i].primField, curDof->_primVarConverged);
-        analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[i].secField, curDof->_secVar);
+        analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[ i ].primField, curDof->_primVarConverged );
+        analysisModel().domainManager().setFieldValueAt(targetNode, _nodalDofInfo[ i ].secField, curDof->_secVar );
     }
 }
 // ----------------------------------------------------------------------------
@@ -699,37 +773,37 @@ void DofManager::imposeNodalDofSlaveConstraint( MultiFreedomConstraint& mfc )
 {
     int nBCells = analysisModel().domainManager().giveNumberOfBoundaryCells();
     
-    int masterPhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor(mfc.masterTag);
-    int slavePhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor(mfc.slaveTag);
+    int masterPhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor( mfc.masterTag );
+    int slavePhysNum = analysisModel().domainManager().givePhysicalEntityNumberFor( mfc.slaveTag );
 
     // Find master node
     Dof* masterDof = nullptr;
-    for ( int i = 0; i < nBCells; i++)
+    for ( int i = 0; i < nBCells; i++ )
     {
-        Cell* candCell = analysisModel().domainManager().giveBoundaryCell(i);
-        if ( analysisModel().domainManager().giveLabelOf(candCell) == masterPhysNum )
+        Cell* candCell = analysisModel().domainManager().giveBoundaryCell( i );
+        if ( analysisModel().domainManager().giveLabelOf( candCell ) == masterPhysNum )
         {
-            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(candCell);
+            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf( candCell );
             if ( (int)node.size() != 1 )
-                throw std::runtime_error("ERROR: Detected more than one master node in 'NodalDofSlaveConstraint' assignment!\nSource: DofManager");
+                throw std::runtime_error( "ERROR: Detected more than one master node in 'NodalDofSlaveConstraint' assignment!\nSource: DofManager" );
 
-            masterDof = analysisModel().domainManager().giveNodalDof(mfc.masterDofNum, node[0]);
+            masterDof = analysisModel().domainManager().giveNodalDof( mfc.masterDofNum, node[ 0 ] );
             break;
         }
     }
 
     // Find slave nodes
-    for ( int i = 0; i < nBCells; i++)
+    for ( int i = 0; i < nBCells; i++ )
     {
-        Cell* candCell = analysisModel().domainManager().giveBoundaryCell(i);
-        if ( analysisModel().domainManager().giveLabelOf(candCell) == slavePhysNum )
+        Cell* candCell = analysisModel().domainManager().giveBoundaryCell( i );
+        if ( analysisModel().domainManager().giveLabelOf( candCell ) == slavePhysNum )
         {
-            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf(candCell);
-            for ( int j = 0; j < (int)node.size(); j++)
+            std::vector<Node*> node = analysisModel().domainManager().giveNodesOf( candCell );
+            for ( int j = 0; j < (int)node.size(); j++ )
             {
-                Dof* slaveDof = analysisModel().domainManager().giveNodalDof(mfc.slaveDofNum, node[j]);
+                Dof* slaveDof = analysisModel().domainManager().giveNodalDof( mfc.slaveDofNum, node[ j ] );
                 if ( slaveDof != masterDof )
-                    this->enslave(slaveDof, masterDof);
+                    this->enslave( slaveDof, masterDof );
             }
         }
     }
@@ -739,12 +813,12 @@ void DofManager::readNodalDofSlaveConstraintDataFrom( FILE* fp, MultiFreedomCons
 {
     std::string src = "DofManager", name;
     
-    verifyKeyword(fp, "Master", src);
-    mfc.masterTag = getStringInputFrom(fp, "Failed to read master node tag from input file!", src);
-    name = getStringInputFrom(fp, "Failed to read master DOF name from input file!", src);
-    mfc.masterDofNum = this->giveIndexForNodalDof(name);
-    verifyKeyword(fp, "Slave", src);
-    mfc.slaveTag = getStringInputFrom(fp, "Failed to read slave node tag from input file!", src);
-    name = getStringInputFrom(fp, "Failed to read slave DOF name from input file!", src);
-    mfc.slaveDofNum = this->giveIndexForNodalDof(name);
+    verifyKeyword( fp, "Master", src );
+    mfc.masterTag = getStringInputFrom( fp, "Failed to read master node tag from input file!", src );
+    name = getStringInputFrom( fp, "Failed to read master DOF name from input file!", src );
+    mfc.masterDofNum = this->giveIndexForNodalDof( name );
+    verifyKeyword( fp, "Slave", src );
+    mfc.slaveTag = getStringInputFrom( fp, "Failed to read slave node tag from input file!", src );
+    name = getStringInputFrom( fp, "Failed to read slave DOF name from input file!", src );
+    mfc.slaveDofNum = this->giveIndexForNodalDof( name );
 }

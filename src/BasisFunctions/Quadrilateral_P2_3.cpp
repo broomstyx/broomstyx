@@ -1,6 +1,4 @@
 /*
-  Copyright (c) 2014 - 2019 University of Bergen
-  
   This file is part of the BROOMStyx project.
 
   BROOMStyx is free software: you can redistribute it and/or modify
@@ -22,59 +20,51 @@
 */
 
 #include "Quadrilateral_P2_3.hpp"
-#include <cmath>
-#include "../Core/AnalysisModel.hpp"
-#include "../Core/DomainManager.hpp"
-#include "../Util/linearAlgebra.hpp"
 
 using namespace broomstyx;
-
-Quadrilateral_P2_3::Quadrilateral_P2_3() {}
-
-Quadrilateral_P2_3::~Quadrilateral_P2_3() {}
 
 RealVector Quadrilateral_P2_3::giveBasisFunctionsAt( const RealVector& coor )
 {
     double xi = coor(0);
     double eta = coor(1);
     
-    RealVector psi({-0.25*(1. - xi)*(1. - eta)*(1. + xi + eta),
-                    -0.25*(1. + xi)*(1. - eta)*(1. - xi + eta),
-                    -0.25*(1. + xi)*(1. + eta)*(1. - xi - eta),
-                    -0.25*(1. - xi)*(1. + eta)*(1. + xi - eta),
-                    0.5*(1. - xi*xi)*(1. - eta),
-                    0.5*(1. + xi)*(1. - eta*eta),
-                    0.5*(1. - xi*xi)*(1. + eta),
-                    0.5*(1. - xi)*(1. - eta*eta)});
+    RealVector psi( { -0.25 * ( 1. - xi ) * ( 1. - eta ) * ( 1. + xi + eta ),
+                      -0.25 * ( 1. + xi ) * ( 1. - eta ) * ( 1. - xi + eta ),
+                      -0.25 * ( 1. + xi ) * ( 1. + eta ) * ( 1. - xi - eta ),
+                      -0.25 * ( 1. - xi ) * ( 1. + eta ) * ( 1. + xi - eta ),
+                      0.5 * ( 1. - xi * xi ) * ( 1. - eta ),
+                      0.5 * ( 1. + xi ) * ( 1. - eta * eta ),
+                      0.5 * ( 1. - xi * xi ) * ( 1. + eta ),
+                      0.5 * ( 1. - xi ) * ( 1. - eta * eta ) } );
     
     return psi;
 }
 // ----------------------------------------------------------------------------
 std::vector<RealVector> Quadrilateral_P2_3::giveBasisFunctionDerivativesAt( const RealVector& coor )
 {
-    std::vector<RealVector> dpsi;
-    dpsi.assign(2, RealVector());
+    std::vector< RealVector > dpsi;
+    dpsi.assign( 2, RealVector() );
     
-    double xi = coor(0);
-    double eta = coor(1);
+    double xi = coor( 0 );
+    double eta = coor( 1 );
     
-    dpsi[0] = {-0.25*(eta - 1.)*(eta + 2.*xi),
-               0.25*(eta - 1.)*(eta - 2.*xi),
-               0.25*(eta + 1.)*(eta + 2.*xi),
-               -0.25*(eta + 1.)*(eta - 2.*xi),
-               xi*(eta - 1.),
-               -0.5*(eta - 1.)*(eta + 1.),
-               -xi*(eta + 1.),
-               0.5*(eta - 1.)*(eta + 1.)};
+    dpsi[ 0 ] = { -0.25 * ( eta - 1. ) * ( eta + 2. * xi ),
+                   0.25 * ( eta - 1. ) * ( eta - 2. * xi ),
+                   0.25 * ( eta + 1. ) * ( eta + 2. * xi ),
+                  -0.25 * ( eta + 1. ) * ( eta - 2. * xi ),
+                   xi * ( eta - 1. ),
+                  -0.5 * ( eta - 1. ) * ( eta + 1. ),
+                  -xi * ( eta + 1. ),
+                   0.5 * ( eta - 1. ) * ( eta + 1. ) };
     
-    dpsi[1] = {-0.25*(xi - 1.)*(2.*eta + xi),
-               0.25*(xi + 1.)*(2.*eta - xi),
-               0.25*(xi + 1.)*(2.*eta + xi),
-               -0.25*(xi - 1.)*(2.*eta - xi),
-               0.5*(xi - 1.)*(xi + 1.),
-               -(xi + 1.)*eta,
-               -0.5*(xi - 1.)*(xi + 1.),
-               (xi - 1.)*eta};
+    dpsi[ 1 ] = { -0.25 * ( xi - 1. ) * ( 2. * eta + xi ),
+                   0.25 * ( xi + 1. ) * ( 2. * eta - xi ),
+                   0.25 * ( xi + 1. ) * ( 2. * eta + xi ),
+                  -0.25 * ( xi - 1. ) * ( 2. * eta - xi ),
+                   0.5 * ( xi - 1. ) * ( xi + 1. ),
+                  -( xi + 1. ) * eta,
+                  -0.5 * ( xi - 1. ) * ( xi + 1. ),
+                   ( xi - 1. ) * eta };
     
     return dpsi;
 }

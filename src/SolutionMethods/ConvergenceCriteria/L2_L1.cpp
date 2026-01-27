@@ -132,9 +132,9 @@ bool L2_L1::checkConvergenceOf( const RealVector& resid, const std::vector<Dof*>
         _residCrit = _absTolRes;
     
     bool convergenceStatus = true;
-    if ( _corrNorm > _corrCrit )
+    if ( _corrNorm > _corrCrit && ( _trackingOption == "C" || _trackingOption == "CR" ) )
         convergenceStatus = false;
-    if ( _residNorm > _residCrit )
+    if ( _residNorm > _residCrit && ( _trackingOption == "R" || _trackingOption == "CR" ) )
         convergenceStatus = false;
     
     toc = std::chrono::high_resolution_clock::now();

@@ -77,6 +77,7 @@ namespace broomstyx
         int requiredNumberOfStages();
 
         virtual void initializeMaterialsAt( Cell* targetCell );
+        virtual bool performAdditionalConvergenceCheckAt( int stage, const TimeData& time );
         virtual bool performAdditionalConvergenceCheckAt( Cell* targetCell, int stage );
         virtual void performPreIterationOperationsAt( int stage, int iterNum );
         virtual void printPostIterationMessage( int stage );

@@ -59,54 +59,50 @@ MaterialManager::~MaterialManager()
 Material* MaterialManager::giveMaterial( int label )
 {
     Material* target;
-    std::map<int,Material*>::iterator it = _material.find(label);
+    auto it = _material.find( label );
     if ( it != _material.end() )
-        target = (*it).second;
+        target = ( *it ).second;
     else
-    {
-        throw std::runtime_error("Error: There is no material corresponding to"
-                + std::string(" label '") + std::to_string(label)
-                + std::string("'!\nSource: ") + _name);
-    }
-    
+        throw std::runtime_error( "Error: There is no material corresponding to label '" + std::to_string( label )
+                + "'!\nSource: " + _name );
+
     return target;
 }
 // ----------------------------------------------------------------------------
 void MaterialManager::initializeMaterials()
 {
-    std::chrono::time_point<std::chrono::system_clock> tic, toc;
-    std::chrono::duration<double> tictoc;
+    std::chrono::time_point< std::chrono::system_clock > tic, toc;
+    std::chrono::duration< double > tictoc {};
     
-    std::printf("  %-40s", "Initializing materials ...");
+    std::printf( "  %-40s", "Initializing materials ..." );
     tic = std::chrono::high_resolution_clock::now();
     
-    std::map<int,Material*>::iterator it;
-    for (it = _material.begin(); it != _material.end(); it++)
-        (*it).second->initialize();
+    std::map< int,Material* >::iterator it;
+    for ( it = _material.begin(); it != _material.end(); it++ )
+        ( *it ).second->initialize();
     
     toc = std::chrono::high_resolution_clock::now();
     tictoc = toc - tic;
-    std::printf("done (time = %f sec.)\n", tictoc.count());
+    std::printf( "done (time = %f sec.)\n", tictoc.count() );
 }
 // ----------------------------------------------------------------------------
 void MaterialManager::readMaterialsFrom( FILE* fp )
 {
-    int nMat = getIntegerInputFrom(fp, "Failed to read number of materials from input file!", _name);
+    int nMat = getIntegerInputFrom( fp, "Failed to read number of materials from input file!", _name );
     
-    for ( int i = 0; i < nMat; i++)
+    for ( int i = 0; i < nMat; i++ )
     {
-        int label = getIntegerInputFrom(fp, "Failed reading material label from input file!", _name);
-        std::string materialName = getStringInputFrom(fp, "Failed reading material type from input file!", _name);
+        int label = getIntegerInputFrom( fp, "Failed reading material label from input file!", _name );
+        std::string materialName = getStringInputFrom( fp, "Failed reading material type from input file!", _name );
         
-        Material* newMat = objectFactory().instantiateMaterial(materialName);
+        Material* newMat = objectFactory().instantiateMaterial( materialName );
         
-        std::pair< std::map<int,Material*>::iterator, bool> entry;
-        entry = _material.insert(std::pair<int,Material*>(label, newMat));
+        std::pair< std::map< int,Material* >::iterator, bool> entry;
+        entry = _material.insert( std::pair< int,Material*> ( label, newMat ) );
         if ( !entry.second )
-            throw std::runtime_error("Multiple declaration of materials for label '"
-                    + std::to_string(label)
-                    + std::string("' detected in input file!\nSource: ") + _name);
+            throw std::runtime_error( "Multiple declaration of materials for label '" + std::to_string(label)
+                    + "' detected in input file!\nSource: " + _name );
                 
-        _material[label]->readParamatersFrom(fp);
+        _material[ label ]->readParamatersFrom( fp );
     }
 }

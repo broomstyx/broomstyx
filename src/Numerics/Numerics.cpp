@@ -102,6 +102,12 @@ void Numerics::imposeConstraintAt( Cell*                    targetCell
 // ----------------------------------------------------------------------------
 void Numerics::initializeMaterialsAt( Cell* targetCell ) {}
 // ----------------------------------------------------------------------------
+bool Numerics::performAdditionalConvergenceCheckAt( int stage, const TimeData& time )
+{
+    // Does nothing if no special convergence criteria are defined.
+    return true;
+}
+// ----------------------------------------------------------------------------
 bool Numerics::performAdditionalConvergenceCheckAt( Cell* targetCell, int stage )
 {
     // Does nothing if no special convergence criteria are defined.
@@ -212,7 +218,7 @@ int Numerics::requiredNumberOfMaterials()
     return _nMaterials; 
 }
 // ----------------------------------------------------------------------------
-int Numerics::requiredNumberOfDofPerNode() 
+int Numerics::requiredNumberOfDofPerNode()
 { 
     return _dofPerNode; 
 }

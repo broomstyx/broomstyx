@@ -9,3 +9,6 @@ src/.vscode/*
 .cproject
 .project
 .settings/*
+.idea/*
+cmake-build-debug/*
+runCMake.sh

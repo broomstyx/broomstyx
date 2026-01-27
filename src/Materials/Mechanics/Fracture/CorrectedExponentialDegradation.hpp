@@ -86,7 +86,7 @@ namespace broomstyx
     {
     public:
         CorrectedExponentialDegradation();
-        virtual ~CorrectedExponentialDegradation();
+        ~CorrectedExponentialDegradation() override = default;
         
         double     givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus ) override;
         RealVector giveForceFrom( const RealVector& conState, const MaterialStatus* matStatus ) override;
@@ -99,6 +99,7 @@ namespace broomstyx
         double _a2;
         double _a3;
         double _w;
+        bool   _useSecantModulus;
     };
 }
 

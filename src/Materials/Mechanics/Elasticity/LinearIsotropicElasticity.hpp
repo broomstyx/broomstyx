@@ -59,20 +59,39 @@ namespace broomstyx
     {
     public:
         LinearIsotropicElasticity();
-        virtual ~LinearIsotropicElasticity();
+        ~LinearIsotropicElasticity() override;
 
         double     givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus ) override;
+        double     givePotentialFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label ) override;
         RealVector giveForceFrom( const RealVector& conState, const MaterialStatus* matStatus ) override;
+        RealVector giveForceFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label ) override;
         RealMatrix giveModulusFrom( const RealVector& conState, const MaterialStatus* matStatus ) override;
+        RealMatrix giveModulusFrom( const RealVector& conState, const MaterialStatus* matStatus, const std::string& label ) override;
         double     giveParameter( const std::string& str ) override;
         void       readParamatersFrom( FILE* fp ) override;
 
     private:
-        int _analysisMode;
+        enum AnalysisMode
+        {
+            TwoDimensional,
+            PlaneStress,
+            PlaneStrain,
+            Axisymmetric,
+            ThreeDimensional,
+            Torsion
+        };
+
+        AnalysisMode _analysisMode;
         
         double _E;
         double _nu;
         double _G;
+        double _K;
+
+        RealMatrix   _I;
+        RealMatrix   _Pvol;
+
+        void checkSizeOf( const RealVector& conState );
     };    
 }
 

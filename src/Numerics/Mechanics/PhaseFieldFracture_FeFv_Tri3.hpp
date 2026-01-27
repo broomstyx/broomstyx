@@ -87,34 +87,39 @@ namespace broomstyx
         
     public:
         NumericsStatus_PhaseFieldFracture_FeFv_Tri3();
-        virtual ~NumericsStatus_PhaseFieldFracture_FeFv_Tri3();
+        ~NumericsStatus_PhaseFieldFracture_FeFv_Tri3() override = default;
         
     private:
         double     _area;
         double     _phi;
+        double     _phiOld;
         RealVector _strain;
         RealVector _stress;
         RealMatrix _gradU;
+        double     _crackDensity;
         double     _surfEgy;
         double     _bulkEgy;
         RealVector _gradPhi;
         RealMatrix _dPsi;
+        double     _Gc;
+        double     _Gbulk;
+        double     _histFld;
         
         bool   _hasPhsFldConstraint;
-        bool   _hasPhsFldPrescribedOnFace[3];
-        bool   _hasPhsFldGradientPrescribedOnFace[3];
-        double _valueOnFace[3];
+        bool   _hasPhsFldPrescribedOnFace[ 3 ];
+        bool   _hasPhsFldGradientPrescribedOnFace[ 3 ];
+        double _valueOnFace[ 3 ];
         bool   _hasNotComputedTransmissibilities;
-        double _transmissibility[3];
+        double _transmissibility[ 3 ];
         
-        MaterialStatus* _materialStatus[2];
+        MaterialStatus* _materialStatus[ 3 ];
     };
     
     class PhaseFieldFracture_FeFv_Tri3 final : public Numerics
     {
     public:
         PhaseFieldFracture_FeFv_Tri3();
-        virtual ~PhaseFieldFracture_FeFv_Tri3();
+        ~PhaseFieldFracture_FeFv_Tri3() override = default;
 
         void   deleteNumericsAt( Cell* targetCell ) override;
         void   finalizeDataAt( Cell* targetCell, const TimeData& time ) override;
@@ -128,9 +133,6 @@ namespace broomstyx
         
         std::tuple< RealVector,RealVector > 
             giveFieldOutputAt( Cell* targetCell, const std::string& fieldTag ) override;
-        
-        RealVector
-            giveNumericsParameter( const std::string& paramTag ) override;
         
         std::tuple< std::vector<Dof*>
                   , std::vector<Dof*>
@@ -159,7 +161,20 @@ namespace broomstyx
                                      , int                   subsys
                                      , const FieldCondition& fldCond
                                      , const TimeData&       time ) override;
-        
+
+        std::tuple< std::vector<Dof*>, std::vector<Dof*>, RealVector >
+            giveTransientCoefficientMatrixAt( Cell*           targetCell
+                                            , int             stage
+                                            , int             subsys
+                                            , const TimeData& time ) override;
+
+        std::tuple< std::vector<Dof*>, RealVector >
+            giveTransientLeftHandSideAt( Cell*           targetCell
+                                       , int             stage
+                                       , int             subsys
+                                       , const TimeData& time
+                                       , ValueType       valType ) override;
+
         void imposeConstraintAt( Cell*                    targetCell
                                , int                      stage
                                , const BoundaryCondition& bndCond
@@ -169,7 +184,6 @@ namespace broomstyx
                                      , const InitialCondition& initCond ) override;
         void initializeMaterialsAt( Cell* targetCell ) override;
         void initializeNumericsAt( Cell* targetCell ) override;
-        void performPostprocessingAt( Cell* targetCell, std::string tag ) override;
         void printPostIterationMessage( int stage ) override;
         void readAdditionalDataFrom( FILE* fp ) override;
         void removeConstraintsOn( Cell* targetCell ) override;
@@ -184,23 +198,23 @@ namespace broomstyx
         double      _wt;
         
         double _l;
-        double _Gc;
+        double _phiIrrev;
+        double _dampingCoef;
+
+        RealMatrix _massMatrix;
         
-        NumericsStatus_PhaseFieldFracture_FeFv_Tri3*
-                   getNumericsStatusAt( Cell* targetCell );
-        RealMatrix giveBmatAt( Cell* targetCell );
-        std::vector< std::vector<Node*> >
-                   giveFaceNodesOf( Cell* targetCell );
-        double     giveDistanceToMidpointOf( std::vector<Node*>& face, RealVector& coor);
-        RealMatrix giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
-        double     giveLengthOf( std::vector<Node*>& face );
-        RealVector giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType );
-        std::vector<Dof*> 
-                   giveNodalDofsAt( Cell* targetCell );
-        RealVector giveOutwardUnitNormalOf( std::vector<Node*>& face );
-        double     giveTransmissibilityCoefficientAt( std::vector<Node*>& face
-                                                    , Cell*               targetCell
-                                                    , Cell*               neighborCell );
+        NumericsStatus_PhaseFieldFracture_FeFv_Tri3* getNumericsStatusAt( Cell* targetCell );
+        RealMatrix        giveBmatAt( Cell* targetCell );
+        static std::vector< std::vector<Node*> > giveFaceNodesOf( Cell* targetCell );
+        static double     giveDistanceToMidpointOf( std::vector<Node*>& face, RealVector& coor);
+        RealMatrix        giveJacobianMatrixAt( Cell* targetCell, const RealVector& natCoor );
+        static double     giveLengthOf( std::vector<Node*>& face );
+        static RealVector giveLocalDisplacementsAt( std::vector<Dof*>& dof, ValueType valType );
+        std::vector<Dof*> giveNodalDofsAt( Cell* targetCell );
+        static RealVector giveOutwardUnitNormalOf( std::vector<Node*>& face );
+        double            giveTransmissibilityCoefficientAt( std::vector<Node*>& face
+                                                           , Cell*               targetCell
+                                                           , Cell*               neighborCell );
     };
 }
 

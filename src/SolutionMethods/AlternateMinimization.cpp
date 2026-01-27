@@ -179,7 +179,7 @@ int AlternateMinimization::computeSolutionFor( int stage
         }
         
         // Additional convergence checks from numerics
-        bool numericsConverged = this->checkConvergenceOfNumericsAt(stage);
+        bool numericsConverged = this->checkConvergenceOfNumericsAt(stage, time);
         if ( !numericsConverged )
             converged = false;
         

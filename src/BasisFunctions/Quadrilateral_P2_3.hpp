@@ -44,8 +44,8 @@ namespace broomstyx
     class Quadrilateral_P2_3 final : public ScalarBasisFunction
     {
     public:
-        Quadrilateral_P2_3();
-        virtual ~Quadrilateral_P2_3();
+        Quadrilateral_P2_3() = default;
+        virtual ~Quadrilateral_P2_3() = default;
         
         RealVector giveBasisFunctionsAt( const RealVector& coor ) override;
         std::vector<RealVector> giveBasisFunctionDerivativesAt( const RealVector& coor ) override;

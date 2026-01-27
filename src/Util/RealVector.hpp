@@ -101,7 +101,7 @@ namespace broomstyx
         }
 
         // Move constructor
-        RealVector( RealVector&& source )
+        RealVector( RealVector&& source ) noexcept
             : _dim(source._dim)
             , _ptr(source._ptr)
             , _ownsItsPointer(source._ownsItsPointer)

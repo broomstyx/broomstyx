@@ -34,11 +34,10 @@ namespace broomstyx
         
     public:
         MaterialStatus_BourdinDamageModel();
-        virtual ~MaterialStatus_BourdinDamageModel();
+        ~MaterialStatus_BourdinDamageModel() override = default;
         
     private:
         MaterialStatus* _materialStatus[2];
-        double _historyField;
         double _elasticEnergy;
     };
     
@@ -46,7 +45,7 @@ namespace broomstyx
     {
     public:
         BourdinDamageModel();
-        virtual ~BourdinDamageModel();
+        ~BourdinDamageModel() override = default;
         
         MaterialStatus* createMaterialStatus() override;
         void       destroy( MaterialStatus*& matStatus ) override;
@@ -60,8 +59,7 @@ namespace broomstyx
     private:
         Material* _elasticityModel;
         Material* _degradationFunction;
-        double _phiIrrev;
-        
+
         MaterialStatus_BourdinDamageModel* 
                    accessMaterialStatus( MaterialStatus* matStatus );
         const MaterialStatus_BourdinDamageModel* 
